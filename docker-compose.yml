@@ -1,0 +1,231 @@
+# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# BOS Pipeline v9.0 �� Docker Compose (Development)
+# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+#
+# Services:
+#   - backend     : FastAPI application (uvicorn)
+#   - celery      : Celery worker (all queues)
+#   - celery-beat : Celery beat scheduler
+#   - db          : PostgreSQL 16
+#   - redis       : Redis 7.2 (cache, broker, rate limiting)
+#   - nginx       : Reverse proxy + static files
+#   - frontend    : React/Vite dev server
+#
+# Usage:
+#   docker compose up -d
+#   docker compose logs -f backend
+#   docker compose exec backend alembic upgrade head
+
+version: "3.9"
+
+x-backend-env: &backend-env
+  DATABASE_URL: postgresql+asyncpg://bos:bos_secret@db:5432/bos_pipeline
+  REDIS_URL: redis://redis:6379/0
+  CELERY_BROKER_URL: redis://redis:6379/1
+  CELERY_RESULT_BACKEND: redis://redis:6379/2
+  JWT_SECRET_KEY: dev-super-secret-key-change-in-production-32chars!
+  JWT_REFRESH_SECRET_KEY: dev-refresh-secret-key-change-in-production-32!
+  ENVIRONMENT: development
+  DEBUG: "true"
+  APP_NAME: "BOS Pipeline"
+  APP_VERSION: "9.0.0"
+  LOG_LEVEL: INFO
+  CORS_ORIGINS: '["http://localhost:5173","http://localhost:3000","http://localhost:8080"]'
+  FF_ENABLE_MONTE_CARLO: "true"
+  FF_ENABLE_DIGITAL_TWIN: "true"
+  FF_ENABLE_AUTOML: "false"
+  FF_ENABLE_WEBSOCKET: "true"
+  FF_ENABLE_EXPORT_PARQUET: "true"
+  FF_ENABLE_BILLING: "true"
+  FF_ENABLE_MULTI_LANGUAGE: "false"
+  FF_ENABLE_DARK_MODE: "true"
+
+services:
+  # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+  # PostgreSQL 16
+  # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+  db:
+    image: postgres:16-alpine
+    container_name: bos_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: bos
+      POSTGRES_PASSWORD: bos_secret
+      POSTGRES_DB: bos_pipeline
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bos -d bos_pipeline"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bos_net
+
+  # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+  # Redis 7.2
+  # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+  redis:
+    image: redis:7.2-alpine
+    container_name: bos_redis
+    restart: unless-stopped
+    command: >
+      redis-server
+        --maxmemory 256mb
+        --maxmemory-policy allkeys-lru
+        --save 60 1000
+        --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - bos_net
+
+  # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+  # FastAPI Backend
+  # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: bos_backend
+    restart: unless-stopped
+    environment:
+      <<: *backend-env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      uvicorn app.main:app
+        --host 0.0.0.0
+        --port 8000
+        --reload
+        --log-level info
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/health/live"]
+      interval: 15s
+      timeout: 10s
+      start_period: 30s
+      retries: 3
+    networks:
+      - bos_net
+
+  # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+  # Celery Worker
+  # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+  celery:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.celery
+    container_name: bos_celery
+    restart: unless-stopped
+    environment:
+      <<: *backend-env
+    volumes:
+      - ./backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      celery -A app.celery_app:celery_app worker
+        --loglevel=info
+        --concurrency=2
+        --queues=default,compute,export,webhook,maintenance
+        -n worker@%h
+    networks:
+      - bos_net
+
+  # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+  # Celery Beat Scheduler
+  # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+  celery-beat:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.celery
+    container_name: bos_celery_beat
+    restart: unless-stopped
+    environment:
+      <<: *backend-env
+    volumes:
+      - ./backend:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: >
+      celery -A app.celery_app:celery_app beat
+        --loglevel=info
+        --schedule=/tmp/celerybeat-schedule
+    networks:
+      - bos_net
+
+  # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+  # React Frontend (dev server)
+  # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      target: development
+    container_name: bos_frontend
+    restart: unless-stopped
+    environment:
+      VITE_API_BASE_URL: http://localhost:8000/api/v1
+      VITE_WS_URL: ws://localhost:8000/api/v1/ws
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    depends_on:
+      - backend
+    networks:
+      - bos_net
+
+  # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+  # Nginx Reverse Proxy
+  # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: bos_nginx
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+      - "8443:443"
+    volumes:
+      - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./infra/nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./infra/nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - bos_net
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  bos_net:
+    driver: bridge

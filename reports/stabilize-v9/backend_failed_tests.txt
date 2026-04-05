@@ -1,0 +1,78 @@
+﻿FAILED tests/integration/test_auth_router.py::TestProfile::test_get_profile - AssertionError: assert 'adminuser_99403aa2' == 'test_admin'
+FAILED tests/integration/test_auth_router.py::TestChangePassword::test_change_password_success - assert 400 == 200
+FAILED tests/integration/test_batch_router.py::TestGetBatch::test_get_batch - pydantic_core._pydantic_core.ValidationError: 1 validation error for BatchD...
+FAILED tests/integration/test_batch_router.py::TestDeleteBatch::test_delete_batch - assert 204 == 200
+FAILED tests/integration/test_ser_router.py::TestSERCompute::test_ser_compute_basic - pydantic_core._pydantic_core.ValidationError: 1 validation error for SERRes...
+FAILED tests/integration/test_ser_router.py::TestSERCompute::test_ser_compute_with_nitrogen - pydantic_core._pydantic_core.ValidationError: 1 validation error for SERRes...
+FAILED tests/integration/test_ser_router.py::TestSERCompute::test_ser_response_has_recommendations - pydantic_core._pydantic_core.ValidationError: 1 validation error for SERRes...
+FAILED tests/integration/test_ser_router.py::TestSERBatchCompute::test_compute_from_batch - pydantic_core._pydantic_core.ValidationError: 1 validation error for SERRes...
+FAILED tests/test_batch_api.py::TestBatchDetail::test_get_batch_success - pydantic_core._pydantic_core.ValidationError: 1 validation error for BatchD...
+FAILED tests/test_batch_api.py::TestBatchUpdate::test_update_batch_success - KeyError: 'notes'
+FAILED tests/test_batch_api.py::TestBatchDelete::test_delete_batch_success - assert 403 == 204
+FAILED tests/test_batch_api.py::TestBatchDelete::test_delete_batch_not_found - assert 403 == 404
+FAILED tests/test_simulation.py::TestSensitivity::test_basic_sensitivity - ValueError: dm_out must be <= dm_in
+FAILED tests/test_simulation.py::TestSensitivity::test_ranking_ordered_by_impact - ValueError: n_larvae/n_frass must be >= 0
+FAILED tests/test_simulation.py::TestForecast::test_ewma_forecast - assert 0.15156299599999995 <= (0.13 + 0.02)
+FAILED tests/unit/test_anomaly_engine.py::TestAnomalyEngine::test_no_anomalies - TypeError: AnomalyInput.__init__() got an unexpected keyword argument 'values'
+FAILED tests/unit/test_anomaly_engine.py::TestAnomalyEngine::test_obvious_outlier - TypeError: AnomalyInput.__init__() got an unexpected keyword argument 'values'
+FAILED tests/unit/test_anomaly_engine.py::TestAnomalyEngine::test_iqr_method - TypeError: AnomalyInput.__init__() got an unexpected keyword argument 'values'
+FAILED tests/unit/test_anomaly_engine.py::TestAnomalyEngine::test_modified_zscore - TypeError: AnomalyInput.__init__() got an unexpected keyword argument 'values'
+FAILED tests/unit/test_anomaly_engine.py::TestAnomalyEngine::test_isolation_forest - TypeError: AnomalyInput.__init__() got an unexpected keyword argument 'values'
+FAILED tests/unit/test_anomaly_engine.py::TestAnomalyEngine::test_custom_threshold - TypeError: AnomalyInput.__init__() got an unexpected keyword argument 'values'
+FAILED tests/unit/test_anomaly_engine.py::TestAnomalyEngine::test_anomaly_details - TypeError: AnomalyInput.__init__() got an unexpected keyword argument 'values'
+FAILED tests/unit/test_anomaly_engine.py::TestAnomalyEngine::test_statistics_output - TypeError: AnomalyInput.__init__() got an unexpected keyword argument 'values'
+FAILED tests/unit/test_anomaly_engine.py::TestAnomalyEngine::test_short_series - TypeError: AnomalyInput.__init__() got an unexpected keyword argument 'values'
+FAILED tests/unit/test_anomaly_engine.py::TestAnomalyEngine::test_constant_series - TypeError: AnomalyInput.__init__() got an unexpected keyword argument 'values'
+FAILED tests/unit/test_anomaly_engine.py::TestAnomalyEngine::test_trend_detection - TypeError: AnomalyInput.__init__() got an unexpected keyword argument 'values'
+FAILED tests/unit/test_anomaly_engine.py::TestAnomalyEngine::test_deterministic - TypeError: AnomalyInput.__init__() got an unexpected keyword argument 'values'
+FAILED tests/unit/test_bayesian_engine.py::TestBayesianEngine::test_normal_model_clear_winner - AssertionError: assert 'strong' in ('high', 'very_high')
+FAILED tests/unit/test_energy_engine.py::TestEnergyEngine::test_basic_computation - TypeError: EnergyInput.__init__() got an unexpected keyword argument 'dm_out'
+FAILED tests/unit/test_energy_engine.py::TestEnergyEngine::test_eroi_calculation - TypeError: EnergyInput.__init__() got an unexpected keyword argument 'dm_out'
+FAILED tests/unit/test_energy_engine.py::TestEnergyEngine::test_more_output_higher_eroi - TypeError: EnergyInput.__init__() got an unexpected keyword argument 'dm_out'
+FAILED tests/unit/test_energy_engine.py::TestEnergyEngine::test_renewable_fraction - TypeError: EnergyInput.__init__() got an unexpected keyword argument 'dm_out'
+FAILED tests/unit/test_energy_engine.py::TestEnergyEngine::test_energy_categories - TypeError: EnergyInput.__init__() got an unexpected keyword argument 'dm_out'
+FAILED tests/unit/test_energy_engine.py::TestEnergyEngine::test_per_kg_intensity - TypeError: EnergyInput.__init__() got an unexpected keyword argument 'dm_out'
+FAILED tests/unit/test_energy_engine.py::TestEnergyEngine::test_zero_energy_input - TypeError: EnergyInput.__init__() got an unexpected keyword argument 'dm_out'
+FAILED tests/unit/test_energy_engine.py::TestEnergyEngine::test_deterministic - TypeError: EnergyInput.__init__() got an unexpected keyword argument 'dm_out'
+FAILED tests/unit/test_flight_envelope.py::TestFlightEnvelope::test_optimal_conditions - AssertionError: assert 'green' == 'optimal'
+FAILED tests/unit/test_flight_envelope.py::TestFlightEnvelope::test_safe_conditions - AssertionError: assert 'yellow' in ('acceptable', 'warning')
+FAILED tests/unit/test_flight_envelope.py::TestFlightEnvelope::test_outside_envelope - AssertionError: assert 'red' in ('critical', 'danger')
+FAILED tests/unit/test_flight_envelope.py::TestFlightEnvelope::test_individual_checks - AssertionError: assert 'green' in ('optimal', 'acceptable', 'warning', 'cri...
+FAILED tests/unit/test_ghg_engine.py::TestGHGEngine::test_basic_computation - TypeError: GHGInput.__init__() got an unexpected keyword argument 'dm_out'
+FAILED tests/unit/test_ghg_engine.py::TestGHGEngine::test_net_negative_possible - TypeError: GHGInput.__init__() got an unexpected keyword argument 'dm_out'
+FAILED tests/unit/test_ghg_engine.py::TestGHGEngine::test_emission_categories - TypeError: GHGInput.__init__() got an unexpected keyword argument 'dm_out'
+FAILED tests/unit/test_ghg_engine.py::TestGHGEngine::test_zero_transport - TypeError: GHGInput.__init__() got an unexpected keyword argument 'dm_out'
+FAILED tests/unit/test_ghg_engine.py::TestGHGEngine::test_custom_grid_factor - TypeError: GHGInput.__init__() got an unexpected keyword argument 'dm_out'
+FAILED tests/unit/test_ghg_engine.py::TestGHGEngine::test_per_kg_intensity - TypeError: GHGInput.__init__() got an unexpected keyword argument 'dm_out'
+FAILED tests/unit/test_ghg_engine.py::TestGHGEngine::test_co2_equivalents - TypeError: GHGInput.__init__() got an unexpected keyword argument 'dm_out'
+FAILED tests/unit/test_ghg_engine.py::TestGHGEngine::test_functional_units - TypeError: GHGInput.__init__() got an unexpected keyword argument 'dm_out'
+FAILED tests/unit/test_ghg_engine.py::TestGHGEngine::test_deterministic - TypeError: GHGInput.__init__() got an unexpected keyword argument 'dm_out'
+FAILED tests/unit/test_mass_balance.py::TestMassBalance::test_unbalanced_reconciliation - AssertionError: assert -0.02810811 < -1.3
+FAILED tests/unit/test_mass_balance.py::TestMassBalance::test_reconciled_closure - assert 80.0 == 100.0 ± 1.0e+00
+FAILED tests/unit/test_mass_balance.py::TestMassBalance::test_adjustments_bounded - assert 108.11 <= (10.0 + 0.1)
+FAILED tests/unit/test_mass_balance.py::TestMassBalance::test_chi_squared_statistic - AssertionError: assert False
+FAILED tests/unit/test_risk_engine.py::TestRiskEngine::test_all_safe - AssertionError: assert 'NEGLIGIBLE' in ('low', 'negligible')
+FAILED tests/unit/test_risk_engine.py::TestRiskEngine::test_check_details - AssertionError: assert 'NEGLIGIBLE' in ('negligible', 'low', 'medium', 'hig...
+FAILED tests/unit/test_sensitivity_engine.py::TestSensitivityEngine::test_single_parameter - assert 1.605984 == 1.0 ± 1.5e-01
+FAILED tests/unit/test_species_db.py::TestSpeciesDB::test_get_optimal_ranges_bsf - AssertionError: assert 'optimal_min' in (20.0, 36.0)
+FAILED tests/unit/test_species_db.py::TestSpeciesDB::test_compare_species - AssertionError: assert 'code' in 'BSF'
+FAILED tests/unit/test_species_db.py::TestSpeciesDB::test_get_species_summary - AssertionError: assert ('parameters' in {'biology': {'development': '14.0 d...
+FAILED tests/unit/test_species_db.py::TestSpeciesDB::test_bsf_temperature_range - TypeError: tuple indices must be integers or slices, not str
+FAILED tests/unit/test_species_db.py::TestSpeciesDB::test_bsf_moisture_range - TypeError: tuple indices must be integers or slices, not str
+FAILED tests/unit/test_water_engine.py::TestWaterEngine::test_basic_computation - TypeError: WaterInput.__init__() got an unexpected keyword argument 'dm_out'
+FAILED tests/unit/test_water_engine.py::TestWaterEngine::test_higher_input_higher_footprint - TypeError: WaterInput.__init__() got an unexpected keyword argument 'dm_out'
+FAILED tests/unit/test_water_engine.py::TestWaterEngine::test_per_kg_intensity - TypeError: WaterInput.__init__() got an unexpected keyword argument 'dm_out'
+FAILED tests/unit/test_water_engine.py::TestWaterEngine::test_zero_direct_water - TypeError: WaterInput.__init__() got an unexpected keyword argument 'dm_out'
+FAILED tests/unit/test_water_engine.py::TestWaterEngine::test_recycled_water - TypeError: WaterInput.__init__() got an unexpected keyword argument 'dm_out'
+FAILED tests/unit/test_water_engine.py::TestWaterEngine::test_wsi_impact - TypeError: WaterInput.__init__() got an unexpected keyword argument 'dm_out'
+FAILED tests/unit/test_water_engine.py::TestWaterEngine::test_component_sum - TypeError: WaterInput.__init__() got an unexpected keyword argument 'dm_out'
+FAILED tests/unit/test_water_engine.py::TestWaterEngine::test_deterministic - TypeError: WaterInput.__init__() got an unexpected keyword argument 'dm_out'
+ERROR tests/e2e/test_full_workflow.py::TestBatchAnalysisWorkflow::test_complete_batch_workflow
+ERROR tests/e2e/test_full_workflow.py::TestBatchAnalysisWorkflow::test_multi_batch_comparison
+ERROR tests/e2e/test_full_workflow.py::TestDigitalTwinWorkflow::test_twin_lifecycle
+ERROR tests/e2e/test_full_workflow.py::TestRBACWorkflow::test_operator_cannot_admin
+ERROR tests/e2e/test_full_workflow.py::TestRBACWorkflow::test_operator_can_create_batch
+ERROR tests/e2e/test_full_workflow.py::TestRBACWorkflow::test_scientist_can_compute
+ERROR tests/integration/test_auth_router.py::TestLogin::test_login_success
+ERROR tests/integration/test_auth_router.py::TestLogin::test_login_wrong_password
+ERROR tests/integration/test_auth_router.py::TestTokenRefresh::test_refresh_success

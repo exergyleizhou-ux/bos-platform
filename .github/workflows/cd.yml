@@ -1,0 +1,125 @@
+# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# BOS Pipeline v9.0 �� CD Pipeline (GitHub Actions)
+# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+#
+# Triggers:
+#   - Successful CI on main branch
+#   - Manual workflow dispatch
+#
+# Steps:
+#   1. Run migrations
+#   2. Deploy to staging
+#   3. Smoke test
+#   4. Deploy to production (manual approval)
+
+name: CD Pipeline
+
+on:
+  workflow_run:
+    workflows: ["CI Pipeline"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        default: "staging"
+        type: choice
+        options:
+          - staging
+          - production
+      version:
+        description: "Version tag (e.g., 9.0.1)"
+        required: false
+        default: ""
+
+env:
+  DOCKER_REGISTRY: ${{ secrets.DOCKER_REGISTRY }}
+
+jobs:
+  # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+  # Deploy to Staging
+  # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    if: >
+      (github.event.workflow_run.conclusion == 'success') ||
+      (github.event.inputs.environment == 'staging')
+    environment:
+      name: staging
+      url: https://staging.bos-pipeline.io
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set version
+        id: version
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            echo "tag=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ github.sha }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Deploy to staging
+        env:
+          DEPLOY_KEY: ${{ secrets.STAGING_DEPLOY_KEY }}
+          STAGING_HOST: ${{ secrets.STAGING_HOST }}
+          APP_VERSION: ${{ steps.version.outputs.tag }}
+        run: |
+          echo "Deploying version $APP_VERSION to staging..."
+          # In production, use SSH/kubectl/terraform to deploy
+          # ssh -i "$DEPLOY_KEY" deploy@$STAGING_HOST \
+          #   "cd /opt/bos && APP_VERSION=$APP_VERSION docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d"
+
+      - name: Run migrations
+        env:
+          STAGING_HOST: ${{ secrets.STAGING_HOST }}
+        run: |
+          echo "Running database migrations on staging..."
+          # ssh deploy@$STAGING_HOST "cd /opt/bos && docker compose exec -T backend alembic upgrade head"
+
+      - name: Smoke test
+        run: |
+          echo "Running smoke tests against staging..."
+          # curl -f https://staging.bos-pipeline.io/api/v1/health/live
+          # curl -f https://staging.bos-pipeline.io/api/v1/health/ready
+
+  # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+  # Deploy to Production
+  # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: deploy-staging
+    if: github.event.inputs.environment == 'production'
+    environment:
+      name: production
+      url: https://app.bos-pipeline.io
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy to production
+        env:
+          DEPLOY_KEY: ${{ secrets.PROD_DEPLOY_KEY }}
+          PROD_HOST: ${{ secrets.PROD_HOST }}
+          APP_VERSION: ${{ github.event.inputs.version || github.sha }}
+        run: |
+          echo "Deploying version $APP_VERSION to production..."
+          # Blue-green or rolling deployment
+          # ssh -i "$DEPLOY_KEY" deploy@$PROD_HOST \
+          #   "cd /opt/bos && APP_VERSION=$APP_VERSION ./scripts/deploy.sh"
+
+      - name: Post-deploy verification
+        run: |
+          echo "Verifying production deployment..."
+          # curl -f https://app.bos-pipeline.io/api/v1/health/live
+          # curl -f https://app.bos-pipeline.io/api/v1/health/ready
+
+      - name: Notify
+        if: always()
+        run: |
+          echo "Deployment notification (Slack/Teams/email integration)"

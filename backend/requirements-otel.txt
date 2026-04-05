@@ -1,0 +1,24 @@
+# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# BOS Pipeline v9.0 �� OpenTelemetry Dependencies
+# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# Install alongside requirements.txt:
+#   pip install -r requirements.txt -r requirements-otel.txt
+
+# ���� Core SDK ����
+opentelemetry-api>=1.23.0
+opentelemetry-sdk>=1.23.0
+
+# ���� Exporters ����
+opentelemetry-exporter-otlp-proto-grpc>=1.23.0
+
+# ���� Auto-Instrumentation ����
+opentelemetry-instrumentation-fastapi>=0.44b0
+opentelemetry-instrumentation-sqlalchemy>=0.44b0
+opentelemetry-instrumentation-redis>=0.44b0
+opentelemetry-instrumentation-httpx>=0.44b0
+opentelemetry-instrumentation-celery>=0.44b0
+opentelemetry-instrumentation-logging>=0.44b0
+
+# ���� Propagation ����
+opentelemetry-propagator-b3>=1.23.0
+opentelemetry-propagator-jaeger>=1.23.0

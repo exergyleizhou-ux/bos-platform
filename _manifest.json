@@ -1,0 +1,2044 @@
+{
+  "record_count": 426,
+  "expected_record_total": 426,
+  "latest_path_count": 268,
+  "repeated_path_families": 88,
+  "extra_records_over_latest": 158,
+  "latest_snapshot_sha256_with_path_markers": "03444024446b32295af951adc18004702b4ca3730c84cbc53e4cdc98222328ba",
+  "paths": [
+    {
+      "path": ".dockerignore",
+      "latest_record": 5,
+      "all_records": [
+        5
+      ]
+    },
+    {
+      "path": ".editorconfig",
+      "latest_record": 6,
+      "all_records": [
+        6
+      ]
+    },
+    {
+      "path": ".env.example",
+      "latest_record": 3,
+      "all_records": [
+        3
+      ]
+    },
+    {
+      "path": ".github/workflows/cd.yml",
+      "latest_record": 148,
+      "all_records": [
+        148
+      ]
+    },
+    {
+      "path": ".github/workflows/ci.yml",
+      "latest_record": 147,
+      "all_records": [
+        147
+      ]
+    },
+    {
+      "path": ".gitignore",
+      "latest_record": 4,
+      "all_records": [
+        4
+      ]
+    },
+    {
+      "path": ".pre-commit-config.yaml",
+      "latest_record": 7,
+      "all_records": [
+        7
+      ]
+    },
+    {
+      "path": ".prettierrc",
+      "latest_record": 9,
+      "all_records": [
+        9
+      ]
+    },
+    {
+      "path": "LICENSE",
+      "latest_record": 2,
+      "all_records": [
+        2
+      ]
+    },
+    {
+      "path": "Makefile",
+      "latest_record": 10,
+      "all_records": [
+        10
+      ]
+    },
+    {
+      "path": "README.md",
+      "latest_record": 1,
+      "all_records": [
+        1
+      ]
+    },
+    {
+      "path": "backend/.env.example",
+      "latest_record": 177,
+      "all_records": [
+        177
+      ]
+    },
+    {
+      "path": "backend/Dockerfile",
+      "latest_record": 138,
+      "all_records": [
+        13,
+        138
+      ]
+    },
+    {
+      "path": "backend/Dockerfile.celery",
+      "latest_record": 139,
+      "all_records": [
+        139
+      ]
+    },
+    {
+      "path": "backend/alembic.ini",
+      "latest_record": 133,
+      "all_records": [
+        27,
+        133
+      ]
+    },
+    {
+      "path": "backend/alembic/env.py",
+      "latest_record": 134,
+      "all_records": [
+        28,
+        134
+      ]
+    },
+    {
+      "path": "backend/alembic/script.py.mako",
+      "latest_record": 137,
+      "all_records": [
+        29,
+        137
+      ]
+    },
+    {
+      "path": "backend/alembic/versions/2024_01_01_0000_001_initial_schema.py",
+      "latest_record": 135,
+      "all_records": [
+        135
+      ]
+    },
+    {
+      "path": "backend/alembic/versions/2024_01_01_0001_001_initial_schema.py",
+      "latest_record": 30,
+      "all_records": [
+        30
+      ]
+    },
+    {
+      "path": "backend/alembic/versions/2024_01_15_0000_002_seed_data.py",
+      "latest_record": 136,
+      "all_records": [
+        136
+      ]
+    },
+    {
+      "path": "backend/alembic/versions/2024_01_15_0002_002_api_keys_webhooks.py",
+      "latest_record": 31,
+      "all_records": [
+        31
+      ]
+    },
+    {
+      "path": "backend/alembic/versions/2024_02_01_0003_003_feature_flags_notifications.py",
+      "latest_record": 32,
+      "all_records": [
+        32
+      ]
+    },
+    {
+      "path": "backend/alembic/versions/2024_03_01_0004_004_digital_twins_traces.py",
+      "latest_record": 33,
+      "all_records": [
+        33
+      ]
+    },
+    {
+      "path": "backend/alembic/versions/__init__.py",
+      "latest_record": 34,
+      "all_records": [
+        34
+      ]
+    },
+    {
+      "path": "backend/app/__init__.py",
+      "latest_record": 35,
+      "all_records": [
+        35
+      ]
+    },
+    {
+      "path": "backend/app/celery_app.py",
+      "latest_record": 121,
+      "all_records": [
+        121
+      ]
+    },
+    {
+      "path": "backend/app/config.py",
+      "latest_record": 36,
+      "all_records": [
+        36
+      ]
+    },
+    {
+      "path": "backend/app/db.py",
+      "latest_record": 37,
+      "all_records": [
+        37
+      ]
+    },
+    {
+      "path": "backend/app/deps.py",
+      "latest_record": 131,
+      "all_records": [
+        39,
+        131
+      ]
+    },
+    {
+      "path": "backend/app/engine/__init__.py",
+      "latest_record": 43,
+      "all_records": [
+        43
+      ]
+    },
+    {
+      "path": "backend/app/engine/anomaly_engine.py",
+      "latest_record": 56,
+      "all_records": [
+        56
+      ]
+    },
+    {
+      "path": "backend/app/engine/arima_engine.py",
+      "latest_record": 69,
+      "all_records": [
+        69
+      ]
+    },
+    {
+      "path": "backend/app/engine/automl_engine.py",
+      "latest_record": 73,
+      "all_records": [
+        73
+      ]
+    },
+    {
+      "path": "backend/app/engine/bayesian_engine.py",
+      "latest_record": 64,
+      "all_records": [
+        64
+      ]
+    },
+    {
+      "path": "backend/app/engine/calibration_engine.py",
+      "latest_record": 55,
+      "all_records": [
+        55
+      ]
+    },
+    {
+      "path": "backend/app/engine/consistency_engine.py",
+      "latest_record": 72,
+      "all_records": [
+        72
+      ]
+    },
+    {
+      "path": "backend/app/engine/controller_engine.py",
+      "latest_record": 58,
+      "all_records": [
+        58
+      ]
+    },
+    {
+      "path": "backend/app/engine/data_validator.py",
+      "latest_record": 63,
+      "all_records": [
+        63
+      ]
+    },
+    {
+      "path": "backend/app/engine/did_engine.py",
+      "latest_record": 60,
+      "all_records": [
+        60
+      ]
+    },
+    {
+      "path": "backend/app/engine/digital_twin_engine.py",
+      "latest_record": 57,
+      "all_records": [
+        57
+      ]
+    },
+    {
+      "path": "backend/app/engine/energy_engine.py",
+      "latest_record": 51,
+      "all_records": [
+        51
+      ]
+    },
+    {
+      "path": "backend/app/engine/feed_optimizer.py",
+      "latest_record": 65,
+      "all_records": [
+        65
+      ]
+    },
+    {
+      "path": "backend/app/engine/flight_envelope.py",
+      "latest_record": 48,
+      "all_records": [
+        48
+      ]
+    },
+    {
+      "path": "backend/app/engine/ghg_engine.py",
+      "latest_record": 49,
+      "all_records": [
+        49
+      ]
+    },
+    {
+      "path": "backend/app/engine/kinetics_engine.py",
+      "latest_record": 62,
+      "all_records": [
+        62
+      ]
+    },
+    {
+      "path": "backend/app/engine/lca_engine.py",
+      "latest_record": 53,
+      "all_records": [
+        53
+      ]
+    },
+    {
+      "path": "backend/app/engine/mass_balance.py",
+      "latest_record": 61,
+      "all_records": [
+        61
+      ]
+    },
+    {
+      "path": "backend/app/engine/monte_carlo_engine.py",
+      "latest_record": 46,
+      "all_records": [
+        46
+      ]
+    },
+    {
+      "path": "backend/app/engine/nn_surrogate.py",
+      "latest_record": 70,
+      "all_records": [
+        70
+      ]
+    },
+    {
+      "path": "backend/app/engine/outlier_engine.py",
+      "latest_record": 71,
+      "all_records": [
+        71
+      ]
+    },
+    {
+      "path": "backend/app/engine/pareto_engine.py",
+      "latest_record": 67,
+      "all_records": [
+        67
+      ]
+    },
+    {
+      "path": "backend/app/engine/risk_engine.py",
+      "latest_record": 54,
+      "all_records": [
+        54
+      ]
+    },
+    {
+      "path": "backend/app/engine/scheduling_engine.py",
+      "latest_record": 66,
+      "all_records": [
+        66
+      ]
+    },
+    {
+      "path": "backend/app/engine/schema_engine.py",
+      "latest_record": 74,
+      "all_records": [
+        74
+      ]
+    },
+    {
+      "path": "backend/app/engine/sensitivity_engine.py",
+      "latest_record": 59,
+      "all_records": [
+        59
+      ]
+    },
+    {
+      "path": "backend/app/engine/ser_engine.py",
+      "latest_record": 45,
+      "all_records": [
+        45
+      ]
+    },
+    {
+      "path": "backend/app/engine/species_db.py",
+      "latest_record": 47,
+      "all_records": [
+        47
+      ]
+    },
+    {
+      "path": "backend/app/engine/stoichiometry_engine.py",
+      "latest_record": 68,
+      "all_records": [
+        68
+      ]
+    },
+    {
+      "path": "backend/app/engine/tea_engine.py",
+      "latest_record": 52,
+      "all_records": [
+        52
+      ]
+    },
+    {
+      "path": "backend/app/engine/water_engine.py",
+      "latest_record": 50,
+      "all_records": [
+        50
+      ]
+    },
+    {
+      "path": "backend/app/main.py",
+      "latest_record": 132,
+      "all_records": [
+        41,
+        132
+      ]
+    },
+    {
+      "path": "backend/app/middleware/__init__.py",
+      "latest_record": 127,
+      "all_records": [
+        127
+      ]
+    },
+    {
+      "path": "backend/app/middleware/rate_limit.py",
+      "latest_record": 130,
+      "all_records": [
+        130
+      ]
+    },
+    {
+      "path": "backend/app/middleware/request_id.py",
+      "latest_record": 128,
+      "all_records": [
+        128
+      ]
+    },
+    {
+      "path": "backend/app/middleware/timing.py",
+      "latest_record": 129,
+      "all_records": [
+        129
+      ]
+    },
+    {
+      "path": "backend/app/models.py",
+      "latest_record": 38,
+      "all_records": [
+        38
+      ]
+    },
+    {
+      "path": "backend/app/routers/__init__.py",
+      "latest_record": 110,
+      "all_records": [
+        42,
+        110
+      ]
+    },
+    {
+      "path": "backend/app/routers/admin.py",
+      "latest_record": 97,
+      "all_records": [
+        97
+      ]
+    },
+    {
+      "path": "backend/app/routers/anomaly.py",
+      "latest_record": 91,
+      "all_records": [
+        91
+      ]
+    },
+    {
+      "path": "backend/app/routers/api_keys.py",
+      "latest_record": 101,
+      "all_records": [
+        101
+      ]
+    },
+    {
+      "path": "backend/app/routers/audit.py",
+      "latest_record": 103,
+      "all_records": [
+        103
+      ]
+    },
+    {
+      "path": "backend/app/routers/auth.py",
+      "latest_record": 76,
+      "all_records": [
+        76
+      ]
+    },
+    {
+      "path": "backend/app/routers/batches.py",
+      "latest_record": 79,
+      "all_records": [
+        79
+      ]
+    },
+    {
+      "path": "backend/app/routers/bayesian.py",
+      "latest_record": 109,
+      "all_records": [
+        109
+      ]
+    },
+    {
+      "path": "backend/app/routers/billing.py",
+      "latest_record": 99,
+      "all_records": [
+        99
+      ]
+    },
+    {
+      "path": "backend/app/routers/calculations.py",
+      "latest_record": 80,
+      "all_records": [
+        80
+      ]
+    },
+    {
+      "path": "backend/app/routers/calibration.py",
+      "latest_record": 90,
+      "all_records": [
+        90
+      ]
+    },
+    {
+      "path": "backend/app/routers/controller.py",
+      "latest_record": 93,
+      "all_records": [
+        93
+      ]
+    },
+    {
+      "path": "backend/app/routers/dashboard.py",
+      "latest_record": 106,
+      "all_records": [
+        106
+      ]
+    },
+    {
+      "path": "backend/app/routers/did.py",
+      "latest_record": 95,
+      "all_records": [
+        95
+      ]
+    },
+    {
+      "path": "backend/app/routers/energy.py",
+      "latest_record": 85,
+      "all_records": [
+        85
+      ]
+    },
+    {
+      "path": "backend/app/routers/export.py",
+      "latest_record": 98,
+      "all_records": [
+        98
+      ]
+    },
+    {
+      "path": "backend/app/routers/feature_flags.py",
+      "latest_record": 104,
+      "all_records": [
+        104
+      ]
+    },
+    {
+      "path": "backend/app/routers/flight.py",
+      "latest_record": 89,
+      "all_records": [
+        89
+      ]
+    },
+    {
+      "path": "backend/app/routers/forecast.py",
+      "latest_record": 107,
+      "all_records": [
+        107
+      ]
+    },
+    {
+      "path": "backend/app/routers/gdpr.py",
+      "latest_record": 102,
+      "all_records": [
+        102
+      ]
+    },
+    {
+      "path": "backend/app/routers/ghg.py",
+      "latest_record": 83,
+      "all_records": [
+        83
+      ]
+    },
+    {
+      "path": "backend/app/routers/health.py",
+      "latest_record": 75,
+      "all_records": [
+        75
+      ]
+    },
+    {
+      "path": "backend/app/routers/lca.py",
+      "latest_record": 87,
+      "all_records": [
+        87
+      ]
+    },
+    {
+      "path": "backend/app/routers/mass_balance.py",
+      "latest_record": 108,
+      "all_records": [
+        108
+      ]
+    },
+    {
+      "path": "backend/app/routers/risk.py",
+      "latest_record": 88,
+      "all_records": [
+        88
+      ]
+    },
+    {
+      "path": "backend/app/routers/sensitivity.py",
+      "latest_record": 96,
+      "all_records": [
+        96
+      ]
+    },
+    {
+      "path": "backend/app/routers/ser.py",
+      "latest_record": 81,
+      "all_records": [
+        81
+      ]
+    },
+    {
+      "path": "backend/app/routers/simulation.py",
+      "latest_record": 82,
+      "all_records": [
+        82
+      ]
+    },
+    {
+      "path": "backend/app/routers/species.py",
+      "latest_record": 94,
+      "all_records": [
+        94
+      ]
+    },
+    {
+      "path": "backend/app/routers/tea.py",
+      "latest_record": 86,
+      "all_records": [
+        86
+      ]
+    },
+    {
+      "path": "backend/app/routers/tenants.py",
+      "latest_record": 78,
+      "all_records": [
+        78
+      ]
+    },
+    {
+      "path": "backend/app/routers/twin.py",
+      "latest_record": 92,
+      "all_records": [
+        92
+      ]
+    },
+    {
+      "path": "backend/app/routers/users.py",
+      "latest_record": 77,
+      "all_records": [
+        77
+      ]
+    },
+    {
+      "path": "backend/app/routers/water.py",
+      "latest_record": 84,
+      "all_records": [
+        84
+      ]
+    },
+    {
+      "path": "backend/app/routers/webhooks.py",
+      "latest_record": 100,
+      "all_records": [
+        100
+      ]
+    },
+    {
+      "path": "backend/app/routers/websocket_router.py",
+      "latest_record": 105,
+      "all_records": [
+        105
+      ]
+    },
+    {
+      "path": "backend/app/schemas.py",
+      "latest_record": 40,
+      "all_records": [
+        40
+      ]
+    },
+    {
+      "path": "backend/app/schemas/__init__.py",
+      "latest_record": 111,
+      "all_records": [
+        111
+      ]
+    },
+    {
+      "path": "backend/app/schemas/auth.py",
+      "latest_record": 113,
+      "all_records": [
+        113
+      ]
+    },
+    {
+      "path": "backend/app/schemas/batch.py",
+      "latest_record": 116,
+      "all_records": [
+        116
+      ]
+    },
+    {
+      "path": "backend/app/schemas/calculation.py",
+      "latest_record": 117,
+      "all_records": [
+        117
+      ]
+    },
+    {
+      "path": "backend/app/schemas/common.py",
+      "latest_record": 112,
+      "all_records": [
+        112
+      ]
+    },
+    {
+      "path": "backend/app/schemas/ser.py",
+      "latest_record": 118,
+      "all_records": [
+        118
+      ]
+    },
+    {
+      "path": "backend/app/schemas/simulation.py",
+      "latest_record": 119,
+      "all_records": [
+        119
+      ]
+    },
+    {
+      "path": "backend/app/schemas/tenant.py",
+      "latest_record": 115,
+      "all_records": [
+        115
+      ]
+    },
+    {
+      "path": "backend/app/schemas/twin.py",
+      "latest_record": 120,
+      "all_records": [
+        120
+      ]
+    },
+    {
+      "path": "backend/app/schemas/user.py",
+      "latest_record": 114,
+      "all_records": [
+        114
+      ]
+    },
+    {
+      "path": "backend/app/services/__init__.py",
+      "latest_record": 44,
+      "all_records": [
+        44
+      ]
+    },
+    {
+      "path": "backend/app/tasks/__init__.py",
+      "latest_record": 122,
+      "all_records": [
+        122
+      ]
+    },
+    {
+      "path": "backend/app/tasks/compute.py",
+      "latest_record": 123,
+      "all_records": [
+        123
+      ]
+    },
+    {
+      "path": "backend/app/tasks/export.py",
+      "latest_record": 124,
+      "all_records": [
+        124
+      ]
+    },
+    {
+      "path": "backend/app/tasks/maintenance.py",
+      "latest_record": 126,
+      "all_records": [
+        126
+      ]
+    },
+    {
+      "path": "backend/app/tasks/webhook.py",
+      "latest_record": 125,
+      "all_records": [
+        125
+      ]
+    },
+    {
+      "path": "backend/pytest.ini",
+      "latest_record": 176,
+      "all_records": [
+        176
+      ]
+    },
+    {
+      "path": "backend/requirements-otel.txt",
+      "latest_record": 21,
+      "all_records": [
+        21
+      ]
+    },
+    {
+      "path": "backend/requirements-sentry.txt",
+      "latest_record": 22,
+      "all_records": [
+        22
+      ]
+    },
+    {
+      "path": "backend/requirements.txt",
+      "latest_record": 140,
+      "all_records": [
+        20,
+        140
+      ]
+    },
+    {
+      "path": "backend/scripts/init_db.sql",
+      "latest_record": 23,
+      "all_records": [
+        23
+      ]
+    },
+    {
+      "path": "backend/tests/__init__.py",
+      "latest_record": 149,
+      "all_records": [
+        149
+      ]
+    },
+    {
+      "path": "backend/tests/conftest.py",
+      "latest_record": 411,
+      "all_records": [
+        150,
+        411
+      ]
+    },
+    {
+      "path": "backend/tests/e2e/__init__.py",
+      "latest_record": 174,
+      "all_records": [
+        174
+      ]
+    },
+    {
+      "path": "backend/tests/e2e/test_full_workflow.py",
+      "latest_record": 175,
+      "all_records": [
+        175
+      ]
+    },
+    {
+      "path": "backend/tests/integration/__init__.py",
+      "latest_record": 166,
+      "all_records": [
+        166
+      ]
+    },
+    {
+      "path": "backend/tests/integration/test_auth_router.py",
+      "latest_record": 167,
+      "all_records": [
+        167
+      ]
+    },
+    {
+      "path": "backend/tests/integration/test_batch_router.py",
+      "latest_record": 168,
+      "all_records": [
+        168
+      ]
+    },
+    {
+      "path": "backend/tests/integration/test_dashboard_router.py",
+      "latest_record": 172,
+      "all_records": [
+        172
+      ]
+    },
+    {
+      "path": "backend/tests/integration/test_health_router.py",
+      "latest_record": 173,
+      "all_records": [
+        173
+      ]
+    },
+    {
+      "path": "backend/tests/integration/test_ser_router.py",
+      "latest_record": 169,
+      "all_records": [
+        169
+      ]
+    },
+    {
+      "path": "backend/tests/integration/test_simulation_router.py",
+      "latest_record": 170,
+      "all_records": [
+        170
+      ]
+    },
+    {
+      "path": "backend/tests/integration/test_twin_router.py",
+      "latest_record": 171,
+      "all_records": [
+        171
+      ]
+    },
+    {
+      "path": "backend/tests/test_batch_api.py",
+      "latest_record": 413,
+      "all_records": [
+        413
+      ]
+    },
+    {
+      "path": "backend/tests/test_ser_engine.py",
+      "latest_record": 412,
+      "all_records": [
+        412
+      ]
+    },
+    {
+      "path": "backend/tests/test_simulation.py",
+      "latest_record": 414,
+      "all_records": [
+        414
+      ]
+    },
+    {
+      "path": "backend/tests/unit/__init__.py",
+      "latest_record": 151,
+      "all_records": [
+        151
+      ]
+    },
+    {
+      "path": "backend/tests/unit/test_anomaly_engine.py",
+      "latest_record": 164,
+      "all_records": [
+        164
+      ]
+    },
+    {
+      "path": "backend/tests/unit/test_arima_engine.py",
+      "latest_record": 161,
+      "all_records": [
+        161
+      ]
+    },
+    {
+      "path": "backend/tests/unit/test_bayesian_engine.py",
+      "latest_record": 159,
+      "all_records": [
+        159
+      ]
+    },
+    {
+      "path": "backend/tests/unit/test_digital_twin_engine.py",
+      "latest_record": 165,
+      "all_records": [
+        165
+      ]
+    },
+    {
+      "path": "backend/tests/unit/test_energy_engine.py",
+      "latest_record": 156,
+      "all_records": [
+        156
+      ]
+    },
+    {
+      "path": "backend/tests/unit/test_flight_envelope.py",
+      "latest_record": 158,
+      "all_records": [
+        158
+      ]
+    },
+    {
+      "path": "backend/tests/unit/test_ghg_engine.py",
+      "latest_record": 154,
+      "all_records": [
+        154
+      ]
+    },
+    {
+      "path": "backend/tests/unit/test_mass_balance.py",
+      "latest_record": 162,
+      "all_records": [
+        162
+      ]
+    },
+    {
+      "path": "backend/tests/unit/test_monte_carlo_engine.py",
+      "latest_record": 153,
+      "all_records": [
+        153
+      ]
+    },
+    {
+      "path": "backend/tests/unit/test_risk_engine.py",
+      "latest_record": 157,
+      "all_records": [
+        157
+      ]
+    },
+    {
+      "path": "backend/tests/unit/test_sensitivity_engine.py",
+      "latest_record": 163,
+      "all_records": [
+        163
+      ]
+    },
+    {
+      "path": "backend/tests/unit/test_ser_engine.py",
+      "latest_record": 152,
+      "all_records": [
+        152
+      ]
+    },
+    {
+      "path": "backend/tests/unit/test_species_db.py",
+      "latest_record": 160,
+      "all_records": [
+        160
+      ]
+    },
+    {
+      "path": "backend/tests/unit/test_water_engine.py",
+      "latest_record": 155,
+      "all_records": [
+        155
+      ]
+    },
+    {
+      "path": "deploy/otel-collector-config.yaml",
+      "latest_record": 24,
+      "all_records": [
+        24
+      ]
+    },
+    {
+      "path": "docker-compose.otel.yml",
+      "latest_record": 12,
+      "all_records": [
+        12
+      ]
+    },
+    {
+      "path": "docker-compose.prod.yml",
+      "latest_record": 142,
+      "all_records": [
+        142
+      ]
+    },
+    {
+      "path": "docker-compose.yml",
+      "latest_record": 141,
+      "all_records": [
+        11,
+        141
+      ]
+    },
+    {
+      "path": "frontend/.env.example",
+      "latest_record": 403,
+      "all_records": [
+        403
+      ]
+    },
+    {
+      "path": "frontend/.eslintrc.cjs",
+      "latest_record": 184,
+      "all_records": [
+        184
+      ]
+    },
+    {
+      "path": "frontend/Dockerfile",
+      "latest_record": 14,
+      "all_records": [
+        14
+      ]
+    },
+    {
+      "path": "frontend/eslint.config.js",
+      "latest_record": 410,
+      "all_records": [
+        410
+      ]
+    },
+    {
+      "path": "frontend/index.html",
+      "latest_record": 399,
+      "all_records": [
+        185,
+        281,
+        399
+      ]
+    },
+    {
+      "path": "frontend/nginx.conf",
+      "latest_record": 26,
+      "all_records": [
+        26
+      ]
+    },
+    {
+      "path": "frontend/package.json",
+      "latest_record": 400,
+      "all_records": [
+        25,
+        178,
+        285,
+        400
+      ]
+    },
+    {
+      "path": "frontend/postcss.config.cjs",
+      "latest_record": 282,
+      "all_records": [
+        282
+      ]
+    },
+    {
+      "path": "frontend/postcss.config.js",
+      "latest_record": 402,
+      "all_records": [
+        183,
+        402
+      ]
+    },
+    {
+      "path": "frontend/src/App.tsx",
+      "latest_record": 187,
+      "all_records": [
+        187
+      ]
+    },
+    {
+      "path": "frontend/src/api/authApi.ts",
+      "latest_record": 266,
+      "all_records": [
+        195,
+        266
+      ]
+    },
+    {
+      "path": "frontend/src/api/batchApi.ts",
+      "latest_record": 345,
+      "all_records": [
+        196,
+        267,
+        345
+      ]
+    },
+    {
+      "path": "frontend/src/api/client.ts",
+      "latest_record": 344,
+      "all_records": [
+        194,
+        265,
+        344
+      ]
+    },
+    {
+      "path": "frontend/src/api/dashboardApi.ts",
+      "latest_record": 366,
+      "all_records": [
+        366
+      ]
+    },
+    {
+      "path": "frontend/src/api/serApi.ts",
+      "latest_record": 346,
+      "all_records": [
+        197,
+        268,
+        346
+      ]
+    },
+    {
+      "path": "frontend/src/api/simulationApi.ts",
+      "latest_record": 347,
+      "all_records": [
+        198,
+        269,
+        347
+      ]
+    },
+    {
+      "path": "frontend/src/api/twinApi.ts",
+      "latest_record": 365,
+      "all_records": [
+        365
+      ]
+    },
+    {
+      "path": "frontend/src/components/CommandPalette.tsx",
+      "latest_record": 320,
+      "all_records": [
+        320
+      ]
+    },
+    {
+      "path": "frontend/src/components/auth/AuthGuard.tsx",
+      "latest_record": 385,
+      "all_records": [
+        234,
+        312,
+        385
+      ]
+    },
+    {
+      "path": "frontend/src/components/auth/LoginForm.tsx",
+      "latest_record": 386,
+      "all_records": [
+        235,
+        313,
+        386
+      ]
+    },
+    {
+      "path": "frontend/src/components/charts/ForecastChart.tsx",
+      "latest_record": 392,
+      "all_records": [
+        242,
+        319,
+        392
+      ]
+    },
+    {
+      "path": "frontend/src/components/charts/GradeBarChart.tsx",
+      "latest_record": 391,
+      "all_records": [
+        391
+      ]
+    },
+    {
+      "path": "frontend/src/components/charts/GradeDistributionChart.tsx",
+      "latest_record": 327,
+      "all_records": [
+        241,
+        327
+      ]
+    },
+    {
+      "path": "frontend/src/components/charts/MonteCarloHistogram.tsx",
+      "latest_record": 390,
+      "all_records": [
+        239,
+        316,
+        390
+      ]
+    },
+    {
+      "path": "frontend/src/components/charts/SERGauge.tsx",
+      "latest_record": 387,
+      "all_records": [
+        236,
+        317,
+        387
+      ]
+    },
+    {
+      "path": "frontend/src/components/charts/SERTrendChart.tsx",
+      "latest_record": 388,
+      "all_records": [
+        237,
+        314,
+        388
+      ]
+    },
+    {
+      "path": "frontend/src/components/charts/SensitivityTornado.tsx",
+      "latest_record": 243,
+      "all_records": [
+        243
+      ]
+    },
+    {
+      "path": "frontend/src/components/charts/SpeciesPieChart.tsx",
+      "latest_record": 389,
+      "all_records": [
+        238,
+        315,
+        389
+      ]
+    },
+    {
+      "path": "frontend/src/components/charts/TwinTrajectoryChart.tsx",
+      "latest_record": 393,
+      "all_records": [
+        240,
+        318,
+        393
+      ]
+    },
+    {
+      "path": "frontend/src/components/layout/AppLayout.tsx",
+      "latest_record": 394,
+      "all_records": [
+        323,
+        394
+      ]
+    },
+    {
+      "path": "frontend/src/components/layout/AuthLayout.tsx",
+      "latest_record": 324,
+      "all_records": [
+        324
+      ]
+    },
+    {
+      "path": "frontend/src/components/layout/CommandPalette.tsx",
+      "latest_record": 384,
+      "all_records": [
+        384
+      ]
+    },
+    {
+      "path": "frontend/src/components/layout/LoginLayout.tsx",
+      "latest_record": 395,
+      "all_records": [
+        395
+      ]
+    },
+    {
+      "path": "frontend/src/components/layout/MobileSidebar.tsx",
+      "latest_record": 383,
+      "all_records": [
+        233,
+        311,
+        383
+      ]
+    },
+    {
+      "path": "frontend/src/components/layout/Sidebar.tsx",
+      "latest_record": 381,
+      "all_records": [
+        231,
+        309,
+        381
+      ]
+    },
+    {
+      "path": "frontend/src/components/layout/TopBar.tsx",
+      "latest_record": 382,
+      "all_records": [
+        232,
+        310,
+        382
+      ]
+    },
+    {
+      "path": "frontend/src/components/ui/Badge.tsx",
+      "latest_record": 373,
+      "all_records": [
+        218,
+        296,
+        373
+      ]
+    },
+    {
+      "path": "frontend/src/components/ui/Button.tsx",
+      "latest_record": 372,
+      "all_records": [
+        219,
+        297,
+        372
+      ]
+    },
+    {
+      "path": "frontend/src/components/ui/Card.tsx",
+      "latest_record": 374,
+      "all_records": [
+        220,
+        301,
+        374
+      ]
+    },
+    {
+      "path": "frontend/src/components/ui/ConfirmDialog.tsx",
+      "latest_record": 379,
+      "all_records": [
+        225,
+        306,
+        379
+      ]
+    },
+    {
+      "path": "frontend/src/components/ui/EmptyState.tsx",
+      "latest_record": 380,
+      "all_records": [
+        228,
+        307,
+        380
+      ]
+    },
+    {
+      "path": "frontend/src/components/ui/Input.tsx",
+      "latest_record": 369,
+      "all_records": [
+        221,
+        298,
+        369
+      ]
+    },
+    {
+      "path": "frontend/src/components/ui/LoadingScreen.tsx",
+      "latest_record": 368,
+      "all_records": [
+        216,
+        294,
+        368
+      ]
+    },
+    {
+      "path": "frontend/src/components/ui/Modal.tsx",
+      "latest_record": 378,
+      "all_records": [
+        224,
+        305,
+        378
+      ]
+    },
+    {
+      "path": "frontend/src/components/ui/Pagination.tsx",
+      "latest_record": 376,
+      "all_records": [
+        227,
+        303,
+        376
+      ]
+    },
+    {
+      "path": "frontend/src/components/ui/Select.tsx",
+      "latest_record": 370,
+      "all_records": [
+        223,
+        299,
+        370
+      ]
+    },
+    {
+      "path": "frontend/src/components/ui/Spinner.tsx",
+      "latest_record": 367,
+      "all_records": [
+        217,
+        295,
+        367
+      ]
+    },
+    {
+      "path": "frontend/src/components/ui/Table.tsx",
+      "latest_record": 375,
+      "all_records": [
+        226,
+        302,
+        375
+      ]
+    },
+    {
+      "path": "frontend/src/components/ui/Tabs.tsx",
+      "latest_record": 377,
+      "all_records": [
+        230,
+        304,
+        377
+      ]
+    },
+    {
+      "path": "frontend/src/components/ui/Textarea.tsx",
+      "latest_record": 371,
+      "all_records": [
+        222,
+        300,
+        371
+      ]
+    },
+    {
+      "path": "frontend/src/components/ui/Tooltip.tsx",
+      "latest_record": 308,
+      "all_records": [
+        229,
+        308
+      ]
+    },
+    {
+      "path": "frontend/src/hooks/useBatches.ts",
+      "latest_record": 361,
+      "all_records": [
+        207,
+        290,
+        361
+      ]
+    },
+    {
+      "path": "frontend/src/hooks/useDashboard.ts",
+      "latest_record": 355,
+      "all_records": [
+        210,
+        289,
+        355
+      ]
+    },
+    {
+      "path": "frontend/src/hooks/useDebounce.ts",
+      "latest_record": 356,
+      "all_records": [
+        213,
+        287,
+        356
+      ]
+    },
+    {
+      "path": "frontend/src/hooks/useKeyboardShortcut.ts",
+      "latest_record": 357,
+      "all_records": [
+        212,
+        288,
+        357
+      ]
+    },
+    {
+      "path": "frontend/src/hooks/useLocalStorage.ts",
+      "latest_record": 214,
+      "all_records": [
+        214
+      ]
+    },
+    {
+      "path": "frontend/src/hooks/useSER.ts",
+      "latest_record": 362,
+      "all_records": [
+        208,
+        291,
+        362
+      ]
+    },
+    {
+      "path": "frontend/src/hooks/useSimulation.ts",
+      "latest_record": 363,
+      "all_records": [
+        209,
+        292,
+        363
+      ]
+    },
+    {
+      "path": "frontend/src/hooks/useTwin.ts",
+      "latest_record": 364,
+      "all_records": [
+        211,
+        293,
+        364
+      ]
+    },
+    {
+      "path": "frontend/src/layouts/AppLayout.tsx",
+      "latest_record": 259,
+      "all_records": [
+        259
+      ]
+    },
+    {
+      "path": "frontend/src/layouts/AuthLayout.tsx",
+      "latest_record": 258,
+      "all_records": [
+        189,
+        258
+      ]
+    },
+    {
+      "path": "frontend/src/layouts/DashboardLayout.tsx",
+      "latest_record": 190,
+      "all_records": [
+        190
+      ]
+    },
+    {
+      "path": "frontend/src/lib/utils.ts",
+      "latest_record": 358,
+      "all_records": [
+        215,
+        286,
+        358
+      ]
+    },
+    {
+      "path": "frontend/src/main.tsx",
+      "latest_record": 405,
+      "all_records": [
+        186,
+        261,
+        340,
+        405
+      ]
+    },
+    {
+      "path": "frontend/src/pages/AdminPage.tsx",
+      "latest_record": 424,
+      "all_records": [
+        256,
+        338,
+        424
+      ]
+    },
+    {
+      "path": "frontend/src/pages/BatchCreatePage.tsx",
+      "latest_record": 408,
+      "all_records": [
+        248,
+        329,
+        408
+      ]
+    },
+    {
+      "path": "frontend/src/pages/BatchDetailPage.tsx",
+      "latest_record": 416,
+      "all_records": [
+        247,
+        330,
+        416
+      ]
+    },
+    {
+      "path": "frontend/src/pages/BatchListPage.tsx",
+      "latest_record": 415,
+      "all_records": [
+        328,
+        415
+      ]
+    },
+    {
+      "path": "frontend/src/pages/BatchesPage.tsx",
+      "latest_record": 246,
+      "all_records": [
+        246
+      ]
+    },
+    {
+      "path": "frontend/src/pages/DashboardPage.tsx",
+      "latest_record": 407,
+      "all_records": [
+        245,
+        326,
+        407
+      ]
+    },
+    {
+      "path": "frontend/src/pages/DigitalTwinPage.tsx",
+      "latest_record": 251,
+      "all_records": [
+        251
+      ]
+    },
+    {
+      "path": "frontend/src/pages/ForecastPage.tsx",
+      "latest_record": 421,
+      "all_records": [
+        254,
+        335,
+        421
+      ]
+    },
+    {
+      "path": "frontend/src/pages/LoginPage.tsx",
+      "latest_record": 406,
+      "all_records": [
+        244,
+        325,
+        406
+      ]
+    },
+    {
+      "path": "frontend/src/pages/NotFoundPage.tsx",
+      "latest_record": 409,
+      "all_records": [
+        257,
+        339,
+        409
+      ]
+    },
+    {
+      "path": "frontend/src/pages/SERComputePage.tsx",
+      "latest_record": 249,
+      "all_records": [
+        249
+      ]
+    },
+    {
+      "path": "frontend/src/pages/SERPage.tsx",
+      "latest_record": 417,
+      "all_records": [
+        331,
+        417
+      ]
+    },
+    {
+      "path": "frontend/src/pages/SettingsPage.tsx",
+      "latest_record": 423,
+      "all_records": [
+        255,
+        337,
+        423
+      ]
+    },
+    {
+      "path": "frontend/src/pages/SimulationPage.tsx",
+      "latest_record": 418,
+      "all_records": [
+        250,
+        332,
+        418
+      ]
+    },
+    {
+      "path": "frontend/src/pages/SustainabilityPage.tsx",
+      "latest_record": 422,
+      "all_records": [
+        253,
+        336,
+        422
+      ]
+    },
+    {
+      "path": "frontend/src/pages/TwinDetailPage.tsx",
+      "latest_record": 420,
+      "all_records": [
+        252,
+        334,
+        420
+      ]
+    },
+    {
+      "path": "frontend/src/pages/TwinListPage.tsx",
+      "latest_record": 419,
+      "all_records": [
+        333,
+        419
+      ]
+    },
+    {
+      "path": "frontend/src/providers/ThemeProvider.tsx",
+      "latest_record": 425,
+      "all_records": [
+        191,
+        262,
+        341,
+        425
+      ]
+    },
+    {
+      "path": "frontend/src/router.tsx",
+      "latest_record": 396,
+      "all_records": [
+        260,
+        322,
+        396
+      ]
+    },
+    {
+      "path": "frontend/src/store/authStore.ts",
+      "latest_record": 342,
+      "all_records": [
+        192,
+        263,
+        342
+      ]
+    },
+    {
+      "path": "frontend/src/store/uiStore.ts",
+      "latest_record": 426,
+      "all_records": [
+        193,
+        264,
+        343,
+        426
+      ]
+    },
+    {
+      "path": "frontend/src/styles/globals.css",
+      "latest_record": 359,
+      "all_records": [
+        188,
+        278,
+        359
+      ]
+    },
+    {
+      "path": "frontend/src/types/auth.ts",
+      "latest_record": 348,
+      "all_records": [
+        199,
+        270,
+        348
+      ]
+    },
+    {
+      "path": "frontend/src/types/batch.ts",
+      "latest_record": 349,
+      "all_records": [
+        200,
+        271,
+        349
+      ]
+    },
+    {
+      "path": "frontend/src/types/common.ts",
+      "latest_record": 354,
+      "all_records": [
+        206,
+        277,
+        354
+      ]
+    },
+    {
+      "path": "frontend/src/types/dashboard.ts",
+      "latest_record": 353,
+      "all_records": [
+        203,
+        275,
+        353
+      ]
+    },
+    {
+      "path": "frontend/src/types/ser.ts",
+      "latest_record": 350,
+      "all_records": [
+        201,
+        272,
+        350
+      ]
+    },
+    {
+      "path": "frontend/src/types/simulation.ts",
+      "latest_record": 351,
+      "all_records": [
+        202,
+        273,
+        351
+      ]
+    },
+    {
+      "path": "frontend/src/types/sustainability.ts",
+      "latest_record": 276,
+      "all_records": [
+        205,
+        276
+      ]
+    },
+    {
+      "path": "frontend/src/types/twin.ts",
+      "latest_record": 352,
+      "all_records": [
+        204,
+        274,
+        352
+      ]
+    },
+    {
+      "path": "frontend/src/vite-env.d.ts",
+      "latest_record": 404,
+      "all_records": [
+        321,
+        404
+      ]
+    },
+    {
+      "path": "frontend/tailwind.config.js",
+      "latest_record": 182,
+      "all_records": [
+        182
+      ]
+    },
+    {
+      "path": "frontend/tailwind.config.ts",
+      "latest_record": 360,
+      "all_records": [
+        280,
+        360
+      ]
+    },
+    {
+      "path": "frontend/tsconfig.json",
+      "latest_record": 398,
+      "all_records": [
+        179,
+        283,
+        398
+      ]
+    },
+    {
+      "path": "frontend/tsconfig.node.json",
+      "latest_record": 401,
+      "all_records": [
+        180,
+        284,
+        401
+      ]
+    },
+    {
+      "path": "frontend/vite.config.ts",
+      "latest_record": 397,
+      "all_records": [
+        181,
+        279,
+        397
+      ]
+    },
+    {
+      "path": "infra/nginx/conf.d/default.conf",
+      "latest_record": 144,
+      "all_records": [
+        144
+      ]
+    },
+    {
+      "path": "infra/nginx/conf.d/prod.conf",
+      "latest_record": 145,
+      "all_records": [
+        145
+      ]
+    },
+    {
+      "path": "infra/nginx/nginx.conf",
+      "latest_record": 143,
+      "all_records": [
+        143
+      ]
+    },
+    {
+      "path": "infra/postgres/init.sql",
+      "latest_record": 146,
+      "all_records": [
+        146
+      ]
+    },
+    {
+      "path": "monitoring/alertmanager.yml",
+      "latest_record": 19,
+      "all_records": [
+        19
+      ]
+    },
+    {
+      "path": "monitoring/grafana/dashboard.json",
+      "latest_record": 18,
+      "all_records": [
+        18
+      ]
+    },
+    {
+      "path": "monitoring/prometheus.yml",
+      "latest_record": 17,
+      "all_records": [
+        17
+      ]
+    },
+    {
+      "path": "nginx/conf.d/default.conf",
+      "latest_record": 16,
+      "all_records": [
+        16
+      ]
+    },
+    {
+      "path": "nginx/nginx.conf",
+      "latest_record": 15,
+      "all_records": [
+        15
+      ]
+    },
+    {
+      "path": "pyproject.toml",
+      "latest_record": 8,
+      "all_records": [
+        8
+      ]
+    }
+  ]
+}

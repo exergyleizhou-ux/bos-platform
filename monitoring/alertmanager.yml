@@ -1,0 +1,101 @@
+# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# BOS Pipeline v9.0 �� Alertmanager Configuration
+# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+
+global:
+  resolve_timeout: 5m
+
+  # ���� SMTP for email alerts ����
+  smtp_smarthost: "smtp.gmail.com:587"
+  smtp_from: "alerts@bos-pipeline.com"
+  smtp_auth_username: "alerts@bos-pipeline.com"
+  smtp_auth_password: "change-me-in-production"
+  smtp_require_tls: true
+
+  # ���� Slack (optional) ����
+  # slack_api_url: "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+
+# ���� Route Tree ����
+route:
+  group_by: ["alertname", "service", "severity"]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+  receiver: "default-email"
+
+  routes:
+    # Critical alerts �� immediate notification
+    - match:
+        severity: critical
+      receiver: "critical-alerts"
+      group_wait: 10s
+      repeat_interval: 1h
+
+    # Warning alerts �� batch notifications
+    - match:
+        severity: warning
+      receiver: "warning-alerts"
+      group_wait: 1m
+      repeat_interval: 4h
+
+    # Info alerts �� low priority
+    - match:
+        severity: info
+      receiver: "default-email"
+      group_wait: 5m
+      repeat_interval: 24h
+
+# ���� Receivers ����
+receivers:
+  - name: "default-email"
+    email_configs:
+      - to: "devops@bos-pipeline.com"
+        send_resolved: true
+        headers:
+          Subject: "[BOS] {{ .Status | toUpper }} - {{ .CommonLabels.alertname }}"
+
+  - name: "critical-alerts"
+    email_configs:
+      - to: "oncall@bos-pipeline.com"
+        send_resolved: true
+        headers:
+          Subject: "[BOS CRITICAL] {{ .CommonLabels.alertname }} - {{ .CommonLabels.service }}"
+    # Uncomment for Slack critical alerts:
+    # slack_configs:
+    #   - channel: "#bos-alerts-critical"
+    #     send_resolved: true
+    #     title: "{{ .Status | toUpper }}: {{ .CommonLabels.alertname }}"
+    #     text: >-
+    #       {{ range .Alerts }}
+    #         *Alert:* {{ .Labels.alertname }}
+    #         *Service:* {{ .Labels.service }}
+    #         *Severity:* {{ .Labels.severity }}
+    #         *Description:* {{ .Annotations.description }}
+    #       {{ end }}
+
+  - name: "warning-alerts"
+    email_configs:
+      - to: "devops@bos-pipeline.com"
+        send_resolved: true
+        headers:
+          Subject: "[BOS WARNING] {{ .CommonLabels.alertname }}"
+
+# ���� Inhibition Rules ����
+# Suppress warnings when a critical alert for the same service is firing
+inhibit_rules:
+  - source_match:
+      severity: critical
+    target_match:
+      severity: warning
+    equal: ["alertname", "service"]
+
+  - source_match:
+      severity: critical
+    target_match:
+      severity: info
+    equal: ["service"]
+
+# ���� Templates ����
+templates:
+  - "/etc/alertmanager/templates/*.tmpl"
+

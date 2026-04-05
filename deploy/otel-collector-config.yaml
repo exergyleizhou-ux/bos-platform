@@ -1,0 +1,128 @@
+# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# BOS Pipeline v9.0 �� OpenTelemetry Collector Configuration
+# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# Used by docker-compose.otel.yml
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+        cors:
+          allowed_origins:
+            - "http://localhost:*"
+            - "https://bos-pipeline.com"
+
+processors:
+  # ���� Batch Processor ����
+  batch:
+    timeout: 5s
+    send_batch_size: 1024
+    send_batch_max_size: 2048
+
+  # ���� Memory Limiter ����
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 256
+    spike_limit_mib: 64
+
+  # ���� Attribute Enrichment ����
+  attributes:
+    actions:
+      - key: deployment.environment
+        action: upsert
+        value: development
+      - key: service.namespace
+        action: upsert
+        value: bos-pipeline
+
+  # ���� Resource Detection ����
+  resource:
+    attributes:
+      - key: host.name
+        from_attribute: ""
+        action: upsert
+      - key: service.version
+        value: "9.0.0"
+        action: upsert
+
+  # ���� Filter out noisy spans ����
+  filter/health:
+    error_mode: ignore
+    traces:
+      span:
+        - 'attributes["http.route"] == "/api/health/live"'
+        - 'attributes["http.route"] == "/api/health/ready"'
+        - 'attributes["http.target"] == "/favicon.ico"'
+
+  # ���� Tail-based Sampling ����
+  # Keep all error spans + sample 20% of successful spans
+  # (uncomment for production to reduce volume)
+  # tail_sampling:
+  #   decision_wait: 10s
+  #   num_traces: 100
+  #   expected_new_traces_per_sec: 100
+  #   policies:
+  #     - name: errors-always
+  #       type: status_code
+  #       status_code:
+  #         status_codes: [ERROR]
+  #     - name: sample-20-pct
+  #       type: probabilistic
+  #       probabilistic:
+  #         sampling_percentage: 20
+
+exporters:
+  # ���� Jaeger (Traces) ����
+  otlp/jaeger:
+    endpoint: jaeger:4317
+    tls:
+      insecure: true
+
+  # ���� Console (Debug Logging) ����
+  logging:
+    verbosity: detailed
+    sampling_initial: 5
+    sampling_thereafter: 200
+
+  # ���� Prometheus (Metrics) ����
+  prometheus:
+    endpoint: 0.0.0.0:8889
+    namespace: bos_pipeline
+    const_labels:
+      environment: development
+
+  # ���� OTLP/HTTP (for forwarding to other backends) ����
+  # Uncomment to send to Grafana Cloud, Datadog, etc.
+  # otlp/grafana:
+  #   endpoint: https://otlp-gateway-prod-us-east-0.grafana.net/otlp
+  #   headers:
+  #     Authorization: "Basic <base64-encoded-credentials>"
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+  zpages:
+    endpoint: 0.0.0.0:55679
+
+service:
+  extensions: [health_check, zpages]
+
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, filter/health, batch, attributes, resource]
+      exporters: [otlp/jaeger, logging]
+
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [prometheus]
+
+  telemetry:
+    logs:
+      level: info
+    metrics:
+      address: 0.0.0.0:8888

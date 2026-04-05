@@ -1,0 +1,7 @@
+# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# BOS Pipeline v9.0 �� Sentry Error Tracking
+# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# Install alongside requirements.txt:
+#   pip install -r requirements.txt -r requirements-sentry.txt
+
+sentry-sdk[fastapi,celery,sqlalchemy,pure_eval]>=1.40.0
