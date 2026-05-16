@@ -1,12 +1,6 @@
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-# BOS Pipeline v9.0 �� OpenTelemetry Stack Overlay
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-# Usage: docker compose -f docker-compose.yml -f docker-compose.otel.yml up -d
-
 version: "3.9"
 
 services:
-  # ���� OpenTelemetry Collector ����
   otel-collector:
     image: otel/opentelemetry-collector-contrib:0.96.0
     container_name: bos-otel-collector
@@ -15,25 +9,23 @@ services:
     volumes:
       - ./deploy/otel-collector-config.yaml:/etc/otelcol/config.yaml:ro
     ports:
-      - "4317:4317"   # OTLP gRPC receiver
-      - "4318:4318"   # OTLP HTTP receiver
-      - "8888:8888"   # Collector internal metrics
-      - "8889:8889"   # Prometheus exporter
+      - "4317:4317"
+      - "4318:4318"
+      - "8888:8888"
+      - "8889:8889"
     depends_on:
       - jaeger
 
-  # ���� Jaeger (Distributed Tracing UI) ����
   jaeger:
     image: jaegertracing/all-in-one:1.54
     container_name: bos-jaeger
     restart: unless-stopped
     ports:
-      - "16686:16686"  # Jaeger UI
-      - "14250:14250"  # gRPC model endpoint
+      - "16686:16686"
+      - "14250:14250"
     environment:
       - COLLECTOR_OTLP_ENABLED=true
 
-  # ���� Backend override: enable OTel ����
   backend:
     environment:
       - OTEL_ENABLED=true
@@ -43,8 +35,7 @@ services:
     depends_on:
       - otel-collector
 
-  # ���� Celery Worker override: enable OTel ����
-  celery-worker:
+  celery:
     environment:
       - OTEL_ENABLED=true
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317

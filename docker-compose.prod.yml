@@ -1,14 +1,11 @@
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-# BOS Pipeline v9.0 �� Docker Compose (Production)
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# BOS Pipeline v9.0 production Docker Compose overrides
 #
-# Production overrides:
-#   - No source volume mounts
-#   - No --reload
-#   - Multiple workers
-#   - Resource limits
-#   - Proper secrets management
-#   - No debug endpoints
+# Production differences from docker-compose.yml:
+# - No source volume mounts
+# - No reload mode
+# - More workers
+# - Resource limits
+# - Secret-driven environment values
 
 services:
   db:
@@ -219,4 +216,3 @@ volumes:
 
 networks:
   bos_net:
-    driver: bridge

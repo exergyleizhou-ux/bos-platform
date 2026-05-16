@@ -1,323 +1,158 @@
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-# BOS Pipeline v9.0 �� Makefile
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-
 .DEFAULT_GOAL := help
+.RECIPEPREFIX := >
 SHELL := /bin/bash
 
-# ���� Variables ����
 COMPOSE := docker compose
 BACKEND := $(COMPOSE) exec backend
-FRONTEND := $(COMPOSE) exec frontend
 DB := $(COMPOSE) exec db
 
-# ���� Colors ����
 BLUE := \033[36m
 GREEN := \033[32m
 YELLOW := \033[33m
 RED := \033[31m
 RESET := \033[0m
 
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-# Docker Compose
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+.PHONY: up up-build down down-v restart restart-all logs logs-backend logs-celery ps build
+.PHONY: migrate migrate-create migrate-history db-shell
+.PHONY: test test-cov test-integration test-frontend test-contract test-code test-code-provider test-bos-mechanistic test-benchmarks test-benchmarks-runtime test-benchmarks-operator test-benchmarks-protocol test-benchmarks-release test-benchmarks-media generate-benchmark-docs check-benchmark-docs smoke-bos-mechanistic
+.PHONY: lint lint-backend lint-frontend type-check
+.PHONY: build-frontend up-otel shell backend-shell redis-cli clean help
 
-.PHONY: up down restart logs ps build pull
+up: ## Start the local development stack
+> @printf "$(GREEN)Starting BOS Pipeline...$(RESET)\n"
+> $(COMPOSE) up -d
+> @printf "$(GREEN)Frontend: http://localhost:5173 | API: http://localhost:8000 | Proxy: http://localhost:8080$(RESET)\n"
 
-up: ## Start all services
-    @echo "$(GREEN)?? Starting BOS Pipeline...$(RESET)"
-    $(COMPOSE) up -d
-    @echo "$(GREEN)? Services started. API: http://localhost:8000 | Frontend: http://localhost:3000$(RESET)"
+up-build: ## Rebuild and start the local development stack
+> @printf "$(GREEN)Building and starting BOS Pipeline...$(RESET)\n"
+> $(COMPOSE) up -d --build
 
-up-build: ## Start with rebuild
-    @echo "$(GREEN)?? Building and starting...$(RESET)"
-    $(COMPOSE) up -d --build
+down: ## Stop the local development stack
+> @printf "$(RED)Stopping BOS Pipeline...$(RESET)\n"
+> $(COMPOSE) down
 
-down: ## Stop all services
-    @echo "$(RED)?? Stopping BOS Pipeline...$(RESET)"
-    $(COMPOSE) down
+down-v: ## Stop the stack and remove volumes
+> $(COMPOSE) down -v
 
-down-v: ## Stop and remove volumes
-    $(COMPOSE) down -v
+restart: ## Restart the backend container
+> $(COMPOSE) restart backend
 
-restart: ## Restart backend
-    @echo "$(YELLOW)?? Restarting backend...$(RESET)"
-    $(COMPOSE) restart backend
+restart-all: ## Restart every running service
+> $(COMPOSE) restart
 
-restart-all: ## Restart all services
-    $(COMPOSE) restart
-
-logs: ## Tail all logs
-    $(COMPOSE) logs -f
+logs: ## Tail logs from all services
+> $(COMPOSE) logs -f
 
 logs-backend: ## Tail backend logs
-    $(COMPOSE) logs -f backend
+> $(COMPOSE) logs -f backend
 
-logs-worker: ## Tail Celery worker logs
-    $(COMPOSE) logs -f celery-worker
+logs-celery: ## Tail Celery worker logs
+> $(COMPOSE) logs -f celery
 
-ps: ## Show running containers
-    $(COMPOSE) ps
+ps: ## Show service status
+> $(COMPOSE) ps
 
-build: ## Build all images
-    $(COMPOSE) build
+build: ## Build Docker images
+> $(COMPOSE) build
 
-pull: ## Pull latest images
-    $(COMPOSE) pull
+migrate: ## Run Alembic migrations in the backend container
+> $(BACKEND) alembic upgrade head
 
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-# Database
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+migrate-create: ## Create a new Alembic migration (set MSG="...")
+> $(BACKEND) alembic revision --autogenerate -m "$(MSG)"
 
-.PHONY: migrate migrate-create migrate-downgrade seed db-shell db-reset
+migrate-history: ## Show Alembic migration history
+> $(BACKEND) alembic history --verbose
 
-migrate: ## Run Alembic migrations
-    @echo "$(BLUE)?? Running migrations...$(RESET)"
-    $(BACKEND) alembic upgrade head
-
-migrate-create: ## Create new migration (usage: make migrate-create MSG="add users table")
-    $(BACKEND) alembic revision --autogenerate -m "$(MSG)"
-
-migrate-downgrade: ## Downgrade one migration
-    $(BACKEND) alembic downgrade -1
-
-migrate-history: ## Show migration history
-    $(BACKEND) alembic history --verbose
-
-seed: ## Seed demo data
-    @echo "$(BLUE)?? Seeding demo data...$(RESET)"
-    $(BACKEND) python -m scripts.seed_data
-
-db-shell: ## Open PostgreSQL shell
-    $(DB) psql -U bos -d bos_pipeline
-
-db-reset: ## Reset database (drop + recreate + migrate + seed)
-    @echo "$(RED)??  Resetting database...$(RESET)"
-    $(DB) psql -U bos -c "DROP DATABASE IF EXISTS bos_pipeline;"
-    $(DB) psql -U bos -c "CREATE DATABASE bos_pipeline;"
-    $(BACKEND) alembic upgrade head
-    $(BACKEND) python -m scripts.seed_data
-    @echo "$(GREEN)? Database reset complete$(RESET)"
-
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-# Backend Testing
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-
-.PHONY: test test-cov test-fast test-verbose test-watch
+db-shell: ## Open a PostgreSQL shell in the db container
+> $(DB) psql -U bos -d bos_pipeline
 
 test: ## Run backend tests
-    @echo "$(BLUE)?? Running backend tests...$(RESET)"
-    $(BACKEND) pytest
+> $(BACKEND) pytest
 
-test-cov: ## Run tests with coverage
-    @echo "$(BLUE)?? Running tests with coverage...$(RESET)"
-    $(BACKEND) pytest --cov=app --cov-report=html --cov-report=term-missing
+test-cov: ## Run backend tests with coverage
+> $(BACKEND) pytest --cov=app --cov-report=html --cov-report=term-missing
 
-test-fast: ## Run tests (skip slow)
-    $(BACKEND) pytest -m "not slow"
+test-integration: ## Run backend integration tests
+> $(BACKEND) pytest -m integration
 
-test-verbose: ## Run tests with verbose output
-    $(BACKEND) pytest -v --tb=long
+test-frontend: ## Run frontend TypeScript test script
+> cd frontend && npm run test
 
-test-watch: ## Run tests in watch mode
-    $(BACKEND) ptw -- --tb=short
+test-contract: ## Run frontend contract tests
+> cd frontend && npm run test:contract
 
-test-integration: ## Run integration tests only
-    $(BACKEND) pytest -m integration
+test-code: ## Run BOS Code backend integration tests
+> $(BACKEND) pytest tests/integration/test_code_router.py -q
 
-test-chaos: ## Run chaos engineering tests
-    $(BACKEND) pytest -m chaos
+test-code-provider: ## Run BOS Code provider/unit tests
+> $(BACKEND) pytest tests/unit/test_code_provider.py -q
 
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-# Frontend Testing
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+test-bos-mechanistic: ## Run BOS mechanistic backend/frontend verification slices
+> $(BACKEND) pytest tests/unit/test_bos_mechanistic_engine.py tests/unit/test_bos_supervisor_engine.py tests/unit/test_bos_report_service.py tests/integration/test_bos_router_live.py -q
+> cd frontend && npm exec vitest run src/api/bosApi.test.ts src/lib/bos-read-model.test.ts src/components/bos/MechanisticContextCard.test.tsx src/components/bos/SignalSupervisorPanel.test.tsx
 
-.PHONY: test-frontend test-frontend-coverage
+test-benchmarks: ## Run the BOS benchmark starter suite
+> python scripts/bos_code_benchmark.py run
 
-test-frontend: ## Run frontend Vitest tests
-    @echo "$(BLUE)?? Running frontend Vitest tests...$(RESET)"
-    cd frontend && npm run test
+test-benchmarks-runtime: ## Run the runtime benchmark suite
+> python scripts/bos_code_benchmark.py run --suite runtime
 
-test-frontend-coverage: ## Run frontend tests with coverage
-    @echo "$(BLUE)?? Running frontend tests with coverage...$(RESET)"
-    cd frontend && npm run test:coverage
+test-benchmarks-operator: ## Run the operator benchmark suite
+> python scripts/bos_code_benchmark.py run --suite operator
 
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-# E2E Testing
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+test-benchmarks-protocol: ## Run the protocol benchmark suite
+> python scripts/bos_code_benchmark.py run --suite protocol
 
-.PHONY: e2e e2e-headed e2e-report
+test-benchmarks-release: ## Run the release benchmark suite
+> python scripts/bos_code_benchmark.py run --suite release
 
-e2e: ## Run Playwright E2E tests
-    @echo "$(BLUE)?? Running E2E tests...$(RESET)"
-    cd e2e && npx playwright test
+test-benchmarks-media: ## Run the media benchmark suite
+> python scripts/bos_code_benchmark.py run --suite media
 
-e2e-headed: ## Run E2E tests with browser visible
-    cd e2e && npx playwright test --headed
+generate-benchmark-docs: ## Regenerate benchmark README surfaces from task metadata
+> python scripts/bos_code_benchmark.py generate-readme
 
-e2e-report: ## Show E2E test report
-    cd e2e && npx playwright show-report
+check-benchmark-docs: ## Verify benchmark README surfaces are in sync with task metadata
+> python scripts/bos_code_benchmark.py verify-docs
 
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-# Load Testing
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+smoke-bos-mechanistic: ## Run the BOS mechanistic live smoke on Windows
+> powershell -ExecutionPolicy Bypass -File scripts/run_bos_mechanistic_live_smoke.ps1
 
-.PHONY: loadtest-k6 loadtest-k6-health loadtest-locust
+lint: lint-backend lint-frontend ## Run backend and frontend lint checks
 
-loadtest-k6: ## Run k6 load test (SER endpoint)
-    @echo "$(RED)?? Running k6 load test...$(RESET)"
-    k6 run loadtest/k6_ser.js
+lint-backend: ## Run Ruff and mypy for backend code
+> $(BACKEND) ruff check app/
+> $(BACKEND) mypy app/ --ignore-missing-imports
 
-loadtest-k6-health: ## Run k6 health check load test
-    @echo "$(RED)?? Running k6 health check load test...$(RESET)"
-    k6 run loadtest/k6_health.js
+lint-frontend: ## Run frontend ESLint
+> cd frontend && npm run lint
 
-loadtest-locust: ## Run Locust load test (UI at http://localhost:8089)
-    @echo "$(RED)?? Running Locust load test...$(RESET)"
-    cd loadtest && locust -f locustfile.py --host http://localhost:8000
+type-check: ## Run frontend TypeScript checking
+> cd frontend && npm run type-check
 
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-# All Tests
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+build-frontend: ## Build the frontend bundle
+> cd frontend && npm run build
 
-.PHONY: test-all
+up-otel: ## Start the stack with the OpenTelemetry overlay
+> $(COMPOSE) -f docker-compose.yml -f docker-compose.otel.yml up -d
+> @printf "$(GREEN)Jaeger UI: http://localhost:16686$(RESET)\n"
 
-test-all: test test-frontend e2e ## Run ALL tests (backend + frontend + E2E)
-    @echo "$(GREEN)? All tests passed$(RESET)"
+shell: ## Open a Python shell in the backend container
+> $(BACKEND) python
 
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-# Linting & Formatting
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+backend-shell: ## Open a shell in the backend container
+> $(BACKEND) sh
 
-.PHONY: lint lint-backend lint-frontend format format-backend format-frontend typecheck
+redis-cli: ## Open Redis CLI in the redis container
+> $(COMPOSE) exec redis redis-cli
 
-lint: lint-backend lint-frontend ## Lint all code
+clean: ## Remove generated caches, logs, and local database files
+> find . -type d -name __pycache__ -prune -exec rm -rf {} +
+> find . -type f \( -name "*.pyc" -o -name "*.pyo" -o -name "*.tsbuildinfo" -o -name "*.log" -o -name "*.db" -o -name "*.sqlite3" \) -delete
+> rm -rf .pytest_cache backend/.pytest_cache backend/.mypy_cache frontend/dist frontend/coverage output
 
-lint-backend: ## Lint backend (ruff + mypy)
-    @echo "$(BLUE)?? Linting backend...$(RESET)"
-    $(BACKEND) ruff check app/
-    $(BACKEND) mypy app/ --ignore-missing-imports
-
-lint-frontend: ## Lint frontend (eslint)
-    @echo "$(BLUE)?? Linting frontend...$(RESET)"
-    cd frontend && npm run lint
-
-format: format-backend format-frontend ## Format all code
-
-format-backend: ## Format backend (black + ruff)
-    $(BACKEND) black app/ tests/
-    $(BACKEND) ruff check app/ --fix
-
-format-frontend: ## Format frontend (prettier)
-    cd frontend && npm run format
-
-typecheck: ## TypeScript type checking
-    cd frontend && npm run typecheck
-
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-# Storybook
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-
-.PHONY: storybook storybook-build
-
-storybook: ## Start Storybook on http://localhost:6006
-    @echo "$(BLUE)?? Starting Storybook...$(RESET)"
-    cd frontend && npm run storybook
-
-storybook-build: ## Build static Storybook
-    @echo "$(BLUE)?? Building static Storybook...$(RESET)"
-    cd frontend && npm run build-storybook
-
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-# Documentation
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-
-.PHONY: docs docs-build
-
-docs: ## Serve MkDocs locally
-    @echo "$(BLUE)?? Serving docs at http://localhost:8001...$(RESET)"
-    cd docs && mkdocs serve -a 0.0.0.0:8001
-
-docs-build: ## Build static docs
-    cd docs && mkdocs build
-
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-# Production Build
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-
-.PHONY: build-prod build-frontend
-
-build-prod: ## Production build (backend + frontend)
-    @echo "$(GREEN)???  Building for production...$(RESET)"
-    $(COMPOSE) -f docker-compose.yml -f docker-compose.prod.yml build
-
-build-frontend: ## Build frontend for production
-    cd frontend && npm run build
-
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-# Deployment
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-
-.PHONY: deploy-staging deploy-prod
-
-deploy-staging: ## Deploy to staging
-    @echo "$(YELLOW)?? Deploying to staging...$(RESET)"
-    helm upgrade --install bos-pipeline-staging ./helm/bos-pipeline \
-        --namespace bos-staging --create-namespace \
-        --values helm/bos-pipeline/values-staging.yaml
-
-deploy-prod: ## Deploy to production
-    @echo "$(GREEN)?? Deploying to production...$(RESET)"
-    helm upgrade --install bos-pipeline ./helm/bos-pipeline \
-        --namespace bos-production --create-namespace \
-        --values helm/bos-pipeline/values-production.yaml
-
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-# Utilities
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-
-.PHONY: shell backend-shell redis-cli clean
-
-shell: ## Open backend Python shell
-    $(BACKEND) python
-
-backend-shell: ## Open backend bash shell
-    $(BACKEND) bash
-
-redis-cli: ## Open Redis CLI
-    $(COMPOSE) exec redis redis-cli
-
-clean: ## Remove all build artifacts
-    @echo "$(RED)?? Cleaning...$(RESET)"
-    find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
-    find . -type d -name .pytest_cache -exec rm -rf {} + 2>/dev/null || true
-    find . -type d -name .mypy_cache -exec rm -rf {} + 2>/dev/null || true
-    find . -type d -name node_modules -exec rm -rf {} + 2>/dev/null || true
-    find . -type d -name htmlcov -exec rm -rf {} + 2>/dev/null || true
-    rm -rf frontend/dist frontend/dist-storybook frontend/coverage
-    @echo "$(GREEN)? Clean complete$(RESET)"
-
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-# OpenTelemetry Stack
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-
-.PHONY: up-otel
-
-up-otel: ## Start with OpenTelemetry (Jaeger + Collector)
-    @echo "$(BLUE)?? Starting with OpenTelemetry stack...$(RESET)"
-    $(COMPOSE) -f docker-compose.yml -f docker-compose.otel.yml up -d
-    @echo "$(GREEN)? Jaeger UI: http://localhost:16686$(RESET)"
-
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-# Help
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-
-.PHONY: help
-
-help: ## Show this help message
-    @echo ""
-    @echo "$(BLUE)BOS Pipeline v9.0 �� Available Commands$(RESET)"
-    @echo "�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T"
-    @grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | \
-        awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-22s$(RESET) %s\n", $$1, $$2}'
-    @echo ""
+help: ## Show available commands
+> @printf "\n$(BLUE)BOS Pipeline v9.0 command list$(RESET)\n"
+> @grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  $(GREEN)%-18s$(RESET) %s\n", $$1, $$2}'
+> @printf "\n"

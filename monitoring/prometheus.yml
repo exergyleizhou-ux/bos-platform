@@ -1,6 +1,4 @@
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-# BOS Pipeline v9.0 �� Prometheus Configuration
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# BOS Pipeline v9.0 Prometheus configuration
 
 global:
   scrape_interval: 15s
@@ -10,27 +8,24 @@ global:
     cluster: bos-pipeline
     environment: development
 
-# ���� Alerting Configuration ����
 alerting:
   alertmanagers:
     - static_configs:
         - targets:
             - alertmanager:9093
 
-# ���� Recording & Alerting Rules ����
 rule_files:
   - /etc/prometheus/rules/*.yml
 
-# ���� Scrape Targets ����
 scrape_configs:
-  # ���� Prometheus self-monitoring ����
+  # Prometheus self-monitoring
   - job_name: "prometheus"
     static_configs:
       - targets: ["localhost:9090"]
         labels:
           service: prometheus
 
-  # ���� FastAPI Backend ����
+  # FastAPI backend
   - job_name: "bos-backend"
     metrics_path: /api/metrics
     scrape_interval: 10s
@@ -39,10 +34,8 @@ scrape_configs:
         labels:
           service: backend
           component: api
-    # Handle authentication for metrics endpoint
-    # bearer_token_file: /etc/prometheus/token
 
-  # ���� Celery Worker ����
+  # Celery worker
   - job_name: "bos-celery-worker"
     metrics_path: /metrics
     scrape_interval: 15s
@@ -52,7 +45,7 @@ scrape_configs:
           service: celery
           component: worker
 
-  # ���� PostgreSQL (via postgres_exporter) ����
+  # PostgreSQL exporter
   - job_name: "postgres"
     scrape_interval: 30s
     static_configs:
@@ -61,7 +54,7 @@ scrape_configs:
           service: postgresql
           component: database
 
-  # ���� Redis (via redis_exporter) ����
+  # Redis exporter
   - job_name: "redis"
     scrape_interval: 15s
     static_configs:
@@ -70,7 +63,7 @@ scrape_configs:
           service: redis
           component: cache
 
-  # ���� Nginx (via nginx_exporter or stub_status) ����
+  # Nginx exporter
   - job_name: "nginx"
     scrape_interval: 15s
     static_configs:
@@ -79,7 +72,7 @@ scrape_configs:
           service: nginx
           component: proxy
 
-  # ���� Node Exporter (host metrics) ����
+  # Host metrics
   - job_name: "node"
     scrape_interval: 30s
     static_configs:
@@ -88,7 +81,7 @@ scrape_configs:
           service: host
           component: system
 
-  # ���� OpenTelemetry Collector (when OTel stack is enabled) ����
+  # OpenTelemetry Collector core metrics
   - job_name: "otel-collector"
     scrape_interval: 15s
     static_configs:
@@ -97,7 +90,7 @@ scrape_configs:
           service: otel-collector
           component: telemetry
 
-  # ���� OTel Collector Prometheus Exporter (span metrics) ����
+  # OpenTelemetry span metrics
   - job_name: "otel-span-metrics"
     scrape_interval: 15s
     static_configs:
@@ -105,27 +98,3 @@ scrape_configs:
         labels:
           service: otel-collector
           component: span-metrics
-
-  # ���� Kubernetes Service Discovery (uncomment for K8s) ����
-  # - job_name: "kubernetes-pods"
-  #   kubernetes_sd_configs:
-  #     - role: pod
-  #   relabel_configs:
-  #     - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
-  #       action: keep
-  #       regex: true
-  #     - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
-  #       action: replace
-  #       target_label: __metrics_path__
-  #       regex: (.+)
-  #     - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
-  #       action: replace
-  #       regex: ([^:]+)(?::\d+)?;(\d+)
-  #       replacement: $1:$2
-  #       target_label: __address__
-  #     - source_labels: [__meta_kubernetes_namespace]
-  #       action: replace
-  #       target_label: namespace
-  #     - source_labels: [__meta_kubernetes_pod_name]
-  #       action: replace
-  #       target_label: pod

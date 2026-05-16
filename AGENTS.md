@@ -583,3 +583,17 @@ When in doubt, build the next thing that most cleanly upgrades BOS from:
 - workflow -> operator surface,
 - operator surface -> auditable release system,
 - auditable release system -> premium industrial product.
+
+## Local skill guidance
+When local project skills are available, prefer:
+- `$gstack-bos-director` for broad BOS delivery, next-slice selection, and end-to-end project momentum.
+- `$andrej-karpathy-codex` for implementation discipline and verification.
+- `$bos-audit` when the slice changes BOS truth, evidence, release logic, portability, or audit surfaces.
+- `$bos-premium-ui` when the slice changes operator-facing UX or dashboard quality.
+
+Preferred compositions:
+- broad BOS push: `$gstack-bos-director` + downstream BOS skills as needed
+- broad BOS push with self-review loops: `$gstack-bos-director` + `$tbc-autonomy-loop` + downstream BOS skills as needed
+- audited BOS build: `$gstack-bos-director` + `$bos-audit` + `$andrej-karpathy-codex`
+- premium BOS surface: `$gstack-bos-director` + `$bos-premium-ui` + `$andrej-karpathy-codex`
+- premium audited BOS surface: `$gstack-bos-director` + `$bos-audit` + `$bos-premium-ui` + `$andrej-karpathy-codex`
