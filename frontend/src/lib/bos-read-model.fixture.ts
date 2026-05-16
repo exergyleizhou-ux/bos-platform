@@ -1,0 +1,211 @@
+import type { AuditPacket } from "@/types/bos";
+
+import { getAuditPacketReadModel } from "@/lib/bos-read-model";
+
+export const sampleAuditPacket = {
+  id: 101,
+  batch_id: 42,
+  release_decision_id: 88,
+  user_id: 7,
+  tenant_id: 3,
+  packet_version: "AUD-2.0",
+  evidence_level: "Validated",
+  contract_evaluation: {
+    status: "pass",
+    contract_name: "Default BOS Contract",
+    contract_version: "CTRL-2.0",
+    dose_window_ok: true,
+    stability_ratio: 1.33,
+    threshold_breaches: [],
+  },
+  signal_validity: {
+    status: "valid",
+    freshness_state: "Fresh",
+    potency: 0.24,
+    stability_window_hours: 24,
+    checks: ["freshness OK", "potency present", "stability 24.00h"],
+    supervisor_snapshot: {
+      mode: "handover",
+      recorded_at: "2026-04-06T08:31:00Z",
+      observation: {
+        uv254: 2.4,
+        od280: 2.0,
+        do: 5.1,
+        ph: 7.1,
+        elapsed_hours: 8,
+      },
+      decision: {
+        c_signal_hat: 0.52,
+        dc_dt_hat: -0.03,
+        confidence: 0.84,
+        trigger_reason: "negative_slope_persistence",
+        recommended_handover: true,
+      },
+    },
+    supervisor_history: [
+      {
+        mode: "supervisor",
+        recorded_at: "2026-04-06T08:29:00Z",
+        observation: {
+          uv254: 2.1,
+          od280: 1.9,
+          do: 5.3,
+          ph: 7.2,
+          elapsed_hours: 7,
+        },
+        decision: {
+          c_signal_hat: 0.49,
+          dc_dt_hat: 0.01,
+          confidence: 0.9,
+          trigger_reason: null,
+          recommended_handover: false,
+        },
+      },
+      {
+        mode: "handover",
+        recorded_at: "2026-04-06T08:31:00Z",
+        observation: {
+          uv254: 2.4,
+          od280: 2.0,
+          do: 5.1,
+          ph: 7.1,
+          elapsed_hours: 8,
+        },
+        decision: {
+          c_signal_hat: 0.52,
+          dc_dt_hat: -0.03,
+          confidence: 0.84,
+          trigger_reason: "negative_slope_persistence",
+          recommended_handover: true,
+        },
+      },
+    ],
+    mechanistic_context: {
+      c_di_ser: {
+        score: 0.42,
+        alpha_s: 0.52,
+        beta_s: 0.48,
+        penalty: 0.84,
+        information_loss: 0.19,
+        evidence_balance: 0.57,
+      },
+      handover_envelope: {
+        tau_star_min: 94.6,
+        c_peak: 0.73,
+        f_clock: 0.0106,
+        rise_rate: 0.031,
+        decay_rate: 0.008,
+      },
+      inputs: {
+        mass_balance_ratio: 0.22,
+        metering_completeness: 0.91,
+        locality_shift_pct: 8,
+      },
+    },
+  },
+  retuning_axes: {
+    recommended_by_portability: [
+      {
+        audit_id: 51,
+        recommended_outcome: "PASS_WITH_RETUNING",
+        retuning_axes: ["locality_shift"],
+        retuning_magnitude: 0.12,
+        portability_score: 0.88,
+      },
+    ],
+    evidence_profile: {
+      metering_completeness: 0.91,
+      evidence_status: "high",
+      mass_balance_ratio: 0.22,
+    },
+  },
+  generated_at: "2026-04-06T08:30:00Z",
+  created_at: "2026-04-06T08:30:00Z",
+  packet: {
+    batch: {
+      id: 42,
+      batch_id: "BOS-DEMO-042",
+      species: "BSF",
+      status: "completed",
+    },
+    signal_batch: {
+      id: 12,
+      signal_api_version: "SIG-1.0",
+      compiled_signal_id: "SIG-BOS-DEMO-042",
+      potency: 0.24,
+      potency_unit: "SER-equivalent",
+      freshness_state: "Fresh",
+    },
+    control_profile: {
+      id: 4,
+      name: "Default BOS Contract",
+      version: "CTRL-2.0",
+      mtt: 0.18,
+      hal_min: 0.8,
+      hal_max: 1.4,
+      dose_window_min: 0.18,
+      dose_window_max: 0.32,
+      stability_window_hours: 24,
+    },
+    boundary_ledger: {
+      id: 9,
+      d_prime: 0.78,
+      g_prime: 0.88,
+      ser_value: 0.22,
+      delta_delta_ser: null,
+      closure_residual: 1.2,
+      metering_completeness: 0.91,
+      qc_flags: [],
+      evidence_level: "Validated",
+      notes: "Snapshot fixture",
+    },
+    release_decision: {
+      decision: "PASS",
+      reason_codes: [],
+      blocking_factors: [],
+      warning_factors: [],
+      passed_checks: [
+        "Potency meets or exceeds the minimum transfer threshold.",
+        "SER value satisfies the matched-boundary release threshold.",
+      ],
+      trigger_metrics: {
+        ser_value: 0.22,
+        potency: 0.24,
+        mtt: 0.18,
+        decision_confidence: 0.97,
+      },
+      rationale: "Signal satisfies the current Control-API window and matched-boundary checks.",
+    },
+    portability_audits: [
+      {
+        id: 51,
+        executor_profile_id: 14,
+        locality_profile_id: 5,
+        executor_name: "Shanghai Executor",
+        locality_name: "Shanghai Site A",
+        outcome: "PASS_WITH_RETUNING",
+        retuning_required: true,
+        recommended_outcome: "PASS_WITH_RETUNING",
+        portability_score: 0.88,
+        trigger_metrics: {
+          hal_delta: 0.07,
+        },
+      },
+    ],
+    generation_context: {
+      schema_version: "AUD-2.0",
+      compiled_at: "2026-04-06T08:30:00Z",
+      compiled_by_user_id: 7,
+      source_ids: {
+        signal_batch_id: 12,
+        control_profile_id: 4,
+        boundary_ledger_id: 9,
+        release_decision_id: 88,
+        portability_audit_ids: [51],
+      },
+      hash: "7f2b04b20cbf9fc02e0d0f2c618cf6b25ea62909a9d31ff4e5369d1f60416f8e",
+    },
+  },
+} satisfies AuditPacket;
+
+export const sampleAuditPacketView = getAuditPacketReadModel(sampleAuditPacket);
