@@ -1,37 +1,60 @@
 /**
- * BOS Pipeline v9.0 �� Digital Twin Hooks
+ * BOS Pipeline v9.0 digital twin hooks.
  *
  * React Query hooks for twin CRUD, simulation, and cache management.
  */
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 
 import { twinApi } from "@/api/twinApi";
 import { dashboardKeys } from "@/hooks/useDashboard";
-import type { TwinCreate, TwinUpdate } from "@/types/twin";
+import type {
+  Twin,
+  TwinCreate,
+  TwinObservationUpdateRequest,
+  TwinPredictRequest,
+  TwinUpdate,
+} from "@/types/twin";
 
-// ���� Query Keys ����
 export const twinKeys = {
   all: ["twins"] as const,
   lists: () => [...twinKeys.all, "list"] as const,
-  list: (page: number, size: number) =>
-    [...twinKeys.lists(), page, size] as const,
+  list: (page: number, size: number, isActive?: boolean) =>
+    [...twinKeys.lists(), page, size, isActive ?? "all"] as const,
   details: () => [...twinKeys.all, "detail"] as const,
   detail: (id: number) => [...twinKeys.details(), id] as const,
 };
 
-// ���� List ����
-export function useTwinList(page: number, pageSize: number) {
+function getErrorMessage(error: unknown, fallback: string): string {
+  return (
+    (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail ??
+    fallback
+  );
+}
+
+function mergeTwinRuntimeState(
+  current: Twin | undefined,
+  payload: { state: Twin["state"]; version: number },
+): Twin | undefined {
+  if (!current) return current;
+
+  return {
+    ...current,
+    state: payload.state,
+    version: payload.version,
+  };
+}
+
+export function useTwinList(page: number, pageSize: number, isActive?: boolean) {
   return useQuery({
-    queryKey: twinKeys.list(page, pageSize),
-    queryFn: () => twinApi.list(page, pageSize),
+    queryKey: twinKeys.list(page, pageSize, isActive),
+    queryFn: () => twinApi.list(page, pageSize, isActive),
     placeholderData: (prev) => prev,
     staleTime: 60_000,
   });
 }
 
-// ���� Detail ����
 export function useTwin(id: number) {
   return useQuery({
     queryKey: twinKeys.detail(id),
@@ -41,7 +64,6 @@ export function useTwin(id: number) {
   });
 }
 
-// ���� Create ����
 export function useCreateTwin() {
   const qc = useQueryClient();
 
@@ -52,13 +74,12 @@ export function useCreateTwin() {
       qc.invalidateQueries({ queryKey: twinKeys.lists() });
       qc.invalidateQueries({ queryKey: dashboardKeys.all });
     },
-    onError: () => {
-      toast.error("Failed to create twin");
+    onError: (error) => {
+      toast.error(getErrorMessage(error, "Failed to create twin"));
     },
   });
 }
 
-// ���� Update ����
 export function useUpdateTwin(id: number) {
   const qc = useQueryClient();
 
@@ -69,13 +90,12 @@ export function useUpdateTwin(id: number) {
       qc.setQueryData(twinKeys.detail(id), twin);
       qc.invalidateQueries({ queryKey: twinKeys.lists() });
     },
-    onError: () => {
-      toast.error("Failed to update twin");
+    onError: (error) => {
+      toast.error(getErrorMessage(error, "Failed to update twin"));
     },
   });
 }
 
-// ���� Delete ����
 export function useDeleteTwin() {
   const qc = useQueryClient();
 
@@ -87,13 +107,12 @@ export function useDeleteTwin() {
       qc.invalidateQueries({ queryKey: twinKeys.lists() });
       qc.invalidateQueries({ queryKey: dashboardKeys.all });
     },
-    onError: () => {
-      toast.error("Failed to delete twin");
+    onError: (error) => {
+      toast.error(getErrorMessage(error, "Failed to delete twin"));
     },
   });
 }
 
-// ���� Simulate ����
 export function useSimulateTwin() {
   const qc = useQueryClient();
 
@@ -106,13 +125,47 @@ export function useSimulateTwin() {
       payload: Parameters<typeof twinApi.simulate>[1];
     }) => twinApi.simulate(id, payload),
     onSuccess: (result) => {
-      toast.success(
-        `Simulation complete �� SER: ${result.computed_ser.toFixed(4)}`,
-      );
+      toast.success(`Simulation complete - SER: ${result.computed_ser.toFixed(4)}`);
       qc.invalidateQueries({ queryKey: dashboardKeys.all });
     },
-    onError: () => {
-      toast.error("Twin simulation failed");
+    onError: (error) => {
+      toast.error(getErrorMessage(error, "Twin simulation failed"));
+    },
+  });
+}
+
+export function usePredictTwinStep(id: number) {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: TwinPredictRequest) => twinApi.predict(id, payload),
+    onSuccess: (result) => {
+      toast.success(`Prediction complete - instant SER: ${result.ser_instantaneous.toFixed(4)}`);
+      qc.setQueryData(twinKeys.detail(id), (current: Twin | undefined) =>
+        mergeTwinRuntimeState(current, { state: result.state, version: result.version }),
+      );
+      qc.invalidateQueries({ queryKey: twinKeys.lists() });
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error, "Twin prediction failed"));
+    },
+  });
+}
+
+export function useUpdateTwinObservations(id: number) {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: TwinObservationUpdateRequest) => twinApi.updateObservations(id, payload),
+    onSuccess: (result) => {
+      toast.success("Twin observations applied");
+      qc.setQueryData(twinKeys.detail(id), (current: Twin | undefined) =>
+        mergeTwinRuntimeState(current, { state: result.state, version: result.version }),
+      );
+      qc.invalidateQueries({ queryKey: twinKeys.lists() });
+    },
+    onError: (error) => {
+      toast.error(getErrorMessage(error, "Twin observation update failed"));
     },
   });
 }

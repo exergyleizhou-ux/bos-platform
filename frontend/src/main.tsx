@@ -1,5 +1,5 @@
 /**
- * BOS Pipeline v9.0 �� Application Entry Point
+ * BOS Pipeline v9.0 application entry point.
  *
  * Sets up React, React Query, Theme Provider, Toaster, and Router.
  */
@@ -11,11 +11,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { Toaster } from "react-hot-toast";
 
+import { I18nProvider } from "@/providers/I18nProvider";
 import { ThemeProvider } from "@/providers/ThemeProvider";
 import { router } from "@/router";
 import "@/styles/globals.css";
 
-// ���� Query Client ����
+// Query client
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -29,37 +30,41 @@ const queryClient = new QueryClient({
   },
 });
 
-// ���� Render ����
+const showDevtools = import.meta.env.DEV && window.location.pathname !== "/login";
+
+// Render
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
-        <RouterProvider router={router} />
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            duration: 4000,
-            style: {
-              borderRadius: "12px",
-              padding: "12px 16px",
-              fontSize: "14px",
-            },
-            success: {
-              iconTheme: {
-                primary: "#22c55e",
-                secondary: "#fff",
+        <I18nProvider>
+          <RouterProvider router={router} />
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 4000,
+              style: {
+                borderRadius: "12px",
+                padding: "12px 16px",
+                fontSize: "14px",
               },
-            },
-            error: {
-              iconTheme: {
-                primary: "#ef4444",
-                secondary: "#fff",
+              success: {
+                iconTheme: {
+                  primary: "#22c55e",
+                  secondary: "#fff",
+                },
               },
-            },
-          }}
-        />
+              error: {
+                iconTheme: {
+                  primary: "#ef4444",
+                  secondary: "#fff",
+                },
+              },
+            }}
+          />
+        </I18nProvider>
       </ThemeProvider>
-      <ReactQueryDevtools initialIsOpen={false} />
+      {showDevtools ? <ReactQueryDevtools initialIsOpen={false} /> : null}
     </QueryClientProvider>
   </StrictMode>,
 );

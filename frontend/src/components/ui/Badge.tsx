@@ -1,15 +1,16 @@
 import type { ReactNode } from "react";
 
+import { translateNodeText } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import type { BatchStatus } from "@/types/batch";
 
 const BADGE_VARIANTS = {
-  brand: "border border-brand-400/20 bg-brand-500/15 text-brand-200",
-  neutral: "border border-white/10 bg-white/6 text-surface-300",
-  success: "border border-emerald-400/20 bg-emerald-500/15 text-emerald-200",
-  warning: "border border-amber-400/20 bg-amber-500/15 text-amber-200",
-  danger: "border border-red-400/20 bg-red-500/15 text-red-200",
-  info: "border border-sky-400/20 bg-sky-500/15 text-sky-200",
+  brand: "border border-brand-300/18 bg-brand-500/12 text-brand-100",
+  neutral: "border border-white/8 bg-white/4 text-surface-300",
+  success: "border border-emerald-400/18 bg-emerald-500/12 text-emerald-100",
+  warning: "border border-amber-400/18 bg-amber-500/12 text-amber-100",
+  danger: "border border-red-400/18 bg-red-500/12 text-red-100",
+  info: "border border-sky-400/18 bg-sky-500/12 text-sky-100",
 } as const;
 
 const BADGE_SIZES = {
@@ -58,7 +59,7 @@ export function Badge({
           )}
         />
       ) : null}
-      {children}
+      {translateNodeText(children)}
     </span>
   );
 }

@@ -9,10 +9,14 @@
     "preview": "vite preview",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "type-check": "tsc --noEmit",
-    "test": "npm run type-check"
+    "test": "npm run type-check && vitest run",
+    "test:i18n-audit": "vitest run src/lib/i18n-audit.test.ts",
+    "test:contract": "vitest run src/lib/bos-read-model.test.ts",
+    "test:unit": "vitest run"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
+    "@mediapipe/tasks-vision": "^0.10.34",
     "@tanstack/react-query": "^5.62.0",
     "axios": "^1.7.9",
     "clsx": "^2.1.1",
@@ -25,6 +29,7 @@
     "react-router-dom": "^6.28.0",
     "recharts": "^2.15.0",
     "tailwind-merge": "^2.6.0",
+    "three": "^0.184.0",
     "zod": "^3.24.1",
     "zustand": "^5.0.2"
   },
@@ -33,16 +38,18 @@
     "@types/node": "^22.10.2",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
+    "@types/three": "^0.184.0",
     "@typescript-eslint/eslint-plugin": "^8.17.0",
     "@typescript-eslint/parser": "^8.17.0",
     "@vitejs/plugin-react-swc": "^3.7.2",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.16.0",
     "eslint-plugin-react-hooks": "^5.1.0",
+    "jsdom": "^29.0.2",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.2",
-    "vite": "^6.0.3"
+    "vite": "^6.0.3",
+    "vitest": "^2.1.8"
   }
 }
-

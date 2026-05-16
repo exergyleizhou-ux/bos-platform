@@ -1,19 +1,20 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 
 import { Spinner } from "@/components/ui/Spinner";
+import { translateNodeText } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 const VARIANTS = {
   primary:
-    "border border-brand-400/20 bg-brand-500 text-white shadow-glow hover:bg-brand-400 active:bg-brand-600 focus-visible:ring-brand-300",
+    "border border-brand-300/18 bg-brand-500/88 text-white shadow-glow hover:bg-brand-400/92 active:bg-brand-600 focus-visible:ring-brand-300",
   secondary:
-    "border border-white/10 bg-white/6 text-surface-100 hover:bg-white/10 active:bg-white/12 focus-visible:ring-surface-400",
+    "border border-white/8 bg-white/5 text-surface-100 hover:bg-white/8 active:bg-white/10 focus-visible:ring-surface-400",
   outline:
-    "border border-white/12 bg-transparent text-surface-200 hover:bg-white/6 active:bg-white/10 focus-visible:ring-surface-400",
+    "border border-white/10 bg-transparent text-surface-200 hover:bg-white/5 active:bg-white/8 focus-visible:ring-surface-400",
   ghost:
-    "bg-transparent text-surface-300 hover:bg-white/6 hover:text-white active:bg-white/10 focus-visible:ring-surface-400",
+    "bg-transparent text-surface-400 hover:bg-white/5 hover:text-white active:bg-white/8 focus-visible:ring-surface-400",
   danger:
-    "border border-red-400/20 bg-red-500/90 text-white hover:bg-red-500 active:bg-red-600 focus-visible:ring-red-300",
+    "border border-red-400/16 bg-red-500/84 text-white hover:bg-red-500/92 active:bg-red-600 focus-visible:ring-red-300",
 } as const;
 
 const SIZES = {
@@ -76,7 +77,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ) : null}
 
         {size !== "icon" && children ? (
-          <span className={cn(loading && "ml-0.5")}>{children}</span>
+          <span className={cn(loading && "ml-0.5")}>{translateNodeText(children)}</span>
         ) : null}
 
         {rightIcon && !loading ? (

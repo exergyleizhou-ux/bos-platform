@@ -1,79 +1,64 @@
 import {
-  DollarSign,
-  Droplets,
-  Leaf,
-  Recycle,
-  TrendingDown,
-  Zap,
+  ShieldCheck,
 } from "lucide-react";
 
-import { useDashboardSummary } from "@/hooks/useDashboard";
-import { Card, CardBody, CardHeader, StatCard } from "@/components/ui/Card";
+import { useBOSLedgerSummary } from "@/hooks/useDashboard";
+import { Badge } from "@/components/ui/Badge";
+import { CardBody, CardHeader } from "@/components/ui/Card";
+import {
+  CockpitGrid,
+  CockpitMetric,
+  CockpitPanel,
+  CockpitSectionLabel,
+} from "@/components/ui/Cockpit";
 import { ErrorState } from "@/components/ui/EmptyState";
-import { PageHeader } from "@/components/ui/PageHeader";
 import { SpinnerOverlay } from "@/components/ui/Spinner";
-import { formatNumber } from "@/lib/utils";
-
-function computeSustainabilityMetrics(summary: {
-  total_batches: number;
-  avg_ser: number;
-}) {
-  const totalBatches = summary.total_batches;
-  const avgSer = summary.avg_ser;
-  const avgDmProcessed = 10;
-  const totalDm = totalBatches * avgDmProcessed;
-  const conversionEfficiency = 1 - avgSer;
-
-  return {
-    ghgSavedKg: totalDm * conversionEfficiency * 2.5,
-    waterSavedL: totalDm * conversionEfficiency * 15,
-    energyKwh: totalDm * 0.8,
-    biomassProducedKg: totalDm * conversionEfficiency * 0.45,
-    frassProducedKg: totalDm * conversionEfficiency * 0.35,
-    wasteDivertedKg: totalDm,
-    costPerKgProtein: 3.2 - conversionEfficiency * 1.5,
-    revenuePotential: totalDm * conversionEfficiency * 0.45 * 8.5,
-    meteringCompleteness: Math.max(0.45, Math.min(0.92, 1 - avgSer * 1.8)),
-  };
-}
+import { SurfaceTile } from "@/components/ui/SurfaceTile";
+import { formatNumber, formatPercent } from "@/lib/utils";
 
 export default function SustainabilityPage() {
-  const summary = useDashboardSummary();
-  const metrics = summary.data ? computeSustainabilityMetrics(summary.data) : null;
+  const summary = useBOSLedgerSummary();
+  const metrics = summary.data;
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        eyebrow="Sustainability"
-        title="Boundary-qualified impact surface"
-        description="Environmental and TEA view framed as decision support, with explicit caveats about simplified assumptions."
-        badges={[
-          { label: "Screening-level coefficients", variant: "warning" },
-          { label: "Operator visible caveats", variant: "info" },
-        ]}
-        stats={[
-          {
-            label: "Waste diverted",
-            value: metrics ? formatNumber(metrics.wasteDivertedKg, 0) : "Loading",
-            hint: "Estimated dry matter diverted",
-          },
-          {
-            label: "GHG savings",
-            value: metrics ? formatNumber(metrics.ghgSavedKg, 0) : "Loading",
-            hint: "Relative to landfill baseline",
-          },
-          {
-            label: "Revenue potential",
-            value: metrics ? `$${formatNumber(metrics.revenuePotential, 0)}` : "Loading",
-            hint: "Screening-level estimate",
-          },
-          {
-            label: "Metering completeness",
-            value: metrics ? `${formatNumber(metrics.meteringCompleteness * 100, 0)}%` : "Loading",
-            hint: "Visibility into boundary confidence",
-          },
-        ]}
-      />
+    <div className="assistant-ambient-shell space-y-6">
+      <div className="assistant-ambient-backdrop" aria-hidden="true">
+        <span className="assistant-ambient-orb assistant-ambient-orb-cyan" />
+        <span className="assistant-ambient-orb assistant-ambient-orb-violet" />
+        <span className="assistant-ambient-orb assistant-ambient-orb-white" />
+        <span className="assistant-ambient-grid" />
+        <span className="assistant-ambient-scan assistant-ambient-scan-a" />
+        <span className="assistant-ambient-scan assistant-ambient-scan-b" />
+      </div>
+
+      <CockpitPanel tone="hero" className="p-6 lg:p-7">
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-3xl">
+              <CockpitSectionLabel>Sustainability</CockpitSectionLabel>
+              <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-[2.65rem]">
+                Boundary-qualified ledger surface
+              </h1>
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-surface-300">
+                Persisted D', G', SER, release pass rate, and evidence posture from the BOS boundary ledger.
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Badge variant="success">Ledger-driven</Badge>
+              <Badge variant="info">Audit visible evidence</Badge>
+            </div>
+          </div>
+
+          {metrics ? (
+            <CockpitGrid className="sm:grid-cols-2 xl:grid-cols-4">
+              <CockpitMetric label="Average SER" value={formatNumber(metrics.avg_ser, 4)} hint="Persisted ledger average" accent="cyan" />
+              <CockpitMetric label="Average G'" value={formatPercent(metrics.avg_g_prime ?? null, 1)} hint="Boundary-qualified recovery" accent="violet" />
+              <CockpitMetric label="Boundary records" value={formatNumber(metrics.boundary_records, 0)} hint="Matched-boundary entries" accent="amber" />
+              <CockpitMetric label="Audit packets" value={formatNumber(metrics.total_audit_packets, 0)} hint="Evidence-bearing exports" accent="neutral" />
+            </CockpitGrid>
+          ) : null}
+        </div>
+      </CockpitPanel>
 
       {summary.isLoading ? (
         <SpinnerOverlay label="Calculating sustainability surface" />
@@ -81,110 +66,89 @@ export default function SustainabilityPage() {
         <ErrorState onRetry={() => summary.refetch()} />
       ) : metrics ? (
         <>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-            <StatCard
-              label="GHG savings"
-              value={formatNumber(metrics.ghgSavedKg, 0)}
-              unit="kg CO2e"
-              icon={<Leaf className="h-5 w-5" />}
-              color="green"
-            />
-            <StatCard
-              label="Water saved"
-              value={formatNumber(metrics.waterSavedL, 0)}
-              unit="L"
-              icon={<Droplets className="h-5 w-5" />}
-              color="blue"
-            />
-            <StatCard
-              label="Energy consumed"
-              value={formatNumber(metrics.energyKwh, 0)}
-              unit="kWh"
-              icon={<Zap className="h-5 w-5" />}
-              color="amber"
-            />
-            <StatCard
-              label="Waste diverted"
-              value={formatNumber(metrics.wasteDivertedKg, 0)}
-              unit="kg"
-              icon={<Recycle className="h-5 w-5" />}
-              color="green"
-            />
-            <StatCard
-              label="Biomass produced"
-              value={formatNumber(metrics.biomassProducedKg, 1)}
-              unit="kg"
-              icon={<TrendingDown className="h-5 w-5" />}
-              color="blue"
-            />
-            <StatCard
-              label="Frass produced"
-              value={formatNumber(metrics.frassProducedKg, 1)}
-              unit="kg"
-              icon={<Recycle className="h-5 w-5" />}
-              color="neutral"
-            />
-          </div>
+          <CockpitGrid className="md:grid-cols-2 xl:grid-cols-3">
+            <CockpitMetric label="Dry matter in" value={formatNumber(metrics.total_dm_in, 1)} hint="kg" accent="cyan" />
+            <CockpitMetric label="Dry matter out" value={formatNumber(metrics.total_dm_out, 1)} hint="kg" accent="violet" />
+            <CockpitMetric label="Average SER" value={formatNumber(metrics.avg_ser, 4)} hint="Boundary rollup" accent="amber" />
+            <CockpitMetric label="Average G'" value={formatPercent(metrics.avg_g_prime ?? null, 1)} hint="Recovery ratio" accent="neutral" />
+            <CockpitMetric label="Boundary records" value={formatNumber(metrics.boundary_records, 0)} hint="Matched-boundary entries" accent="neutral" />
+            <CockpitMetric label="Audit packets" value={formatNumber(metrics.total_audit_packets, 0)} hint="Evidence-bearing exports" accent="neutral" />
+          </CockpitGrid>
 
           <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-            <Card tone="strong">
+            <CockpitPanel tone="emphasis" className="p-5 lg:p-6">
               <CardHeader
-                title="TEA posture"
-                description="Simplified techno-economic signals derived from current portfolio summary."
+                title="Ledger posture"
+                description="Matched-boundary rollup from persisted boundary ledgers and release decisions."
               />
               <CardBody className="grid gap-4 md:grid-cols-2">
-                <div className="rounded-3xl border border-white/8 bg-white/5 p-5">
+                <SurfaceTile className="assistant-thread-shell rounded-3xl p-5">
                   <div className="flex items-center gap-3">
-                    <DollarSign className="h-5 w-5 text-emerald-200" />
-                    <p className="text-sm font-medium text-white">Cost per kg protein</p>
+                    <ShieldCheck className="h-5 w-5 text-emerald-200" />
+                    <p className="text-sm font-medium text-white">Evidence distribution</p>
                   </div>
-                  <p className="mt-4 text-3xl font-semibold text-white">
-                    ${formatNumber(metrics.costPerKgProtein, 2)}
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-surface-300">
-                    Estimated from simplified cost assumptions and current conversion efficiency.
-                  </p>
-                </div>
+                  <div className="mt-4 space-y-2 text-sm text-surface-300">
+                    {Object.entries(metrics.evidence_distribution).length ? (
+                      Object.entries(metrics.evidence_distribution).map(([level, count]) => (
+                        <div key={level} className="flex items-center justify-between gap-3">
+                          <span>{level}</span>
+                          <span className="font-medium text-white">{count}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <div>No persisted boundary evidence yet.</div>
+                    )}
+                  </div>
+                </SurfaceTile>
 
-                <div className="rounded-3xl border border-white/8 bg-white/5 p-5">
+                <SurfaceTile className="rounded-3xl p-5">
                   <div className="flex items-center gap-3">
-                    <DollarSign className="h-5 w-5 text-brand-200" />
-                    <p className="text-sm font-medium text-white">Revenue potential</p>
+                    <ShieldCheck className="h-5 w-5 text-brand-200" />
+                    <p className="text-sm font-medium text-white">Decision counts</p>
                   </div>
-                  <p className="mt-4 text-3xl font-semibold text-white">
-                    ${formatNumber(metrics.revenuePotential, 0)}
-                  </p>
-                  <p className="mt-2 text-sm leading-6 text-surface-300">
-                    Screening-level output value based on larvae biomass assumptions.
-                  </p>
-                </div>
+                  <div className="mt-4 space-y-2 text-sm text-surface-300">
+                    {Object.entries(metrics.decision_counts).length ? (
+                      Object.entries(metrics.decision_counts).map(([decision, count]) => (
+                        <div key={decision} className="flex items-center justify-between gap-3">
+                          <span>{decision}</span>
+                          <span className="font-medium text-white">{count}</span>
+                        </div>
+                      ))
+                    ) : (
+                      <div>No persisted release decisions yet.</div>
+                    )}
+                  </div>
+                </SurfaceTile>
 
-                <div className="rounded-3xl border border-white/8 bg-white/5 p-5 md:col-span-2">
-                  <p className="metric-kicker">Boundary confidence</p>
+                <SurfaceTile className="rounded-3xl p-5 md:col-span-2">
+                  <p className="assistant-section-kicker">Boundary confidence</p>
                   <p className="mt-3 text-sm leading-6 text-surface-300">
-                    This surface is useful for directional decisions, not for audited sustainability claims. Metering completeness is shown explicitly so operators can judge confidence instead of reading a single oversold score.
+                    This surface is driven by persisted BOS ledger records. If metering completeness is low or release decisions are sparse, the page shows that gap directly instead of filling it with heuristic sustainability coefficients.
                   </p>
-                </div>
+                </SurfaceTile>
               </CardBody>
-            </Card>
+            </CockpitPanel>
 
-            <Card>
+            <CockpitPanel className="p-5 lg:p-6">
               <CardHeader
                 title="Methodology and caveats"
-                description="Why these numbers are informative but not final truth."
+                description="What is now grounded in the ledger, and what still is not."
               />
               <CardBody className="space-y-3 text-sm leading-6 text-surface-300">
-                <div className="rounded-2xl border border-white/8 bg-white/5 px-4 py-3">
-                  GHG savings are estimated relative to landfill disposal using a simplified coefficient.
-                </div>
-                <div className="rounded-2xl border border-white/8 bg-white/5 px-4 py-3">
-                  Water savings are benchmarked against generic soy-protein production assumptions.
-                </div>
-                <div className="rounded-2xl border border-white/8 bg-white/5 px-4 py-3">
-                  TEA values are portfolio-level heuristics and should be replaced by a dedicated sustainability API before external reporting.
-                </div>
+                <SurfaceTile className="px-4 py-3">
+                  D', G', SER, closure residual, and metering completeness come from persisted boundary ledgers.
+                </SurfaceTile>
+                <SurfaceTile className="px-4 py-3">
+                  Release pass rate is derived from stored BOS decisions, not from frontend heuristics.
+                </SurfaceTile>
+                <SurfaceTile className="px-4 py-3">
+                  GHG, water, energy, and TEA remain separate engines and are not yet folded into this unified ledger view.
+                </SurfaceTile>
+                <SurfaceTile className="px-4 py-3">
+                  If no ledgers or audit packets exist yet, this page will stay sparse by design rather than synthesizing unsupported claims.
+                </SurfaceTile>
               </CardBody>
-            </Card>
+            </CockpitPanel>
           </div>
         </>
       ) : null}

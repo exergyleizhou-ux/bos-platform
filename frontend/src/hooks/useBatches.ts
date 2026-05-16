@@ -1,10 +1,10 @@
 /**
- * BOS Pipeline v9.0 �� Batch Hooks
+ * BOS Pipeline v9.0 batch hooks.
  *
  * React Query hooks for batch CRUD, export, and cache management.
  */
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 
 import { batchApi } from "@/api/batchApi";
@@ -12,7 +12,7 @@ import { dashboardKeys } from "@/hooks/useDashboard";
 import { downloadBlob } from "@/lib/utils";
 import type { BatchFilters, BatchUpdate } from "@/types/batch";
 
-// ���� Query Keys ����
+// Query keys
 export const batchKeys = {
   all: ["batches"] as const,
   lists: () => [...batchKeys.all, "list"] as const,
@@ -23,12 +23,8 @@ export const batchKeys = {
   stats: () => [...batchKeys.all, "stats"] as const,
 };
 
-// ���� List ����
-export function useBatchList(
-  page: number,
-  pageSize: number,
-  filters?: BatchFilters,
-) {
+// List
+export function useBatchList(page: number, pageSize: number, filters?: BatchFilters) {
   return useQuery({
     queryKey: batchKeys.list(page, pageSize, filters),
     queryFn: () => batchApi.list(page, pageSize, filters),
@@ -37,7 +33,7 @@ export function useBatchList(
   });
 }
 
-// ���� Detail ����
+// Detail
 export function useBatch(id: number) {
   return useQuery({
     queryKey: batchKeys.detail(id),
@@ -47,7 +43,7 @@ export function useBatch(id: number) {
   });
 }
 
-// ���� Create ����
+// Create
 export function useCreateBatch() {
   const qc = useQueryClient();
 
@@ -65,7 +61,7 @@ export function useCreateBatch() {
   });
 }
 
-// ���� Update ����
+// Update
 export function useUpdateBatch(id: number) {
   const qc = useQueryClient();
 
@@ -83,7 +79,7 @@ export function useUpdateBatch(id: number) {
   });
 }
 
-// ���� Delete ����
+// Delete
 export function useDeleteBatch() {
   const qc = useQueryClient();
 
@@ -102,7 +98,7 @@ export function useDeleteBatch() {
   });
 }
 
-// ���� Export ����
+// Export
 export function useExportBatches() {
   return useMutation({
     mutationFn: batchApi.export,
@@ -118,7 +114,7 @@ export function useExportBatches() {
   });
 }
 
-// ���� Stats ����
+// Stats
 export function useBatchStats() {
   return useQuery({
     queryKey: batchKeys.stats(),

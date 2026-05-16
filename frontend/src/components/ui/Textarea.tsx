@@ -1,4 +1,5 @@
 import {
+  useCallback,
   forwardRef,
   useEffect,
   useRef,
@@ -6,6 +7,7 @@ import {
   type TextareaHTMLAttributes,
 } from "react";
 
+import { translateText } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
@@ -29,6 +31,8 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
       id,
       required,
       onChange,
+      onCompositionStart,
+      onCompositionEnd,
       value,
       defaultValue,
       ...props
@@ -38,6 +42,8 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
     const textareaId = id ?? props.name ?? label?.toLowerCase().replace(/\s+/g, "-");
     const [charCount, setCharCount] = useState(() => String(value ?? defaultValue ?? "").length);
     const internalRef = useRef<HTMLTextAreaElement | null>(null);
+    const resizeFrameRef = useRef<number | null>(null);
+    const composingRef = useRef(false);
 
     const setRefs = (element: HTMLTextAreaElement | null) => {
       internalRef.current = element;
@@ -45,21 +51,39 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
       else if (ref) ref.current = element;
     };
 
-    const handleAutoResize = () => {
+    const handleAutoResize = useCallback(() => {
       if (autoResize && internalRef.current) {
-        internalRef.current.style.height = "auto";
-        internalRef.current.style.height = `${internalRef.current.scrollHeight}px`;
+        const textarea = internalRef.current;
+        textarea.style.height = "auto";
+        textarea.style.height = `${textarea.scrollHeight}px`;
       }
-    };
+    }, [autoResize]);
+
+    const queueAutoResize = useCallback(() => {
+      if (!autoResize || composingRef.current || typeof window === "undefined") return;
+      if (resizeFrameRef.current !== null) {
+        window.cancelAnimationFrame(resizeFrameRef.current);
+      }
+      resizeFrameRef.current = window.requestAnimationFrame(() => {
+        resizeFrameRef.current = null;
+        handleAutoResize();
+      });
+    }, [autoResize, handleAutoResize]);
 
     useEffect(() => {
-      handleAutoResize();
-    }, [value]);
+      queueAutoResize();
+      return () => {
+        if (resizeFrameRef.current !== null) {
+          window.cancelAnimationFrame(resizeFrameRef.current);
+          resizeFrameRef.current = null;
+        }
+      };
+    }, [queueAutoResize, value]);
 
     const handleChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
       setCharCount(event.target.value.length);
-      handleAutoResize();
       onChange?.(event);
+      queueAutoResize();
     };
 
     return (
@@ -69,7 +93,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
             htmlFor={textareaId}
             className="mb-1.5 block text-sm font-medium text-surface-300"
           >
-            {label}
+            {translateText(label)}
             {required ? <span className="ml-0.5 text-red-400">*</span> : null}
           </label>
         ) : null}
@@ -82,16 +106,27 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           value={value}
           defaultValue={defaultValue}
           onChange={handleChange}
+          onCompositionStart={(event) => {
+            composingRef.current = true;
+            onCompositionStart?.(event);
+          }}
+          onCompositionEnd={(event) => {
+            composingRef.current = false;
+            onCompositionEnd?.(event);
+            queueAutoResize();
+          }}
           className={cn(
-            "block w-full rounded-2xl border bg-white/6 px-3 py-2.5 text-sm text-white transition-colors",
+            "block w-full rounded-[22px] border px-3.5 py-3 text-sm text-white transition-all duration-150",
+            "bg-[linear-gradient(180deg,rgba(255,250,241,0.08),rgba(255,255,255,0.04))]",
             "placeholder:text-surface-500 resize-y focus:outline-none focus:ring-2 focus:ring-offset-0",
             "disabled:cursor-not-allowed disabled:opacity-50",
             autoResize && "resize-none overflow-hidden",
             error
-              ? "border-red-400/30 focus:border-red-400 focus:ring-red-400/25"
-              : "border-white/10 focus:border-brand-400/40 focus:ring-brand-400/20",
+              ? "border-red-400/24 focus:border-red-400 focus:ring-red-400/20"
+              : "border-white/8 focus:border-brand-400/28 focus:ring-brand-400/14 hover:border-white/12",
             className,
           )}
+          placeholder={props.placeholder ? translateText(props.placeholder) : props.placeholder}
           aria-invalid={!!error}
           aria-describedby={
             error
@@ -107,12 +142,12 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           <div className="flex-1">
             {error ? (
               <p id={`${textareaId}-error`} className="text-xs text-red-300" role="alert">
-                {error}
+                {translateText(error)}
               </p>
             ) : null}
             {!error && helperText ? (
               <p id={`${textareaId}-helper`} className="text-xs text-surface-500">
-                {helperText}
+                {translateText(helperText)}
               </p>
             ) : null}
           </div>

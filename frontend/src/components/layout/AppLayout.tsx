@@ -9,11 +9,14 @@ import { CommandPalette } from "@/components/layout/CommandPalette";
 import { useBOSShortcuts } from "@/hooks/useKeyboardShortcut";
 import { useUIStore } from "@/store/uiStore";
 import { useTheme } from "@/providers/ThemeProvider";
+import { translateText } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { pageTransition } from "@/lib/motion";
 
 export function AppLayout() {
   const location = useLocation();
+  const isCodeRoute = location.pathname.startsWith("/code");
+  const isAssistantRoute = location.pathname.startsWith("/bos");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const collapsed = useUIStore((state) => state.sidebarCollapsed);
   const toggleSidebar = useUIStore((state) => state.toggleSidebar);
@@ -52,13 +55,13 @@ export function AppLayout() {
       <div
         className={cn(
           "relative min-h-screen transition-all duration-200",
-          collapsed ? "lg:ml-20" : "lg:ml-[17.5rem]",
+          collapsed || isCodeRoute ? "lg:ml-20" : "lg:ml-[17.5rem]",
         )}
       >
         <TopBar onMobileMenuOpen={() => setMobileMenuOpen(true)} />
 
-        <main className="px-4 py-6 lg:px-8 lg:py-8">
-          <div className="mx-auto max-w-[90rem]">
+        <main className={cn("px-4 py-6 lg:px-8 lg:py-8", isAssistantRoute && "lg:py-7")}>
+          <div className={cn("mx-auto", isCodeRoute ? "max-w-[100rem]" : isAssistantRoute ? "max-w-[96rem]" : "max-w-[90rem]")}>
             <AnimatePresence mode="wait">
               <motion.div key={location.pathname} {...pageTransition}>
                 <Outlet />
@@ -67,10 +70,10 @@ export function AppLayout() {
           </div>
         </main>
 
-        <footer className="border-t border-white/8 px-4 py-4 lg:px-8">
+        <footer className={cn("border-t border-white/8 px-4 py-4 lg:px-8", (isCodeRoute || isAssistantRoute) && "opacity-50")}>
           <div className="mx-auto flex max-w-[90rem] items-center justify-between gap-3 text-xs text-surface-500">
-            <p>BOS Pipeline v9.0</p>
-            <p>Audit visibility, release discipline, premium operator UX.</p>
+            <p>{translateText("BOS v9.0")}</p>
+            <p>{translateText("Conversation-first operating workspace with evidence and control surfaces nearby.")}</p>
           </div>
         </footer>
       </div>

@@ -1,12 +1,13 @@
 /**
- * BOS Pipeline v9.0 �� SER Gauge Chart
+ * BOS Pipeline v9.0 SER gauge chart.
  *
  * Circular gauge displaying the SER value with color-coded grade arcs.
  */
 
 import { useMemo } from "react";
-import { scoreToGrade, getGradeColor } from "@/types/ser";
+
 import { cn } from "@/lib/utils";
+import { getGradeColor, scoreToGrade } from "@/types/ser";
 
 interface SERGaugeProps {
   value: number;
@@ -25,16 +26,10 @@ export function SERGauge({
   const color = getGradeColor(grade);
 
   // SVG arc calculations
-  const {
-    cx,
-    radius,
-    strokeWidth,
-    circumference,
-    offset,
-  } = useMemo(() => {
+  const { cx, radius, strokeWidth, circumference, offset } = useMemo(() => {
     const sw = size * 0.08;
     const r = (size - sw) / 2;
-    const c = Math.PI * r; // semicircle
+    const c = Math.PI * r;
     const clampedValue = Math.min(value / maxValue, 1);
     const o = c * (1 - clampedValue);
 
@@ -58,7 +53,6 @@ export function SERGauge({
         viewBox={`0 0 ${size} ${size * 0.55}`}
         className="overflow-visible"
       >
-        {/* Background arc */}
         <path
           d={describeArc(cx, size * 0.52, radius, 180, 360)}
           fill="none"
@@ -68,7 +62,6 @@ export function SERGauge({
           className="text-surface-100 dark:text-surface-700"
         />
 
-        {/* Value arc */}
         <path
           d={describeArc(cx, size * 0.52, radius, 180, 360)}
           fill="none"
@@ -81,15 +74,11 @@ export function SERGauge({
         />
       </svg>
 
-      {/* Center label */}
       <div className="absolute inset-0 flex flex-col items-center justify-end pb-1">
-        <p
-          className="text-2xl font-bold"
-          style={{ color }}
-        >
+        <p className="text-2xl font-bold" style={{ color }}>
           {value.toFixed(4)}
         </p>
-        <p className="text-xs font-semibold text-surface-400 uppercase">
+        <p className="text-xs font-semibold uppercase text-surface-400">
           Grade {grade}
         </p>
       </div>
@@ -97,8 +86,7 @@ export function SERGauge({
   );
 }
 
-// ���� SVG Arc Helper ����
-
+// SVG arc helper
 function polarToCartesian(
   cx: number,
   cy: number,
@@ -123,17 +111,5 @@ function describeArc(
   const end = polarToCartesian(cx, cy, r, startAngle);
   const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
 
-  return [
-    "M",
-    start.x,
-    start.y,
-    "A",
-    r,
-    r,
-    0,
-    largeArcFlag,
-    0,
-    end.x,
-    end.y,
-  ].join(" ");
+  return ["M", start.x, start.y, "A", r, r, 0, largeArcFlag, 0, end.x, end.y].join(" ");
 }

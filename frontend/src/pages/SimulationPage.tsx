@@ -1,20 +1,27 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { BarChart3, GitCompare, Shuffle } from "lucide-react";
+import { BarChart3, Cpu, GitCompare, Shuffle } from "lucide-react";
 
+import { MonteCarloHistogram } from "@/components/charts/MonteCarloHistogram";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { CardBody, CardHeader } from "@/components/ui/Card";
+import {
+  CockpitGrid,
+  CockpitMetric,
+  CockpitPanel,
+  CockpitSectionLabel,
+} from "@/components/ui/Cockpit";
+import { Input } from "@/components/ui/Input";
+import { TabPanel, Tabs } from "@/components/ui/Tabs";
 import {
   useBayesianAB,
   useMonteCarloSimulation,
   useSensitivityAnalysis,
 } from "@/hooks/useSimulation";
-import { Button } from "@/components/ui/Button";
-import { Card, CardBody, CardHeader, StatCard } from "@/components/ui/Card";
-import { Input } from "@/components/ui/Input";
-import { MonteCarloHistogram } from "@/components/charts/MonteCarloHistogram";
-import { PageHeader } from "@/components/ui/PageHeader";
-import { TabPanel, Tabs } from "@/components/ui/Tabs";
 import { formatNumber, formatPercent } from "@/lib/utils";
 
 const mcSchema = z.object({
@@ -49,6 +56,7 @@ const TABS = [
 ];
 
 export default function SimulationPage() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("mc");
 
   const mc = useMonteCarloSimulation();
@@ -77,6 +85,33 @@ export default function SimulationPage() {
     defaultValues: { group_a: "", group_b: "", n_samples: 10000 },
   });
 
+  const latestResult = mc.data
+    ? formatNumber(mc.data.ser_mean, 4)
+    : sens.data
+      ? formatNumber(sens.data.base_ser, 4)
+      : ab.data
+        ? ab.data.decision
+        : "Pending";
+
+  const posture = useMemo(() => {
+    if (mc.data?.pass_probability != null) {
+      return {
+        label: mc.data.pass_probability >= 0.8 ? "Confidence high" : "Needs review",
+        variant: mc.data.pass_probability >= 0.8 ? ("success" as const) : ("warning" as const),
+      };
+    }
+
+    if (ab.data) {
+      return { label: "Posterior ready", variant: "brand" as const };
+    }
+
+    if (sens.data) {
+      return { label: "Sensitivity ranked", variant: "info" as const };
+    }
+
+    return { label: "Awaiting run", variant: "neutral" as const };
+  }, [ab.data, mc.data, sens.data]);
+
   const onMC = (data: MCFormData) => {
     mc.mutate({
       ...data,
@@ -103,44 +138,103 @@ export default function SimulationPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        eyebrow="Simulation"
-        title="Scenario and uncertainty studio"
-        description="Stress-test BOS performance with Monte Carlo, sensitivity ranking, and Bayesian A/B inference."
-        badges={[
-          { label: `Mode: ${activeTab.toUpperCase()}`, variant: "info" },
-          { label: "Operator analysis", variant: "brand" },
-        ]}
-        stats={[
-          {
-            label: "Monte Carlo sims",
-            value: mcForm.watch("n_simulations"),
-            hint: "Current draft count",
-          },
-          {
-            label: "Sensitivity span",
-            value: `${formatPercent(sensForm.watch("variation_pct"), 0)}`,
-            hint: "Current variation window",
-          },
-          {
-            label: "A/B posterior",
-            value: abForm.watch("n_samples"),
-            hint: "Posterior sample budget",
-          },
-          {
-            label: "Latest result",
-            value: mc.data ? formatNumber(mc.data.ser_mean, 4) : sens.data ? formatNumber(sens.data.base_ser, 4) : "Pending",
-            hint: "Most recent analysis surface",
-          },
-        ]}
-      />
+    <div className="assistant-ambient-shell space-y-6">
+      <div className="assistant-ambient-backdrop" aria-hidden="true">
+        <span className="assistant-ambient-orb assistant-ambient-orb-cyan" />
+        <span className="assistant-ambient-orb assistant-ambient-orb-violet" />
+        <span className="assistant-ambient-orb assistant-ambient-orb-white" />
+        <span className="assistant-ambient-grid" />
+        <span className="assistant-ambient-scan assistant-ambient-scan-a" />
+        <span className="assistant-ambient-scan assistant-ambient-scan-b" />
+      </div>
 
-      <Tabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} />
+      <CockpitPanel tone="hero" className="p-6 lg:p-7">
+        <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div className="max-w-3xl">
+              <CockpitSectionLabel>Simulation</CockpitSectionLabel>
+              <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-[2.65rem]">
+                Scenario and uncertainty studio
+              </h1>
+              <p className="mt-4 max-w-2xl text-sm leading-7 text-surface-300">
+                Stress-test BOS performance with Monte Carlo envelopes, sensitivity ranking,
+                and Bayesian A/B inference in one operator-ready surface.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                variant="secondary"
+                leftIcon={<Cpu className="h-4 w-4" />}
+                onClick={() => navigate("/bos/simulation-lab")}
+              >
+                Open 3D Lab Twin
+              </Button>
+              <Badge variant="info">{`Mode: ${activeTab.toUpperCase()}`}</Badge>
+              <Badge variant={posture.variant}>{posture.label}</Badge>
+              <Badge variant="brand">Operator analysis</Badge>
+            </div>
+          </div>
+
+          <CockpitGrid className="sm:grid-cols-2 xl:grid-cols-4">
+            <CockpitMetric label="Active mode" value={activeTab.toUpperCase()} hint="Current simulation workflow" accent="cyan" />
+            <CockpitMetric
+              label="Configured volume"
+              value={String(mcForm.watch("n_simulations"))}
+              hint="Monte Carlo samples"
+              accent="violet"
+            />
+            <CockpitMetric
+              label="Sensitivity span"
+              value={formatPercent(sensForm.watch("variation_pct"), 0)}
+              hint={`${sensForm.watch("n_steps")} ranking steps`}
+              accent="amber"
+            />
+            <CockpitMetric
+              label="Latest result"
+              value={latestResult}
+              hint={`A/B samples ${abForm.watch("n_samples")}`}
+              accent="neutral"
+            />
+          </CockpitGrid>
+        </div>
+      </CockpitPanel>
+
+      <CockpitPanel className="p-5 lg:p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="max-w-3xl">
+            <CockpitSectionLabel>3D Lab Twin</CockpitSectionLabel>
+            <h2 className="mt-3 text-xl font-semibold text-white">LabSim Twin Studio replay</h2>
+            <p className="mt-3 text-sm leading-7 text-surface-300">
+              Launch the Three.js laboratory view for material-flow replay, reactor liquid state,
+              sensor pulses, station labels, review locks, and release appendix evidence.
+            </p>
+          </div>
+          <Button
+            variant="secondary"
+            leftIcon={<Cpu className="h-4 w-4" />}
+            onClick={() => navigate("/bos/simulation-lab")}
+          >
+            Open LabSim Twin Studio
+          </Button>
+        </div>
+      </CockpitPanel>
+
+      <CockpitPanel className="p-5 lg:p-6">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+          <div className="max-w-2xl">
+            <CockpitSectionLabel>Simulation controls</CockpitSectionLabel>
+            <p className="mt-3 text-sm leading-7 text-surface-300">
+              Choose a modeling mode, adjust the supported parameters, and keep the
+              resulting uncertainty surface in view as you switch between workflows.
+            </p>
+          </div>
+          <Tabs tabs={TABS} activeTab={activeTab} onChange={setActiveTab} />
+        </div>
+      </CockpitPanel>
 
       <TabPanel tabId="mc" activeTab={activeTab}>
         <div className="grid gap-6 xl:grid-cols-[1fr_1.1fr]">
-          <Card tone="strong">
+          <CockpitPanel className="p-5 lg:p-6">
             <CardHeader title="Monte Carlo contract" description="Sample uncertainty around dry matter inputs and quantify pass probability." />
             <CardBody>
               <form onSubmit={mcForm.handleSubmit(onMC)} className="grid gap-4 md:grid-cols-2" noValidate>
@@ -157,36 +251,34 @@ export default function SimulationPage() {
                 </div>
               </form>
             </CardBody>
-          </Card>
+          </CockpitPanel>
 
-          <Card tone="strong">
+          <CockpitPanel tone="emphasis" className="p-5 lg:p-6">
             <CardHeader title="Uncertainty envelope" description="Distribution of sampled SER outcomes and resulting pass probability." />
             <CardBody>
               {mc.data ? (
                 <div className="space-y-5">
                   <MonteCarloHistogram data={mc.data} />
                   <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-                    <StatCard label="Mean SER" value={formatNumber(mc.data.ser_mean, 4)} color="green" />
-                    <StatCard label="Std dev" value={formatNumber(mc.data.ser_std, 4)} color="neutral" />
-                    <StatCard label="Pass prob" value={formatPercent(mc.data.pass_probability)} color="blue" />
-                    <StatCard label="P5" value={formatNumber(mc.data.ser_p5, 4)} color="amber" />
-                    <StatCard label="Median" value={formatNumber(mc.data.ser_median, 4)} color="neutral" />
-                    <StatCard label="P95" value={formatNumber(mc.data.ser_p95, 4)} color="amber" />
+                    <MetricTile label="Mean SER" value={formatNumber(mc.data.ser_mean, 4)} />
+                    <MetricTile label="Std dev" value={formatNumber(mc.data.ser_std, 4)} />
+                    <MetricTile label="Pass prob" value={formatPercent(mc.data.pass_probability)} />
+                    <MetricTile label="P5" value={formatNumber(mc.data.ser_p5, 4)} />
+                    <MetricTile label="Median" value={formatNumber(mc.data.ser_median, 4)} />
+                    <MetricTile label="P95" value={formatNumber(mc.data.ser_p95, 4)} />
                   </div>
                 </div>
               ) : (
-                <div className="py-20 text-center text-sm text-surface-400">
-                  Configure the model and run a simulation to populate the histogram.
-                </div>
+                <EmptyConsole copy="Configure the model and run a simulation to populate the histogram." />
               )}
             </CardBody>
-          </Card>
+          </CockpitPanel>
         </div>
       </TabPanel>
 
       <TabPanel tabId="sens" activeTab={activeTab}>
         <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-          <Card tone="strong">
+          <CockpitPanel className="p-5 lg:p-6">
             <CardHeader title="Sensitivity contract" description="Rank which parameters most strongly affect baseline SER." />
             <CardBody>
               <form onSubmit={sensForm.handleSubmit(onSens)} className="grid gap-4 md:grid-cols-2" noValidate>
@@ -201,19 +293,19 @@ export default function SimulationPage() {
                 </div>
               </form>
             </CardBody>
-          </Card>
+          </CockpitPanel>
 
-          <Card tone="strong">
+          <CockpitPanel tone="emphasis" className="p-5 lg:p-6">
             <CardHeader title="Parameter ranking" description="Relative leverage of each modeled parameter against baseline SER." />
             <CardBody>
               {sens.data ? (
                 <div className="space-y-4">
-                  <div className="rounded-2xl border border-white/8 bg-white/5 px-4 py-3">
-                    <p className="metric-kicker">Base SER</p>
+                  <div className="assistant-thread-shell rounded-2xl border border-white/8 px-4 py-3">
+                    <p className="assistant-section-kicker !text-surface-500">Base SER</p>
                     <p className="mt-2 text-2xl font-semibold text-white">{formatNumber(sens.data.base_ser, 4)}</p>
                   </div>
                   {sens.data.parameter_ranking.map((parameter, index) => (
-                    <div key={parameter} className="flex items-center gap-3 rounded-2xl border border-white/8 bg-white/5 px-4 py-3">
+                    <div key={parameter} className="assistant-thread-shell flex items-center gap-3 rounded-2xl border border-white/8 px-4 py-3">
                       <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-xs font-semibold text-white">
                         {index + 1}
                       </span>
@@ -227,18 +319,16 @@ export default function SimulationPage() {
                   ))}
                 </div>
               ) : (
-                <div className="py-20 text-center text-sm text-surface-400">
-                  Run the sensitivity model to rank parameter leverage.
-                </div>
+                <EmptyConsole copy="Run the sensitivity model to rank parameter leverage." />
               )}
             </CardBody>
-          </Card>
+          </CockpitPanel>
         </div>
       </TabPanel>
 
       <TabPanel tabId="ab" activeTab={activeTab}>
         <div className="grid gap-6 xl:grid-cols-[0.95fr_1.05fr]">
-          <Card tone="strong">
+          <CockpitPanel className="p-5 lg:p-6">
             <CardHeader title="Bayesian A/B contract" description="Compare two SER cohorts with posterior probability rather than fixed-threshold rhetoric." />
             <CardBody>
               <form onSubmit={abForm.handleSubmit(onAB)} className="space-y-4" noValidate>
@@ -250,19 +340,19 @@ export default function SimulationPage() {
                 </Button>
               </form>
             </CardBody>
-          </Card>
+          </CockpitPanel>
 
-          <Card tone="strong">
+          <CockpitPanel tone="emphasis" className="p-5 lg:p-6">
             <CardHeader title="Posterior decision" description="Inference result with probability, effect size, and interval." />
             <CardBody>
               {ab.data ? (
                 <div className="space-y-4">
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <StatCard label="Group A mean" value={formatNumber(ab.data.mean_a, 4)} color="amber" />
-                    <StatCard label="Group B mean" value={formatNumber(ab.data.mean_b, 4)} color="green" />
+                    <MetricTile label="Group A mean" value={formatNumber(ab.data.mean_a, 4)} />
+                    <MetricTile label="Group B mean" value={formatNumber(ab.data.mean_b, 4)} />
                   </div>
-                  <div className="rounded-2xl border border-white/8 bg-white/5 px-4 py-4">
-                    <p className="metric-kicker">Decision</p>
+                  <div className="assistant-thread-shell rounded-2xl border border-white/8 px-4 py-4">
+                    <p className="assistant-section-kicker !text-surface-500">Decision</p>
                     <p className="mt-2 text-2xl font-semibold text-white">{ab.data.decision}</p>
                     <p className="mt-3 text-sm leading-6 text-surface-300">
                       P(B better) = {formatPercent(ab.data.prob_b_better)}. Effect size {formatNumber(ab.data.effect_size, 4)} with CI [{formatNumber(ab.data.ci_effect_lower, 4)}, {formatNumber(ab.data.ci_effect_upper, 4)}].
@@ -270,14 +360,25 @@ export default function SimulationPage() {
                   </div>
                 </div>
               ) : (
-                <div className="py-20 text-center text-sm text-surface-400">
-                  Run the Bayesian comparison to populate the decision surface.
-                </div>
+                <EmptyConsole copy="Run the Bayesian comparison to populate the decision surface." />
               )}
             </CardBody>
-          </Card>
+          </CockpitPanel>
         </div>
       </TabPanel>
     </div>
   );
+}
+
+function MetricTile({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="assistant-thread-shell rounded-[22px] border border-white/8 px-4 py-4">
+      <p className="assistant-section-kicker">{label}</p>
+      <p className="mt-3 text-2xl font-semibold text-white">{value}</p>
+    </div>
+  );
+}
+
+function EmptyConsole({ copy }: { copy: string }) {
+  return <div className="py-20 text-center text-sm text-surface-400">{copy}</div>;
 }

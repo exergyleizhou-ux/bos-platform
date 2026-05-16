@@ -1,39 +1,34 @@
 /**
- * BOS Pipeline v9.0 �� Dashboard API Client
+ * BOS Pipeline v9.0 dashboard API client.
  *
- * HTTP functions for dashboard data endpoints.
- * Note: Most dashboard data is fetched directly in useDashboard hooks.
- * This module provides standalone functions for reuse outside hooks.
+ * HTTP helpers for dashboard endpoints.
  */
 
 import client from "@/api/client";
 import type {
   DashboardSummary,
-  SERTrendResponse,
-  SpeciesDistributionResponse,
   GradeDistributionResponse,
   RecentActivityResponse,
+  SERTrendResponse,
+  SpeciesDistributionResponse,
 } from "@/types/dashboard";
 
 export const dashboardApi = {
-  // ���� Summary KPIs ����
+  // Summary KPIs
   summary: async (): Promise<DashboardSummary> => {
-    const { data } = await client.get<DashboardSummary>(
-      "/dashboard/summary",
-    );
+    const { data } = await client.get<DashboardSummary>("/dashboard/summary");
     return data;
   },
 
-  // ���� SER Trend ����
+  // SER trend
   serTrend: async (days: number): Promise<SERTrendResponse> => {
-    const { data } = await client.get<SERTrendResponse>(
-      "/dashboard/ser-trend",
-      { params: { days } },
-    );
+    const { data } = await client.get<SERTrendResponse>("/dashboard/ser-trend", {
+      params: { days },
+    });
     return data;
   },
 
-  // ���� Species Distribution ����
+  // Species distribution
   speciesDistribution: async (): Promise<SpeciesDistributionResponse> => {
     const { data } = await client.get<SpeciesDistributionResponse>(
       "/dashboard/species-distribution",
@@ -41,7 +36,7 @@ export const dashboardApi = {
     return data;
   },
 
-  // ���� Grade Distribution ����
+  // Grade distribution
   gradeDistribution: async (): Promise<GradeDistributionResponse> => {
     const { data } = await client.get<GradeDistributionResponse>(
       "/dashboard/grade-distribution",
@@ -49,10 +44,8 @@ export const dashboardApi = {
     return data;
   },
 
-  // ���� Recent Activity ����
-  recentActivity: async (
-    limit: number = 10,
-  ): Promise<RecentActivityResponse> => {
+  // Recent activity
+  recentActivity: async (limit: number = 10): Promise<RecentActivityResponse> => {
     const { data } = await client.get<RecentActivityResponse>(
       "/dashboard/recent-activity",
       { params: { limit } },

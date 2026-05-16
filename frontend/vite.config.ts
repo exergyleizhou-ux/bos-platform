@@ -1,9 +1,3 @@
-/**
- * BOS Pipeline v9.0 �� Vite Configuration
- *
- * React + SWC plugin, path aliases, proxy, build optimizations.
- */
-
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import { dirname, resolve } from "node:path";
@@ -13,18 +7,15 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   plugins: [react()],
-
-  // ���� Path Aliases ����
   resolve: {
     alias: {
       "@": resolve(__dirname, "src"),
     },
   },
-
-  // ���� Dev Server ����
   server: {
     port: 5173,
     host: true,
+    allowedHosts: true,
     proxy: {
       "/api": {
         target: "http://localhost:8000",
@@ -33,8 +24,6 @@ export default defineConfig({
       },
     },
   },
-
-  // ���� Build ����
   build: {
     target: "es2020",
     outDir: "dist",
@@ -52,7 +41,5 @@ export default defineConfig({
     },
     chunkSizeWarningLimit: 600,
   },
-
-  // ���� Env Prefix ����
   envPrefix: "VITE_",
 });

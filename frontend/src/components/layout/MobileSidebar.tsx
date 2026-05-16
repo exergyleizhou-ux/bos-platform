@@ -4,8 +4,10 @@ import { AnimatePresence, motion } from "framer-motion";
 import { LogOut, Sparkles, X } from "lucide-react";
 
 import { Badge } from "@/components/ui/Badge";
+import { SurfaceTile, surfaceActionButtonClasses, surfaceTileButtonClasses } from "@/components/ui/SurfaceTile";
 import { useAuthStore } from "@/store/authStore";
 import { hasMinimumRole } from "@/types/auth";
+import { translateText } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { NAV_ITEMS } from "@/lib/navigation";
 
@@ -28,7 +30,7 @@ export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
 
   useEffect(() => {
     if (open) onClose();
-  }, [location.pathname]);
+  }, [location.pathname, onClose, open]);
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
@@ -64,16 +66,16 @@ export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
                 </div>
                 <div>
                   <p className="font-display text-sm font-semibold tracking-[0.22em] text-white">
-                    BOS CONTROL
+                    {translateText("BOS")}
                   </p>
-                  <p className="text-xs text-surface-400">Operator console</p>
+                  <p className="text-xs text-surface-400">{translateText("Conversation-first workspace")}</p>
                 </div>
               </div>
 
               <button
                 onClick={onClose}
                 className="rounded-2xl border border-white/10 bg-white/6 p-2 text-surface-300 transition-colors hover:text-white"
-                aria-label="Close menu"
+                aria-label={translateText("Close menu")}
               >
                 <X className="h-5 w-5" />
               </button>
@@ -84,7 +86,7 @@ export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
                 {sections.map((section) => (
                   <div key={section} className="space-y-2">
                     <p className="px-3 text-[0.68rem] font-semibold uppercase tracking-[0.24em] text-surface-500">
-                      {section}
+                      {translateText(section)}
                     </p>
                     <ul className="space-y-1">
                       {visibleItems
@@ -96,17 +98,16 @@ export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
                               className={({ isActive }) =>
                                 cn(
                                   "flex items-start gap-3 rounded-2xl border px-3 py-3 text-sm transition-all duration-150",
-                                  isActive
-                                    ? "border-brand-400/20 bg-brand-500/15 text-white shadow-glow"
-                                    : "border-transparent text-surface-400 hover:border-white/8 hover:bg-white/6 hover:text-white",
+                                  surfaceTileButtonClasses(isActive),
+                                  isActive ? "text-white" : "text-surface-400 hover:text-white",
                                 )
                               }
                             >
                               <span className="mt-0.5 flex-shrink-0">{item.icon}</span>
                               <span className="min-w-0">
-                                <span className="block font-medium">{item.label}</span>
+                                <span className="block font-medium">{translateText(item.label)}</span>
                                 <span className="mt-0.5 block text-xs text-surface-500">
-                                  {item.description}
+                                  {translateText(item.description)}
                                 </span>
                               </span>
                             </NavLink>
@@ -119,17 +120,17 @@ export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
             </div>
 
             <div className="border-t border-white/8 p-4">
-              <div className="premium-panel p-3">
+              <SurfaceTile className="p-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm font-medium text-white">{user?.full_name ?? "Operator"}</p>
+                    <p className="text-sm font-medium text-white">{user?.full_name ?? translateText("Operator")}</p>
                     <p className="text-xs text-surface-400">{user?.role ?? "viewer"}</p>
                   </div>
                   <Badge variant="success" dot>
                     Stable
                   </Badge>
                 </div>
-              </div>
+              </SurfaceTile>
 
               <button
                 onClick={() => {
@@ -137,10 +138,10 @@ export function MobileSidebar({ open, onClose }: MobileSidebarProps) {
                   onClose();
                   navigate("/login");
                 }}
-                className="mt-3 flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium text-surface-400 transition-colors hover:bg-red-500/10 hover:text-red-200"
+                className={cn("mt-3 flex w-full items-center gap-3", surfaceActionButtonClasses("danger"))}
               >
                 <LogOut className="h-5 w-5" />
-                <span>Logout</span>
+                <span>{translateText("Logout")}</span>
               </button>
             </div>
           </motion.aside>

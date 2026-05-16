@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
 
+import { translateText } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 interface ModalProps {
@@ -68,7 +69,7 @@ export function Modal({
         <>
           <motion.div
             key="modal-backdrop"
-            className="fixed inset-0 z-60 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-60 bg-black/68 backdrop-blur-md"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -86,7 +87,7 @@ export function Modal({
               aria-labelledby={title ? "modal-title" : undefined}
               aria-describedby={description ? "modal-desc" : undefined}
               className={cn(
-                "premium-panel-strong glass-border w-full",
+                "premium-panel-strong glass-border assistant-modal-shell w-full",
                 SIZE_MAP[size],
                 className,
               )}
@@ -100,20 +101,20 @@ export function Modal({
                 <div className="flex items-start justify-between gap-4 border-b border-white/8 px-6 py-4">
                   <div>
                     {title ? (
-                      <h2 id="modal-title" className="text-lg font-semibold text-white">
-                        {title}
+                      <h2 id="modal-title" className="assistant-thread-title !text-[1.35rem]">
+                        {translateText(title)}
                       </h2>
                     ) : null}
                     {description ? (
                       <p id="modal-desc" className="mt-0.5 text-sm text-surface-400">
-                        {description}
+                        {translateText(description)}
                       </p>
                     ) : null}
                   </div>
                   <button
                     onClick={onClose}
-                    className="rounded-2xl border border-white/10 bg-white/6 p-2 text-surface-400 transition-colors hover:text-white"
-                    aria-label="Close"
+                    className="assistant-modal-close rounded-2xl border border-white/10 bg-white/6 p-2 text-surface-400 transition-colors hover:text-white"
+                    aria-label={translateText("Close")}
                   >
                     <X className="h-5 w-5" />
                   </button>

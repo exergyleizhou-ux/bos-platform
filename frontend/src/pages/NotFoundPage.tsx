@@ -65,11 +65,11 @@ export default function NotFoundPage() {
 
   return (
     <div className="flex min-h-[70vh] items-center justify-center">
-      <section className="premium-hero w-full max-w-5xl overflow-hidden rounded-[32px] p-8 lg:p-10">
+      <section className="assistant-thread-stage w-full max-w-5xl overflow-hidden rounded-[32px] p-8 lg:p-10">
         <div className="relative z-[1] space-y-8">
           <div className="grid gap-8 xl:grid-cols-[1.05fr_0.95fr] xl:items-end">
             <div className="space-y-4">
-              <p className="text-[0.7rem] font-semibold uppercase tracking-[0.32em] text-brand-300/90">
+              <p className="assistant-section-kicker !text-brand-300/90">
                 Route Fault
               </p>
               <div className="flex items-center gap-4">
@@ -87,18 +87,18 @@ export default function NotFoundPage() {
             </div>
 
             <div className="grid gap-3 text-left sm:grid-cols-3 xl:grid-cols-1">
-              <div className="rounded-2xl border border-white/10 bg-white/6 px-4 py-4">
-                <p className="metric-kicker">Requested path</p>
+              <div className="assistant-thread-shell rounded-2xl border border-white/10 px-4 py-4">
+                <p className="assistant-section-kicker !text-surface-500">Requested path</p>
                 <p className="mt-2 break-all text-sm text-white">{location.pathname}</p>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-white/6 px-4 py-4">
-                <p className="metric-kicker">Segments</p>
+              <div className="assistant-thread-shell rounded-2xl border border-white/10 px-4 py-4">
+                <p className="assistant-section-kicker !text-surface-500">Segments</p>
                 <p className="mt-2 text-sm text-white">
                   {pathSegments.length ? pathSegments.join(" / ") : "root"}
                 </p>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-white/6 px-4 py-4">
-                <p className="metric-kicker">Safe action</p>
+              <div className="assistant-thread-shell rounded-2xl border border-white/10 px-4 py-4">
+                <p className="assistant-section-kicker !text-surface-500">Safe action</p>
                 <p className="mt-2 text-sm text-white">
                   Search a known route below or open the command palette.
                 </p>
@@ -107,7 +107,7 @@ export default function NotFoundPage() {
           </div>
 
           <div className="grid gap-4 xl:grid-cols-[1.2fr_0.8fr]">
-            <div className="rounded-[28px] border border-white/10 bg-white/6 p-5">
+            <div className="assistant-aside-card rounded-[28px] p-5">
               <div className="flex items-center gap-3">
                 <Compass className="h-5 w-5 text-sky-200" />
                 <div>
@@ -199,8 +199,8 @@ export default function NotFoundPage() {
               </div>
             </div>
 
-            <div className="rounded-[28px] border border-white/10 bg-white/6 p-5">
-              <p className="metric-kicker">Immediate actions</p>
+            <div className="assistant-aside-card rounded-[28px] p-5">
+              <p className="assistant-section-kicker">Immediate actions</p>
               <div className="mt-4 flex flex-wrap gap-3">
                 <Button
                   variant="secondary"
@@ -209,8 +209,8 @@ export default function NotFoundPage() {
                 >
                   Go back
                 </Button>
-                <Button leftIcon={<Home className="h-4 w-4" />} onClick={() => navigate("/dashboard")}>
-                  Return to dashboard
+                <Button leftIcon={<Home className="h-4 w-4" />} onClick={() => navigate("/bos")}>
+                  Return to assistant
                 </Button>
                 <Button
                   variant="outline"

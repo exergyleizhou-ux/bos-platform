@@ -1,6 +1,8 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
+import { getLocale, translateText } from "@/lib/i18n";
+
 const EMPTY_VALUE = "N/A";
 
 export function cn(...inputs: ClassValue[]): string {
@@ -33,7 +35,7 @@ export function formatCompact(value: number): string {
 export function formatDate(dateStr: string | null | undefined): string {
   if (!dateStr) return EMPTY_VALUE;
   try {
-    return new Date(dateStr).toLocaleDateString("en-US", {
+    return new Date(dateStr).toLocaleDateString(getLocale(), {
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -46,7 +48,7 @@ export function formatDate(dateStr: string | null | undefined): string {
 export function formatDateTime(dateStr: string | null | undefined): string {
   if (!dateStr) return EMPTY_VALUE;
   try {
-    return new Date(dateStr).toLocaleString("en-US", {
+    return new Date(dateStr).toLocaleString(getLocale(), {
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -60,7 +62,7 @@ export function formatDateTime(dateStr: string | null | undefined): string {
 
 export function formatShortDate(dateStr: string): string {
   try {
-    return new Date(dateStr).toLocaleDateString("en-US", {
+    return new Date(dateStr).toLocaleDateString(getLocale(), {
       month: "short",
       day: "numeric",
     });
@@ -74,19 +76,20 @@ export function formatRelativeTime(dateStr: string): string {
     const now = Date.now();
     const then = new Date(dateStr).getTime();
     const diffSec = Math.floor((now - then) / 1000);
+    const formatter = new Intl.RelativeTimeFormat(getLocale(), { numeric: "auto" });
 
-    if (diffSec < 60) return "just now";
+    if (diffSec < 60) return translateText("just now");
     if (diffSec < 3600) {
       const mins = Math.floor(diffSec / 60);
-      return `${mins} min${mins > 1 ? "s" : ""} ago`;
+      return formatter.format(-mins, "minute");
     }
     if (diffSec < 86400) {
       const hours = Math.floor(diffSec / 3600);
-      return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+      return formatter.format(-hours, "hour");
     }
     if (diffSec < 604800) {
       const days = Math.floor(diffSec / 86400);
-      return `${days} day${days > 1 ? "s" : ""} ago`;
+      return formatter.format(-days, "day");
     }
     return formatDate(dateStr);
   } catch {

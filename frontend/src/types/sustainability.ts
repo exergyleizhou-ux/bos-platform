@@ -1,13 +1,13 @@
 /**
- * BOS Pipeline v9.0 �� Sustainability Types
+ * BOS Pipeline v9.0 sustainability types.
  *
- * TypeScript interfaces for GHG, Water, Energy, TEA, LCA responses.
+ * TypeScript interfaces for GHG, water, energy, TEA, and LCA responses.
  */
 
-// ���� GHG ����
+// GHG
 export interface GHGResponse {
   batch_id: number;
-  total_emissions: number;       // kg CO?e
+  total_emissions: number; // kg CO2e
   process_emissions: number;
   energy_emissions: number;
   transport_emissions: number;
@@ -18,10 +18,10 @@ export interface GHGResponse {
   computation_time_ms: number;
 }
 
-// ���� Water ����
+// Water
 export interface WaterResponse {
   batch_id: number;
-  total_footprint: number;       // litres
+  total_footprint: number; // litres
   blue_water: number;
   green_water: number;
   grey_water: number;
@@ -30,41 +30,41 @@ export interface WaterResponse {
   computation_time_ms: number;
 }
 
-// ���� Energy ����
+// Energy
 export interface EnergyResponse {
   batch_id: number;
-  total_input_energy: number;    // MJ
+  total_input_energy: number; // MJ
   total_output_energy: number;
   net_energy: number;
-  eroi: number;                  // Energy Return On Investment
+  eroi: number;
   fossil_energy: number;
   renewable_energy: number;
   per_kg_larvae: number;
   computation_time_ms: number;
 }
 
-// ���� TEA ����
+// TEA
 export interface TEAResponse {
   batch_id: number;
-  total_cost: number;            // USD
+  total_cost: number; // USD
   total_revenue: number;
   net_profit: number;
-  roi: number;                   // fraction
-  profit_margin: number;         // fraction
+  roi: number;
+  profit_margin: number;
   cost_per_kg_larvae: number;
   revenue_per_kg_larvae: number;
   break_even_kg: number;
   computation_time_ms: number;
 }
 
-// ���� LCA Summary (future) ����
+// LCA summary
 export interface LCASummary {
   batch_id: number;
-  global_warming_potential: number;  // kg CO?e
-  water_depletion: number;           // m3
-  energy_demand: number;             // MJ
-  eutrophication: number;            // kg PO?e
-  acidification: number;             // kg SO?e
-  land_use: number;                  // m2a
+  global_warming_potential: number; // kg CO2e
+  water_depletion: number; // m3
+  energy_demand: number; // MJ
+  eutrophication: number; // kg PO4e
+  acidification: number; // kg SO2e
+  land_use: number;
   computation_time_ms: number;
 }

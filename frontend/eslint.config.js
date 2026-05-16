@@ -1,7 +1,7 @@
 /**
- * BOS Pipeline v9.0 �� ESLint Configuration (Flat Config)
+ * BOS Pipeline v9.0 ESLint flat configuration.
  *
- * TypeScript + React Hooks rules.
+ * Applies TypeScript and React Hooks rules to the frontend source tree.
  */
 
 import js from "@eslint/js";
@@ -10,15 +10,10 @@ import tsParser from "@typescript-eslint/parser";
 import reactHooksPlugin from "eslint-plugin-react-hooks";
 
 export default [
-  // ���� Ignore patterns ����
   {
     ignores: ["dist/**", "node_modules/**", "*.config.js", "*.config.ts"],
   },
-
-  // ���� Base JS rules ����
   js.configs.recommended,
-
-  // ���� TypeScript + React ����
   {
     files: ["src/**/*.{ts,tsx}"],
     languageOptions: {
@@ -34,7 +29,7 @@ export default [
       "react-hooks": reactHooksPlugin,
     },
     rules: {
-      // TypeScript
+      "no-undef": "off",
       ...tsPlugin.configs.recommended.rules,
       "@typescript-eslint/no-unused-vars": [
         "warn",
@@ -45,15 +40,10 @@ export default [
         "warn",
         { prefer: "type-imports" },
       ],
-
-      // React Hooks
       ...reactHooksPlugin.configs.recommended.rules,
-
-      // General
       "no-console": ["warn", { allow: ["warn", "error"] }],
       "no-debugger": "warn",
       "prefer-const": "warn",
     },
   },
 ];
-

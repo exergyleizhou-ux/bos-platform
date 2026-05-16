@@ -1,22 +1,20 @@
 /**
- * BOS Pipeline v9.0 �� Batch Types
+ * BOS Pipeline v9.0 batch types.
  *
  * Type definitions for batch records, filters, and responses.
  */
 
-// ���� Status ����
-export type BatchStatus =
-  | "logged"
-  | "active"
-  | "completed"
-  | "archived"
-  | "failed";
+import type { BatchBosOverview } from "@/types/bos";
 
-// ���� Batch Record ����
+// Status
+export type BatchStatus = "logged" | "active" | "completed" | "archived" | "failed";
+
+// Batch record
 export interface Batch {
   id: number;
   batch_id: string;
   species: string;
+  substrate?: string | null;
   status: BatchStatus;
   dm_in: number;
   dm_out: number;
@@ -39,12 +37,14 @@ export interface Batch {
   updated_at: string;
   ser_value?: number | null;
   grade?: string | null;
+  bos?: BatchBosOverview | null;
 }
 
-// ���� Create / Update ����
+// Create / update
 export interface BatchCreate {
   batch_id: string;
   species: string;
+  substrate?: string;
   dm_in: number;
   dm_out: number;
   n_in?: number;
@@ -67,16 +67,17 @@ export interface BatchUpdate extends Partial<BatchCreate> {
   status?: BatchStatus;
 }
 
-// ���� Filters ����
+// Filters
 export interface BatchFilters {
   search?: string;
   status?: BatchStatus;
   species?: string;
+  substrate?: string;
   sort_by?: string;
   sort_order?: "asc" | "desc";
 }
 
-// ���� Paginated Response ����
+// Paginated response
 export interface BatchListResponse {
   items: Batch[];
   total: number;
@@ -85,7 +86,7 @@ export interface BatchListResponse {
   total_pages: number;
 }
 
-// ���� Stats ����
+// Stats
 export interface BatchStatsResponse {
   total: number;
   by_status: Record<BatchStatus, number>;

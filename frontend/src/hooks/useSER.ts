@@ -1,10 +1,10 @@
 /**
- * BOS Pipeline v9.0 �� SER Hooks
+ * BOS Pipeline v9.0 SER hooks.
  *
  * React Query hooks for SER computation, batch-level results, and history.
  */
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import toast from "react-hot-toast";
 
 import { serApi } from "@/api/serApi";
@@ -12,15 +12,14 @@ import { batchKeys } from "@/hooks/useBatches";
 import { dashboardKeys } from "@/hooks/useDashboard";
 import type { SERComputeRequest } from "@/types/ser";
 
-// ���� Query Keys ����
+// Query keys
 export const serKeys = {
   all: ["ser"] as const,
   result: (batchId: number) => [...serKeys.all, "result", batchId] as const,
-  history: (page: number, size: number) =>
-    [...serKeys.all, "history", page, size] as const,
+  history: (page: number, size: number) => [...serKeys.all, "history", page, size] as const,
 };
 
-// ���� Compute (manual) ����
+// Compute from direct input
 export function useComputeSER() {
   const qc = useQueryClient();
 
@@ -37,7 +36,7 @@ export function useComputeSER() {
   });
 }
 
-// ���� Compute from Batch ����
+// Compute from batch
 export function useComputeSERFromBatch() {
   const qc = useQueryClient();
 
@@ -47,9 +46,7 @@ export function useComputeSERFromBatch() {
       toast.success(`SER: ${result.ser_value.toFixed(4)} (${result.grade})`);
       if (result.batch_id) {
         qc.setQueryData(serKeys.result(result.batch_id), result);
-        qc.invalidateQueries({
-          queryKey: batchKeys.detail(result.batch_id),
-        });
+        qc.invalidateQueries({ queryKey: batchKeys.detail(result.batch_id) });
       }
       qc.invalidateQueries({ queryKey: serKeys.all });
       qc.invalidateQueries({ queryKey: batchKeys.lists() });
@@ -61,7 +58,7 @@ export function useComputeSERFromBatch() {
   });
 }
 
-// ���� Get SER Result for a Batch ����
+// Get SER result for a batch
 export function useSERResult(batchId: number) {
   return useQuery({
     queryKey: serKeys.result(batchId),
@@ -77,7 +74,7 @@ export function useSERResult(batchId: number) {
   });
 }
 
-// ���� History ����
+// History
 export function useSERHistory(page: number, pageSize: number) {
   return useQuery({
     queryKey: serKeys.history(page, pageSize),

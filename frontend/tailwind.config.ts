@@ -1,9 +1,3 @@
-/**
- * BOS Pipeline v9.0 �� Tailwind CSS Configuration
- *
- * Custom theme tokens, fonts, shadows, and animation.
- */
-
 import type { Config } from "tailwindcss";
 
 export default {
@@ -11,7 +5,6 @@ export default {
   darkMode: "class",
   theme: {
     extend: {
-      // ���� Colors ����
       colors: {
         surface: {
           50: "var(--color-surface-50)",
@@ -39,20 +32,9 @@ export default {
           900: "var(--color-brand-900)",
         },
       },
-
-      // ���� Font Family ����
       fontFamily: {
-        sans: [
-          "Aptos",
-          "Segoe UI",
-          "sans-serif",
-        ],
-        display: [
-          "Bahnschrift",
-          "Aptos",
-          "Segoe UI",
-          "sans-serif",
-        ],
+        sans: ["Aptos", "Segoe UI", "sans-serif"],
+        display: ["Bahnschrift", "Aptos", "Segoe UI", "sans-serif"],
         mono: [
           "JetBrains Mono",
           "Fira Code",
@@ -62,15 +44,11 @@ export default {
           "monospace",
         ],
       },
-
-      // ���� Box Shadows ����
       boxShadow: {
         card: "var(--shadow-card)",
         "card-hover": "var(--shadow-card-hover)",
         glow: "var(--shadow-glow)",
       },
-
-      // ���� Animation ����
       animation: {
         "fade-in": "fade-in 0.2s ease-out",
         "spin-slow": "spin-slow 2s linear infinite",
@@ -91,26 +69,18 @@ export default {
           "100%": { boxShadow: "0 0 0 0 rgb(17 173 130 / 0)" },
         },
       },
-
-      // ���� Spacing / Sizing ����
       spacing: {
         "18": "4.5rem",
         "88": "22rem",
         "112": "28rem",
         "128": "32rem",
       },
-
-      // ���� Typography ����
       fontSize: {
         "2xs": ["0.625rem", { lineHeight: "0.875rem" }],
       },
-
-      // ���� Border Radius ����
       borderRadius: {
         "4xl": "2rem",
       },
-
-      // ���� Z-Index ����
       zIndex: {
         "60": "60",
         "70": "70",
@@ -119,4 +89,3 @@ export default {
   },
   plugins: [],
 } satisfies Config;
-

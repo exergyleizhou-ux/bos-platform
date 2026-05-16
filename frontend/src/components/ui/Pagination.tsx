@@ -1,15 +1,12 @@
 /**
- * BOS Pipeline v9.0 �� Pagination Component
+ * BOS Pipeline v9.0 pagination component.
  *
  * Page navigation with first/prev/next/last buttons and page info.
  */
 
-import {
-  ChevronLeft,
-  ChevronRight,
-  ChevronsLeft,
-  ChevronsRight,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+
+import { translateText } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 interface PaginationProps {
@@ -35,53 +32,37 @@ export function Pagination({
   const end = Math.min(page * pageSize, total);
 
   return (
-    <div
-      className={cn(
-        "flex flex-col items-center justify-between gap-3 sm:flex-row",
-        className,
-      )}
-    >
-      {/* Info */}
+    <div className={cn("flex flex-col items-center justify-between gap-3 sm:flex-row", className)}>
       <p className="text-xs text-surface-400 dark:text-surface-500">
-        Showing{" "}
+        {translateText("Showing")}{" "}
         <span className="font-medium text-surface-600 dark:text-surface-300">
-          {start}�C{end}
+          {start}-{end}
         </span>{" "}
-        of{" "}
-        <span className="font-medium text-surface-600 dark:text-surface-300">
-          {total}
-        </span>{" "}
-        results
+        {translateText("of")}{" "}
+        <span className="font-medium text-surface-600 dark:text-surface-300">{total}</span>{" "}
+        {translateText("results")}
       </p>
 
-      {/* Buttons */}
       <div className="flex items-center gap-1">
-        {/* First */}
-        <PageButton
-          onClick={() => onPageChange(1)}
-          disabled={page <= 1}
-          aria-label="First page"
-        >
+        <PageButton onClick={() => onPageChange(1)} disabled={page <= 1} aria-label={translateText("First page")}>
           <ChevronsLeft className="h-3.5 w-3.5" />
         </PageButton>
 
-        {/* Previous */}
         <PageButton
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
-          aria-label="Previous page"
+          aria-label={translateText("Previous page")}
         >
           <ChevronLeft className="h-3.5 w-3.5" />
         </PageButton>
 
-        {/* Page numbers */}
         {getPageNumbers(page, totalPages).map((p, i) =>
           p === "..." ? (
             <span
               key={`ellipsis-${i}`}
               className="flex h-8 w-8 items-center justify-center text-xs text-surface-400"
             >
-              ��
+              ...
             </span>
           ) : (
             <PageButton
@@ -94,20 +75,18 @@ export function Pagination({
           ),
         )}
 
-        {/* Next */}
         <PageButton
           onClick={() => onPageChange(page + 1)}
           disabled={page >= totalPages}
-          aria-label="Next page"
+          aria-label={translateText("Next page")}
         >
           <ChevronRight className="h-3.5 w-3.5" />
         </PageButton>
 
-        {/* Last */}
         <PageButton
           onClick={() => onPageChange(totalPages)}
           disabled={page >= totalPages}
-          aria-label="Last page"
+          aria-label={translateText("Last page")}
         >
           <ChevronsRight className="h-3.5 w-3.5" />
         </PageButton>
@@ -116,10 +95,8 @@ export function Pagination({
   );
 }
 
-// ���� Page Button ����
-
-interface PageButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
+// Page button
+interface PageButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   active?: boolean;
 }
 
@@ -148,12 +125,8 @@ function PageButton({
   );
 }
 
-// ���� Page Number Generator ����
-
-function getPageNumbers(
-  current: number,
-  total: number,
-): (number | "...")[] {
+// Page number generator
+function getPageNumbers(current: number, total: number): (number | "...")[] {
   if (total <= 7) {
     return Array.from({ length: total }, (_, i) => i + 1);
   }
@@ -172,6 +145,5 @@ function getPageNumbers(
   if (current < total - 2) pages.push("...");
 
   pages.push(total);
-
   return pages;
 }

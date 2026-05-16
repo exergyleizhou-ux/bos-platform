@@ -5,8 +5,9 @@ import { Plus, Search } from "lucide-react";
 
 import { useAuthStore } from "@/store/authStore";
 import { useUIStore } from "@/store/uiStore";
+import { SurfaceTile, SurfaceTileButton } from "@/components/ui/SurfaceTile";
 import { hasMinimumRole } from "@/types/auth";
-import { cn } from "@/lib/utils";
+import { translateText } from "@/lib/i18n";
 import { NAV_ITEMS } from "@/lib/navigation";
 
 interface CommandItem {
@@ -127,7 +128,7 @@ export function CommandPalette() {
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Search pages, functions, and command surfaces"
+                  placeholder={translateText("Search pages, functions, and command surfaces")}
                   className="w-full bg-transparent text-sm text-white placeholder:text-surface-500 focus:outline-none"
                 />
                 <span className="rounded-lg border border-white/10 bg-white/6 px-2 py-1 text-[10px] text-surface-400">
@@ -138,36 +139,32 @@ export function CommandPalette() {
               <div ref={listRef} className="max-h-[28rem] overflow-y-auto px-2 py-2">
                 {filtered.length ? (
                   filtered.map((item, index) => (
-                    <button
+                    <SurfaceTileButton
                       key={item.id}
-                      data-index={index}
                       onClick={() => {
                         item.action();
                         close();
                       }}
                       onMouseEnter={() => setActiveIndex(index)}
-                      className={cn(
-                        "flex w-full items-start gap-3 rounded-2xl border px-3 py-3 text-left transition-all duration-150",
-                        index === activeIndex
-                          ? "border-brand-400/20 bg-brand-500/15 text-white shadow-glow"
-                          : "border-transparent text-surface-300 hover:border-white/8 hover:bg-white/6 hover:text-white",
-                      )}
+                      data-index={index}
+                      selected={index === activeIndex}
+                      className="flex w-full items-start gap-3 px-3 py-3 text-surface-300 hover:text-white"
                     >
                       <span className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-2xl border border-white/10 bg-white/6">
                         {item.icon}
                       </span>
                       <span className="min-w-0">
-                        <span className="block text-sm font-medium">{item.label}</span>
+                        <span className="block text-sm font-medium">{translateText(item.label)}</span>
                         <span className="mt-1 block text-xs text-surface-500">
-                          {item.description}
+                          {translateText(item.description)}
                         </span>
                       </span>
-                    </button>
+                    </SurfaceTileButton>
                   ))
                 ) : (
-                  <div className="px-4 py-10 text-center text-sm text-surface-400">
-                    No command surfaces matched "{query}".
-                  </div>
+                  <SurfaceTile className="mx-2 px-4 py-10 text-center text-sm text-surface-400">
+                    {translateText("No command surfaces matched")} "{query}".
+                  </SurfaceTile>
                 )}
               </div>
             </motion.div>

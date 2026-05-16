@@ -1,20 +1,22 @@
 /**
- * BOS Pipeline v9.0 �� Login Layout
+ * BOS Pipeline v9.0 -Login Layout
  *
  * Minimal layout wrapper for the login page (no sidebar, no top bar).
  */
 
 import { Outlet, Navigate } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
+import { useUIStore } from "@/store/uiStore";
 
 export function LoginLayout() {
-  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const user = useAuthStore((s) => s.user);
+ const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+ const user = useAuthStore((s) => s.user);
+ const loginTransitionActive = useUIStore((s) => s.loginTransitionActive);
 
-  // If already authenticated, redirect to dashboard
-  if (isAuthenticated && user) {
-    return <Navigate to="/dashboard" replace />;
+  // If already authenticated, redirect to the assistant first
+  if (isAuthenticated && user && !loginTransitionActive) {
+  return <Navigate to="/bos" replace />;
   }
 
-  return <Outlet />;
+ return <Outlet />;
 }

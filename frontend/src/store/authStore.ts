@@ -1,14 +1,14 @@
 /**
- * BOS Pipeline v9.0 �� Auth Store (Zustand)
+ * BOS Pipeline v9.0 auth store.
  *
- * Manages authentication state: tokens, user profile, login/logout.
+ * Manages authentication state: tokens, user profile, and login/logout actions.
  */
 
 import { create } from "zustand";
-import { persist, createJSONStorage } from "zustand/middleware";
+import { createJSONStorage, persist } from "zustand/middleware";
+
 import client from "@/api/client";
 
-// ���� Types ����
 export interface AuthUser {
   id: number;
   username: string;
@@ -30,20 +30,16 @@ interface LoginPayload {
 }
 
 interface AuthState {
-  // State
   accessToken: string | null;
   refreshToken: string | null;
   user: AuthUser | null;
   isLoading: boolean;
   error: string | null;
-
-  // Computed
   isAuthenticated: boolean;
-
-  // Actions
   login: (payload: LoginPayload) => Promise<void>;
   logout: () => void;
   fetchProfile: () => Promise<void>;
+  setUser: (user: AuthUser | null) => void;
   setTokens: (access: string, refresh: string) => void;
   clearError: () => void;
 }
@@ -51,7 +47,7 @@ interface AuthState {
 export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
-      // ���� Initial State ����
+      // Initial state
       accessToken: null,
       refreshToken: null,
       user: null,
@@ -59,7 +55,7 @@ export const useAuthStore = create<AuthState>()(
       error: null,
       isAuthenticated: false,
 
-      // ���� Login ����
+      // Login
       login: async (payload) => {
         set({ isLoading: true, error: null });
         try {
@@ -72,12 +68,12 @@ export const useAuthStore = create<AuthState>()(
             error: null,
           });
 
-          // Fetch profile
           await get().fetchProfile();
         } catch (err: unknown) {
           const message =
-            (err as { response?: { data?: { detail?: string } } })?.response
-              ?.data?.detail ?? "Login failed";
+            (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ??
+            "Login failed";
+
           set({
             accessToken: null,
             refreshToken: null,
@@ -91,7 +87,7 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      // ���� Logout ����
+      // Logout
       logout: () => {
         set({
           accessToken: null,
@@ -102,7 +98,7 @@ export const useAuthStore = create<AuthState>()(
         });
       },
 
-      // ���� Fetch Profile ����
+      // Fetch profile
       fetchProfile: async () => {
         const token = get().accessToken;
         if (!token) return;
@@ -112,14 +108,20 @@ export const useAuthStore = create<AuthState>()(
           const { data } = await client.get<AuthUser>("/auth/me");
           set({ user: data, isAuthenticated: true });
         } catch {
-          // Token may be expired �� logout
           get().logout();
         } finally {
           set({ isLoading: false });
         }
       },
 
-      // ���� Set Tokens (for refresh) ����
+      setUser: (user) => {
+        set({
+          user,
+          isAuthenticated: !!user || !!get().accessToken,
+        });
+      },
+
+      // Set tokens
       setTokens: (access, refresh) => {
         set({
           accessToken: access,
@@ -128,7 +130,7 @@ export const useAuthStore = create<AuthState>()(
         });
       },
 
-      // ���� Clear Error ����
+      // Clear error
       clearError: () => set({ error: null }),
     }),
     {

@@ -1,16 +1,16 @@
 /**
- * BOS Pipeline v9.0 �� Common Types
+ * BOS Pipeline v9.0 common types.
  *
  * Shared type definitions used across the frontend.
  */
 
-// ���� Sort Config ����
+// Sort config
 export interface SortConfig {
   field: string;
   direction: "asc" | "desc";
 }
 
-// ���� Paginated Response (generic) ����
+// Paginated response
 export interface PaginatedResponse<T> {
   items: T[];
   total: number;
@@ -19,37 +19,37 @@ export interface PaginatedResponse<T> {
   total_pages: number;
 }
 
-// ���� API Error ����
+// API error
 export interface APIError {
   detail: string;
   status_code: number;
   errors?: Record<string, string[]>;
 }
 
-// ���� Select Option ����
+// Select option
 export interface SelectOption {
   value: string;
   label: string;
   disabled?: boolean;
 }
 
-// ���� Key-Value Pair ����
+// Key-value pair
 export interface KeyValue<V = string> {
   key: string;
   value: V;
 }
 
-// ���� Date Range ����
+// Date range
 export interface DateRange {
   start: string;
   end: string;
 }
 
-// ���� Generic ID Reference ����
+// Generic ID reference
 export interface IdRef {
   id: number;
   label: string;
 }
 
-// ���� Export Format ����
+// Export format
 export type ExportFormat = "csv" | "json" | "parquet";

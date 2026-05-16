@@ -1,10 +1,9 @@
 /**
- * BOS Pipeline v9.0 �� SER Types
+ * BOS Pipeline v9.0 SER types.
  *
  * Type definitions for SER computation, results, and grading.
  */
 
-// ���� Compute Request ����
 export interface SERComputeRequest {
   dm_in: number;
   dm_out: number;
@@ -18,7 +17,6 @@ export interface SERComputeRequest {
   batch_id?: number;
 }
 
-// ���� Compute Response ����
 export interface SERComputeResponse {
   ser_value: number;
   eer: number;
@@ -31,7 +29,6 @@ export interface SERComputeResponse {
   computed_at: string;
 }
 
-// ���� Stored Result (from DB) ����
 export interface SERResult {
   id: number;
   batch_id: number;
@@ -45,7 +42,6 @@ export interface SERResult {
   computed_at: string;
 }
 
-// ���� History Response ����
 export interface SERHistoryResponse {
   items: SERHistoryItem[];
   total: number;
@@ -66,30 +62,22 @@ export interface SERHistoryItem {
   computed_at: string;
 }
 
-// ���� Grade Helpers ����
-
 export const GRADE_THRESHOLDS = [
-  { grade: "A+", max: 0.05 },
-  { grade: "A", max: 0.08 },
-  { grade: "B", max: 0.12 },
-  { grade: "C", max: 0.18 },
-  { grade: "D", max: 0.25 },
+  { grade: "A+", min: 0.25 },
+  { grade: "A", min: 0.2 },
+  { grade: "B", min: 0.15 },
+  { grade: "C", min: 0.1 },
+  { grade: "D", min: 0.05 },
 ] as const;
 
-/**
- * Map SER value to letter grade.
- */
 export function scoreToGrade(ser: number | null): string {
-  if (ser === null || ser === undefined) return "��";
-  for (const { grade, max } of GRADE_THRESHOLDS) {
-    if (ser <= max) return grade;
+  if (ser === null || ser === undefined) return "--";
+  for (const { grade, min } of GRADE_THRESHOLDS) {
+    if (ser >= min) return grade;
   }
   return "F";
 }
 
-/**
- * Get color for a given grade.
- */
 export function getGradeColor(grade: string): string {
   const colors: Record<string, string> = {
     "A+": "#059669",
@@ -102,10 +90,6 @@ export function getGradeColor(grade: string): string {
   return colors[grade] ?? "#94a3b8";
 }
 
-/**
- * Whether a SER value passes (grade B or better, i.e. �� 0.12).
- */
 export function serPasses(ser: number): boolean {
-  return ser <= 0.12;
+  return ser >= 0.15;
 }
-

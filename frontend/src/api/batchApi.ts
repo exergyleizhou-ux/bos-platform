@@ -1,21 +1,21 @@
 /**
- * BOS Pipeline v9.0 �� Batch API Client
+ * BOS Pipeline v9.0 batch API client.
  *
- * HTTP functions for batch CRUD, export, and aggregation.
+ * HTTP helpers for batch CRUD, export, and aggregation.
  */
 
 import client from "@/api/client";
 import type {
   Batch,
   BatchCreate,
-  BatchUpdate,
-  BatchListResponse,
   BatchFilters,
+  BatchListResponse,
   BatchStatsResponse,
+  BatchUpdate,
 } from "@/types/batch";
 
 export const batchApi = {
-  // ���� List ����
+  // List
   list: async (
     page: number,
     pageSize: number,
@@ -28,6 +28,7 @@ export const batchApi = {
         search: filters?.search,
         status: filters?.status,
         species: filters?.species,
+        substrate: filters?.substrate,
         sort_by: filters?.sort_by,
         sort_order: filters?.sort_order,
       },
@@ -35,30 +36,30 @@ export const batchApi = {
     return data;
   },
 
-  // ���� Detail ����
+  // Detail
   get: async (id: number): Promise<Batch> => {
     const { data } = await client.get<Batch>(`/batches/${id}`);
     return data;
   },
 
-  // ���� Create ����
+  // Create
   create: async (payload: BatchCreate): Promise<Batch> => {
     const { data } = await client.post<Batch>("/batches", payload);
     return data;
   },
 
-  // ���� Update ����
+  // Update
   update: async (id: number, payload: BatchUpdate): Promise<Batch> => {
     const { data } = await client.patch<Batch>(`/batches/${id}`, payload);
     return data;
   },
 
-  // ���� Delete ����
+  // Delete
   delete: async (id: number): Promise<void> => {
     await client.delete(`/batches/${id}`);
   },
 
-  // ���� Export ����
+  // Export
   export: async (params: {
     format: "csv" | "json" | "parquet";
     filters?: BatchFilters;
@@ -69,13 +70,14 @@ export const batchApi = {
         search: params.filters?.search,
         status: params.filters?.status,
         species: params.filters?.species,
+        substrate: params.filters?.substrate,
       },
       responseType: "blob",
     });
     return data;
   },
 
-  // ���� Stats ����
+  // Stats
   stats: async (): Promise<BatchStatsResponse> => {
     const { data } = await client.get<BatchStatsResponse>("/batches/stats");
     return data;

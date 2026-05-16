@@ -27,6 +27,8 @@ const SustainabilityPage = lazy(() => import("@/pages/SustainabilityPage"));
 const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
 const AdminPage = lazy(() => import("@/pages/AdminPage"));
 const NotFoundPage = lazy(() => import("@/pages/NotFoundPage"));
+const BOSAssistantV1Page = lazy(() => import("@/pages/BOSAssistantV1Page"));
+const BOSAssistantV2Page = lazy(() => import("@/pages/BOSAssistantV2Page"));
 
 // ���� Suspense Wrapper ����
 function SuspenseWrap({ children }: { children: React.ReactNode }) {
@@ -67,6 +69,22 @@ export const router = createBrowserRouter([
         element: (
           <SuspenseWrap>
             <DashboardPage />
+          </SuspenseWrap>
+        ),
+      },
+      {
+        path: "/bos",
+        element: (
+          <SuspenseWrap>
+            <BOSAssistantV1Page />
+          </SuspenseWrap>
+        ),
+      },
+      {
+        path: "/bos/v2",
+        element: (
+          <SuspenseWrap>
+            <BOSAssistantV2Page />
           </SuspenseWrap>
         ),
       },

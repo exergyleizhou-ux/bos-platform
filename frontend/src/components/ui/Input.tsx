@@ -1,5 +1,6 @@
 import { forwardRef, type InputHTMLAttributes, type ReactNode } from "react";
 
+import { translateText } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
@@ -34,7 +35,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             htmlFor={inputId}
             className="mb-1.5 block text-sm font-medium text-surface-300"
           >
-            {label}
+            {translateText(label)}
             {required ? <span className="ml-0.5 text-red-400">*</span> : null}
           </label>
         ) : null}
@@ -50,12 +51,13 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             className={cn(
-              "block w-full rounded-2xl border bg-white/6 px-3 py-2.5 text-sm text-white transition-colors",
+              "block w-full rounded-[20px] border px-3.5 py-3 text-sm text-white transition-all duration-150",
+              "bg-[linear-gradient(180deg,rgba(255,250,241,0.08),rgba(255,255,255,0.04))]",
               "placeholder:text-surface-500 focus:outline-none focus:ring-2 focus:ring-offset-0",
               "disabled:cursor-not-allowed disabled:opacity-50",
               error
-                ? "border-red-400/30 focus:border-red-400 focus:ring-red-400/25"
-                : "border-white/10 focus:border-brand-400/40 focus:ring-brand-400/20",
+                ? "border-red-400/24 focus:border-red-400 focus:ring-red-400/20"
+                : "border-white/8 focus:border-brand-400/28 focus:ring-brand-400/14 hover:border-white/12",
               leftIcon && "pl-10",
               rightIcon && "pr-10",
               className,
@@ -69,6 +71,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
                   : undefined
             }
             {...props}
+            placeholder={props.placeholder ? translateText(props.placeholder) : props.placeholder}
           />
 
           {rightIcon ? (
@@ -80,13 +83,13 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
 
         {error ? (
           <p id={`${inputId}-error`} className="mt-1 text-xs text-red-300" role="alert">
-            {error}
+            {translateText(error)}
           </p>
         ) : null}
 
         {!error && helperText ? (
           <p id={`${inputId}-helper`} className="mt-1 text-xs text-surface-500">
-            {helperText}
+            {translateText(helperText)}
           </p>
         ) : null}
       </div>

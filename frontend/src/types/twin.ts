@@ -1,61 +1,82 @@
 /**
- * BOS Pipeline v9.0 �� Digital Twin Types
+ * BOS Pipeline v9.0 digital twin types.
  *
- * Type definitions for digital twin models, parameters, and simulation.
+ * Frontend-facing twin shapes plus backend contract types used by the API adapter.
  */
 
-// �T�T�T�T�T�T�T�T�T�T�T Twin Model �T�T�T�T�T�T�T�T�T�T�T
-
+// Normalized twin model consumed by the current frontend pages.
 export interface Twin {
   id: number;
+  twin_id: string;
   name: string;
   description: string | null;
   species: string | null;
+  is_active: boolean;
   parameters: TwinParameters;
-  created_at: string;
-  updated_at: string;
-  owner_id: number;
+  state: TwinState;
+  config: Record<string, unknown>;
+  created_at: string | null;
+  updated_at: string | null;
+  owner_id: number | null;
+  tenant_id: number | null;
+  version: number;
+}
+
+export interface TwinState {
+  biomass: number;
+  substrate: number;
+  temperature: number;
+  moisture: number;
+  nitrogen: number;
+  timestamp_hours: number;
 }
 
 export interface TwinParameters {
-  mu_max: number;         // Maximum specific growth rate (1/h)
-  ks: number;             // Half-saturation constant (kg)
-  yield_coeff: number;    // Yield coefficient (kg biomass / kg substrate)
-  maintenance: number;    // Maintenance coefficient (1/h)
-  temp_opt: number;       // Optimal temperature (��C)
-  temp_range: number;     // Temperature tolerance (��C)
-  moisture_opt: number;   // Optimal moisture (%)
-  moisture_range: number; // Moisture tolerance (%)
-  initial_biomass: number; // Starting biomass (kg)
-  initial_substrate: number; // Starting substrate (kg)
+  mu_max: number;
+  ks: number;
+  yield_coeff: number;
+  maintenance: number;
+  temp_opt: number;
+  temp_range: number;
+  moisture_opt: number;
+  moisture_range: number;
+  initial_biomass: number;
+  initial_substrate: number;
 }
 
 export const DEFAULT_TWIN_PARAMETERS: TwinParameters = {
-  mu_max: 0.15,
-  ks: 0.5,
-  yield_coeff: 0.35,
-  maintenance: 0.01,
-  temp_opt: 28,
+  mu_max: 0.025,
+  ks: 5.0,
+  yield_coeff: 0.22,
+  maintenance: 0.001,
+  temp_opt: 25,
   temp_range: 5,
-  moisture_opt: 65,
+  moisture_opt: 60,
   moisture_range: 10,
-  initial_biomass: 0.1,
+  initial_biomass: 0.5,
   initial_substrate: 10.0,
 };
 
-// �T�T�T�T�T�T�T�T�T�T�T Twin Create / Update �T�T�T�T�T�T�T�T�T�T�T
-
+// Frontend create / update payloads.
 export interface TwinCreate {
+  twin_id?: string;
   name: string;
   description?: string;
   species?: string;
+  config?: Record<string, unknown>;
   parameters?: Partial<TwinParameters>;
 }
 
-export interface TwinUpdate extends Partial<TwinCreate> {}
+export interface TwinUpdate {
+  name?: string;
+  description?: string;
+  species?: string;
+  is_active?: boolean;
+  config?: Record<string, unknown>;
+  parameters?: Partial<TwinParameters>;
+}
 
-// �T�T�T�T�T�T�T�T�T�T�T Twin List Response �T�T�T�T�T�T�T�T�T�T�T
-
+// Shared list response.
 export interface TwinListResponse {
   items: Twin[];
   total: number;
@@ -64,8 +85,7 @@ export interface TwinListResponse {
   total_pages: number;
 }
 
-// �T�T�T�T�T�T�T�T�T�T�T Simulation �T�T�T�T�T�T�T�T�T�T�T
-
+// Frontend-friendly simulation payload consumed by the current page.
 export interface TwinSimulateRequest {
   duration_hours: number;
   time_step: number;
@@ -86,10 +106,153 @@ export interface TwinSimulateResponse {
 }
 
 export interface TwinTrajectoryPoint {
-  time: number;       // hours
-  biomass: number;    // kg
-  substrate: number;  // kg
-  growth_rate: number; // 1/h
-  temperature: number; // ��C
-  moisture: number;    // %
+  time: number;
+  biomass: number;
+  substrate: number;
+  growth_rate: number;
+  temperature: number;
+  moisture: number;
+}
+
+export interface TwinPredictRequest {
+  dt?: number;
+  feed_rate?: number;
+  ventilation?: number;
+  heating?: number;
+}
+
+export interface TwinPredictResponse {
+  state: TwinState;
+  growth_rate: number;
+  ser_instantaneous: number;
+  timestamp_hours: number;
+  version: number;
+}
+
+export interface TwinObservationUpdateRequest {
+  weight?: number;
+  temperature?: number;
+  moisture?: number;
+}
+
+export interface TwinObservationUpdateResponse {
+  state: TwinState;
+  innovation: number[];
+  version: number;
+}
+
+// Backend contract types used only by the adapter layer.
+export interface BackendTwinState {
+  biomass?: number;
+  substrate?: number;
+  temperature?: number;
+  moisture?: number;
+  nitrogen?: number;
+  timestamp_hours?: number;
+}
+
+export interface BackendTwinParameters {
+  mu_max?: number;
+  K_s?: number;
+  Y?: number;
+  k_death?: number;
+  tau_T?: number;
+  tau_M?: number;
+  T_env?: number;
+  M_env?: number;
+  k_n?: number;
+  c_p?: number;
+  Q_met_coeff?: number;
+  evap_rate?: number;
+  Q_heat_coeff?: number;
+}
+
+export interface BackendTwinResponse {
+  id: number;
+  twin_id: string;
+  name: string;
+  species: string;
+  is_active: boolean;
+  state?: BackendTwinState | null;
+  parameters?: BackendTwinParameters | null;
+  config?: Record<string, unknown> | null;
+  version: number;
+  user_id?: number | null;
+  tenant_id?: number | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export interface BackendTwinCreatePayload {
+  twin_id: string;
+  name: string;
+  species?: string;
+  config?: Record<string, unknown>;
+  parameters?: BackendTwinParameters;
+}
+
+export interface BackendTwinUpdatePayload {
+  name?: string;
+  is_active?: boolean;
+  config?: Record<string, unknown>;
+  parameters?: BackendTwinParameters;
+}
+
+export interface BackendTwinSimulationRequest {
+  inputs_schedule?: Array<Record<string, number>>;
+  initial_biomass?: number;
+  initial_substrate?: number;
+  initial_temperature?: number;
+  initial_moisture?: number;
+  initial_nitrogen?: number;
+  n_steps: number;
+  dt: number;
+}
+
+export interface BackendTwinSimulationTrajectoryPoint {
+  t: number;
+  biomass: number;
+  substrate: number;
+  temperature: number;
+  moisture: number;
+  nitrogen: number;
+  growth_rate: number;
+  ser_instantaneous: number;
+}
+
+export interface BackendTwinSimulationResponse {
+  n_steps: number;
+  trajectory: BackendTwinSimulationTrajectoryPoint[];
+  final_state: BackendTwinState;
+}
+
+export interface BackendTwinPredictRequest {
+  inputs: {
+    feed_rate?: number;
+    ventilation?: number;
+    heating?: number;
+  };
+  dt?: number;
+}
+
+export interface BackendTwinPredictResponse {
+  state: BackendTwinState;
+  growth_rate: number;
+  ser_instantaneous: number;
+  timestamp_hours: number;
+  version: number;
+}
+
+export interface BackendTwinObservationUpdateRequest {
+  observations: {
+    weight?: number;
+    temperature?: number;
+    moisture?: number;
+  };
+}
+
+export interface BackendTwinObservationUpdateResponse {
+  state: BackendTwinState;
+  innovation: number[];
+  version: number;
 }

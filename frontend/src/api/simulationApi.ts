@@ -1,26 +1,24 @@
 /**
- * BOS Pipeline v9.0 �� Simulation API Client
+ * BOS Pipeline v9.0 simulation API client.
  *
- * HTTP functions for Monte Carlo, Sensitivity, Bayesian A/B, and Forecast.
+ * HTTP helpers for Monte Carlo, sensitivity, Bayesian A/B, and forecast endpoints.
  */
 
 import client from "@/api/client";
 import type {
-  MonteCarloRequest,
-  MonteCarloResponse,
-  SensitivityRequest,
-  SensitivityResponse,
   BayesianABRequest,
   BayesianABResponse,
   ForecastRequest,
   ForecastResponse,
+  MonteCarloRequest,
+  MonteCarloResponse,
+  SensitivityRequest,
+  SensitivityResponse,
 } from "@/types/simulation";
 
 export const simulationApi = {
-  // ���� Monte Carlo ����
-  monteCarlo: async (
-    payload: MonteCarloRequest,
-  ): Promise<MonteCarloResponse> => {
+  // Monte Carlo
+  monteCarlo: async (payload: MonteCarloRequest): Promise<MonteCarloResponse> => {
     const { data } = await client.post<MonteCarloResponse>(
       "/simulation/monte-carlo",
       payload,
@@ -28,7 +26,7 @@ export const simulationApi = {
     return data;
   },
 
-  // ���� Sensitivity Analysis ����
+  // Sensitivity analysis
   sensitivity: async (
     payload: SensitivityRequest,
   ): Promise<SensitivityResponse> => {
@@ -39,10 +37,8 @@ export const simulationApi = {
     return data;
   },
 
-  // ���� Bayesian A/B ����
-  bayesianAB: async (
-    payload: BayesianABRequest,
-  ): Promise<BayesianABResponse> => {
+  // Bayesian A/B
+  bayesianAB: async (payload: BayesianABRequest): Promise<BayesianABResponse> => {
     const { data } = await client.post<BayesianABResponse>(
       "/simulation/bayesian-ab",
       payload,
@@ -50,7 +46,7 @@ export const simulationApi = {
     return data;
   },
 
-  // ���� Forecast ����
+  // Forecast
   forecast: async (payload: ForecastRequest): Promise<ForecastResponse> => {
     const { data } = await client.post<ForecastResponse>(
       "/simulation/forecast",

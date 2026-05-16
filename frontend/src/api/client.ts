@@ -1,5 +1,5 @@
 /**
- * BOS Pipeline v9.0 �� Axios HTTP Client
+ * BOS Pipeline v9.0 Axios HTTP client.
  *
  * Configured with base URL, auth interceptors, and token refresh logic.
  */
@@ -8,9 +8,10 @@ import axios, {
   type AxiosError,
   type InternalAxiosRequestConfig,
 } from "axios";
+
 import { useAuthStore } from "@/store/authStore";
 
-// ���� Create Instance ����
+// Create instance
 const client = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000/api/v1",
   timeout: 30_000,
@@ -19,7 +20,7 @@ const client = axios.create({
   },
 });
 
-// ���� Request Interceptor: Attach Token ����
+// Request interceptor: attach token
 client.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     const token = useAuthStore.getState().accessToken;
@@ -31,7 +32,7 @@ client.interceptors.request.use(
   (error) => Promise.reject(error),
 );
 
-// ���� Response Interceptor: Refresh on 401 ����
+// Response interceptor: refresh on 401
 let isRefreshing = false;
 let failedQueue: Array<{
   resolve: (token: string) => void;
@@ -56,14 +57,12 @@ client.interceptors.response.use(
       _retry?: boolean;
     };
 
-    // Only attempt refresh on 401, not on login endpoint
     if (
       error.response?.status === 401 &&
       !originalRequest._retry &&
       !originalRequest.url?.includes("/auth/login")
     ) {
       if (isRefreshing) {
-        // Queue request while refresh is in progress
         return new Promise<string>((resolve, reject) => {
           failedQueue.push({ resolve, reject });
         }).then((token) => {
@@ -78,7 +77,6 @@ client.interceptors.response.use(
       isRefreshing = true;
 
       const refreshToken = useAuthStore.getState().refreshToken;
-
       if (!refreshToken) {
         useAuthStore.getState().logout();
         isRefreshing = false;
@@ -89,16 +87,11 @@ client.interceptors.response.use(
         const { data } = await axios.post<{
           access_token: string;
           refresh_token: string;
-        }>(
-          `${client.defaults.baseURL}/auth/refresh`,
-          { refresh_token: refreshToken },
-        );
+        }>(`${client.defaults.baseURL}/auth/refresh`, {
+          refresh_token: refreshToken,
+        });
 
-        useAuthStore.getState().setTokens(
-          data.access_token,
-          data.refresh_token,
-        );
-
+        useAuthStore.getState().setTokens(data.access_token, data.refresh_token);
         processQueue(null, data.access_token);
 
         if (originalRequest.headers) {

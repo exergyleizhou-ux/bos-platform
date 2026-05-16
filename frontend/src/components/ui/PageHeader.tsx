@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { motion } from "framer-motion";
 
 import { Badge } from "@/components/ui/Badge";
+import { translateNodeText, translateText } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { panelReveal } from "@/lib/motion";
 
@@ -43,16 +44,16 @@ export function PageHeader({
           <div className="max-w-3xl space-y-3">
             {eyebrow ? (
               <p className="text-[0.7rem] font-semibold uppercase tracking-[0.32em] text-brand-300/90">
-                {eyebrow}
+                {translateText(eyebrow)}
               </p>
             ) : null}
             <div className="space-y-3">
               <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
-                {title}
+                {translateText(title)}
               </h1>
               {description ? (
                 <p className="max-w-2xl text-sm leading-6 text-surface-300">
-                  {description}
+                  {translateText(description)}
                 </p>
               ) : null}
             </div>
@@ -65,7 +66,7 @@ export function PageHeader({
                     variant={badge.variant ?? "neutral"}
                     className="border border-white/10 bg-white/5 text-white"
                   >
-                    {badge.label}
+                    {translateText(badge.label)}
                   </Badge>
                 ))}
               </div>
@@ -85,13 +86,13 @@ export function PageHeader({
                 className="rounded-2xl border border-white/10 bg-white/6 px-4 py-4 backdrop-blur-sm"
               >
                 <p className="text-[0.68rem] uppercase tracking-[0.24em] text-surface-400">
-                  {stat.label}
+                  {translateText(stat.label)}
                 </p>
                 <div className="mt-3 text-2xl font-semibold text-white">
-                  {stat.value}
+                  {translateNodeText(stat.value)}
                 </div>
                 {stat.hint ? (
-                  <p className="mt-2 text-xs text-surface-400">{stat.hint}</p>
+                  <p className="mt-2 text-xs text-surface-400">{translateText(stat.hint)}</p>
                 ) : null}
               </div>
             ))}
