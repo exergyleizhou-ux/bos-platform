@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� Auth Router Integration Tests
+BOS Pipeline v9.0 — Auth Router Integration Tests
 
 Tests the authentication endpoints end-to-end.
 """

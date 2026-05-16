@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� Mass Balance Engine Unit Tests
+BOS Pipeline v9.0 -Mass Balance Engine Unit Tests
 
 Tests the mass balance reconciliation engine.
 """
@@ -17,7 +17,7 @@ class TestMassBalance:
     """Tests for the mass balance reconciliation engine."""
 
     def test_already_balanced(self):
-        """Input already balanced �� minimal adjustments."""
+        """Input already balanced - minimal adjustments."""
         inp = MassBalanceInput(
             dm_in=10.0,
             dm_larvae=2.3,
@@ -30,12 +30,12 @@ class TestMassBalance:
         )
         result = reconcile_mass_balance(inp)
 
-        # Sum �� 10.0, minimal adjustment needed
+        # Sum - 10.0, minimal adjustment needed
         assert result.closure_pct == pytest.approx(100.0, abs=5.0)
         assert result.engine_version == ENGINE_VERSION
 
     def test_unbalanced_reconciliation(self):
-        """Input with imbalance �� reconciliation adjusts values."""
+        """Input with imbalance - reconciliation adjusts values."""
         inp = MassBalanceInput(
             dm_in=10.0,
             dm_larvae=2.3,
@@ -52,7 +52,7 @@ class TestMassBalance:
         assert result.reconciled_balance_error < result.raw_balance_error
 
     def test_reconciled_closure(self):
-        """After reconciliation, inputs �� outputs."""
+        """After reconciliation, inputs - outputs."""
         inp = MassBalanceInput(
             dm_in=10.0,
             dm_larvae=2.0,
@@ -102,7 +102,7 @@ class TestMassBalance:
             dm_in=10.0,
             dm_larvae=2.3,
             dm_frass=6.5,
-            # dm_gas_loss not provided �� engine estimates
+            # dm_gas_loss not provided - engine estimates
         )
         result = reconcile_mass_balance(inp)
 

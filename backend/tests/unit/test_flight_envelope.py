@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� Flight Envelope Engine Unit Tests
+BOS Pipeline v9.0 -Flight Envelope Engine Unit Tests
 
 Tests the operating envelope check engine.
 """
@@ -17,7 +17,7 @@ class TestFlightEnvelope:
     """Tests for the flight envelope engine."""
 
     def test_optimal_conditions(self):
-        """All parameters within optimal range �� green zone."""
+        """All parameters within optimal range - green zone."""
         inp = FlightEnvelopeInput(
             species="BSF",
             temperature=28.0,
@@ -31,11 +31,11 @@ class TestFlightEnvelope:
         assert result.engine_version == ENGINE_VERSION
 
     def test_safe_conditions(self):
-        """Parameters within safe but not optimal �� yellow zone."""
+        """Parameters within safe but not optimal - yellow zone."""
         inp = FlightEnvelopeInput(
             species="BSF",
             temperature=22.0,  # Below optimal but within safe
-            moisture=55.0,     # Below optimal but within safe
+            moisture=55.0,  # Below optimal but within safe
         )
         result = check_flight_envelope(inp)
 
@@ -43,11 +43,11 @@ class TestFlightEnvelope:
         assert result.overall_zone in ("acceptable", "warning")
 
     def test_outside_envelope(self):
-        """Parameters outside safe range �� red zone, not in envelope."""
+        """Parameters outside safe range - red zone, not in envelope."""
         inp = FlightEnvelopeInput(
             species="BSF",
             temperature=5.0,  # Well below safe range
-            moisture=95.0,    # Well above safe range
+            moisture=95.0,  # Well above safe range
         )
         result = check_flight_envelope(inp)
 

@@ -1,6 +1,7 @@
 import { forwardRef, type SelectHTMLAttributes } from "react";
 import { ChevronDown } from "lucide-react";
 
+import { translateText } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 interface SelectOption {
@@ -41,7 +42,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             htmlFor={selectId}
             className="mb-1.5 block text-sm font-medium text-surface-300"
           >
-            {label}
+            {translateText(label)}
             {required ? <span className="ml-0.5 text-red-400">*</span> : null}
           </label>
         ) : null}
@@ -71,12 +72,12 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           >
             {placeholder ? (
               <option value="" disabled>
-                {placeholder}
+                {translateText(placeholder)}
               </option>
             ) : null}
             {options.map((option) => (
               <option key={option.value} value={option.value} disabled={option.disabled}>
-                {option.label}
+                {translateText(option.label)}
               </option>
             ))}
           </select>
@@ -88,13 +89,13 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
 
         {error ? (
           <p id={`${selectId}-error`} className="mt-1 text-xs text-red-300" role="alert">
-            {error}
+            {translateText(error)}
           </p>
         ) : null}
 
         {!error && helperText ? (
           <p id={`${selectId}-helper`} className="mt-1 text-xs text-surface-500">
-            {helperText}
+            {translateText(helperText)}
           </p>
         ) : null}
       </div>

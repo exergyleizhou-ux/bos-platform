@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� Health Router Integration Tests
+BOS Pipeline v9.0 — Health Router Integration Tests
 
 Tests the health check endpoints.
 """

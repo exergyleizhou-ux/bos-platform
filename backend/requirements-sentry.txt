@@ -1,6 +1,4 @@
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-# BOS Pipeline v9.0 �� Sentry Error Tracking
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# BOS Pipeline v9.0 Sentry dependencies
 # Install alongside requirements.txt:
 #   pip install -r requirements.txt -r requirements-sentry.txt
 

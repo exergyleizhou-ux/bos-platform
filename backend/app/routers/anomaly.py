@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� Anomaly Detection Router
+BOS Pipeline v9.0 — Anomaly Detection Router
 
 API endpoints for multivariate anomaly detection on batches.
 """

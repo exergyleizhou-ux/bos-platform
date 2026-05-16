@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� GHG Balance Router
+BOS Pipeline v9.0 — GHG Balance Router
 
 API endpoints for greenhouse gas balance computation.
 """

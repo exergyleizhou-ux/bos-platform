@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� Tenant Schemas
+BOS Pipeline v9.0 -Tenant Schemas
 """
 
 from datetime import datetime

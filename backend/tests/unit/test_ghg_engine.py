@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� GHG Engine Unit Tests
+BOS Pipeline v9.0 -GHG Engine Unit Tests
 
 Tests the greenhouse gas balance computation engine.
 """
@@ -57,7 +57,7 @@ class TestGHGEngine:
         assert result.biogenic_emissions >= 0
 
     def test_zero_transport(self):
-        """Zero transport �� zero transport emissions."""
+        """Zero transport - zero transport emissions."""
         inp = GHGInput(dm_in=10.0, dm_out=2.3, energy_kwh=50.0, transport_km=0.0)
         result = compute_ghg(inp)
 

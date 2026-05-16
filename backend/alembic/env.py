@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� Alembic Environment Configuration
+BOS Pipeline v9.0 — Alembic Environment Configuration
 
 Supports both offline (SQL generation) and online (direct DB) migrations.
 Uses async engine for online mode.

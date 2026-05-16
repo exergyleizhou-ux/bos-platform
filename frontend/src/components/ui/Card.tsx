@@ -1,6 +1,7 @@
 import { type HTMLAttributes, type ReactNode } from "react";
 import { motion } from "framer-motion";
 
+import { translateNodeText, translateText } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { panelReveal } from "@/lib/motion";
 
@@ -61,9 +62,9 @@ export function CardHeader({
   return (
     <div className={cn("flex items-start justify-between gap-4", className)}>
       <div>
-        <h3 className="text-sm font-semibold text-white">{title}</h3>
+        <h3 className="text-sm font-semibold text-white">{translateText(title)}</h3>
         {description ? (
-          <p className="mt-0.5 text-xs text-surface-400">{description}</p>
+          <p className="mt-0.5 text-xs text-surface-400">{translateText(description)}</p>
         ) : null}
       </div>
       {action ? <div className="flex-shrink-0">{action}</div> : null}
@@ -144,13 +145,13 @@ export function StatCard({
       ) : null}
       <div className="min-w-0">
         <p className="text-xs font-medium uppercase tracking-[0.22em] text-surface-400">
-          {label}
+          {translateText(label)}
         </p>
         <p className="mt-1 text-2xl font-semibold tracking-tight text-white">
-          {value}
+          {translateNodeText(value)}
           {unit ? (
             <span className="ml-1 text-xs font-normal text-surface-400">
-              {unit}
+              {translateText(unit)}
             </span>
           ) : null}
         </p>

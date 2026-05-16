@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� Authentication Schemas
+BOS Pipeline v9.0 authentication schemas.
 """
 
 from typing import Optional
@@ -20,7 +20,7 @@ class TokenResponse(BaseModel):
     access_token: str
     refresh_token: str
     token_type: str = "bearer"
-    expires_in: int  # seconds
+    expires_in: int
 
 
 class RefreshTokenRequest(BaseModel):
@@ -37,5 +37,5 @@ class ChangePasswordRequest(BaseModel):
         ...,
         min_length=8,
         max_length=128,
-        description="Must be ��8 chars with mixed case, digit, and special character",
+        description="Must be at least 8 characters with mixed case, a digit, and a special character",
     )

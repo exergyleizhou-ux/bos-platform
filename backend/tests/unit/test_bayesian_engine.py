@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� Bayesian A/B Testing Engine Unit Tests
+BOS Pipeline v9.0 -Bayesian A/B Testing Engine Unit Tests
 
 Tests the Bayesian hypothesis testing engine.
 """
@@ -17,7 +17,7 @@ class TestBayesianEngine:
     """Tests for the Bayesian A/B testing engine."""
 
     def test_normal_model_clear_winner(self):
-        """Group B clearly better �� high P(B > A)."""
+        """Group B clearly better - high P(B > A)."""
         inp = BayesianABInput(
             group_a_values=[0.15, 0.16, 0.14, 0.17, 0.15, 0.16, 0.14, 0.15, 0.16, 0.15],
             group_b_values=[0.25, 0.26, 0.24, 0.27, 0.25, 0.26, 0.24, 0.25, 0.26, 0.25],
@@ -33,7 +33,7 @@ class TestBayesianEngine:
         assert result.engine_version == ENGINE_VERSION
 
     def test_normal_model_no_difference(self):
-        """Groups identical �� ~50% P(B > A)."""
+        """Groups identical - ~50% P(B > A)."""
         values = [0.20, 0.21, 0.19, 0.20, 0.21, 0.20, 0.19, 0.20, 0.21, 0.20]
         inp = BayesianABInput(
             group_a_values=values,
@@ -76,7 +76,7 @@ class TestBayesianEngine:
         )
         result = run_bayesian_ab(inp)
 
-        # Very small difference �� high probability of practical equivalence
+        # Very small difference - high probability of practical equivalence
         assert result.prob_rope > 0.5
 
     def test_effect_ci(self):
@@ -107,7 +107,7 @@ class TestBayesianEngine:
         assert len(result.effect_histogram_counts) > 0
 
     def test_reproducibility(self):
-        """Same seed �� identical results."""
+        """Same seed - identical results."""
         inp = BayesianABInput(
             group_a_values=[0.15, 0.16, 0.14],
             group_b_values=[0.22, 0.23, 0.21],

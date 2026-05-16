@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� Audit Log Router
+BOS Pipeline v9.0 — Audit Log Router
 
 Provides read access to the audit trail.
 All actions are immutable (append-only).

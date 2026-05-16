@@ -12,7 +12,7 @@
       }
     ]
   },
-  "description": "BOS Pipeline v9.0 �� Application Monitoring Dashboard",
+  "description": "BOS Pipeline v9.0 - Application Monitoring Dashboard",
   "editable": true,
   "gnetId": null,
   "graphTooltip": 1,
@@ -321,7 +321,7 @@
   },
   "timepicker": {},
   "timezone": "browser",
-  "title": "BOS Pipeline �� Application Dashboard",
+  "title": "BOS Pipeline - Application Dashboard",
   "uid": "bos-pipeline-main",
   "version": 1
 }

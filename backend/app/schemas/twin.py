@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� Digital Twin Schemas
+BOS Pipeline v9.0 -Digital Twin Schemas
 """
 
 from datetime import datetime
@@ -56,4 +56,3 @@ class DigitalTwinResponse(BaseModel):
     updated_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
-

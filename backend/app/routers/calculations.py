@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� Calculations Router
+BOS Pipeline v9.0 — Calculations Router
 
 Read-only access to calculation results.
 Calculations are created by the SER, simulation, and other engine routers.
@@ -98,11 +98,11 @@ async def calculation_stats(
     )).scalar() or 0
 
     passed_count = (await db.execute(
-        select(func.count()).where(Calculation.tenant_id == tid, Calculation.passed == True)
+        select(func.count()).where(Calculation.tenant_id == tid, Calculation.passed.is_(True))
     )).scalar() or 0
 
     failed_count = (await db.execute(
-        select(func.count()).where(Calculation.tenant_id == tid, Calculation.passed == False)
+        select(func.count()).where(Calculation.tenant_id == tid, Calculation.passed.is_(False))
     )).scalar() or 0
 
     avg_ser = (await db.execute(

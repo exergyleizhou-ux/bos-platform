@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� Energy Balance Engine Unit Tests
+BOS Pipeline v9.0 -Energy Balance Engine Unit Tests
 
 Tests the energy balance computation engine.
 """
@@ -42,12 +42,10 @@ class TestEnergyEngine:
         )
         result = compute_energy_balance(inp)
 
-        assert result.eroi == pytest.approx(
-            result.total_output_energy / result.total_input_energy, rel=1e-4
-        )
+        assert result.eroi == pytest.approx(result.total_output_energy / result.total_input_energy, rel=1e-4)
 
     def test_more_output_higher_eroi(self):
-        """Higher dm_out (more product) �� better EROI."""
+        """Higher dm_out (more product) - better EROI."""
         inp_low = EnergyInput(dm_in=10.0, dm_out=1.0, electricity_kwh=30.0, heating_kwh=20.0)
         inp_high = EnergyInput(dm_in=10.0, dm_out=3.0, electricity_kwh=30.0, heating_kwh=20.0)
 
@@ -93,7 +91,7 @@ class TestEnergyEngine:
         assert result.per_kg_larvae > 0
 
     def test_zero_energy_input(self):
-        """Zero energy input �� EROI undefined or special case."""
+        """Zero energy input - EROI undefined or special case."""
         inp = EnergyInput(dm_in=10.0, dm_out=2.3, electricity_kwh=0.0, heating_kwh=0.0)
         result = compute_energy_balance(inp)
 

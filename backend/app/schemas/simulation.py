@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� Monte Carlo Simulation Schemas
+BOS Pipeline v9.0 -Monte Carlo Simulation Schemas
 """
 
 from typing import Dict, List, Optional

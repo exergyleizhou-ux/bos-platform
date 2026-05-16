@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� Common Schemas
+BOS Pipeline v9.0 — Common Schemas
 
 Shared response schemas used across multiple routers.
 """

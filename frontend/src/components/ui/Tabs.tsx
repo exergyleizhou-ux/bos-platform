@@ -1,5 +1,6 @@
 import { type ReactNode } from "react";
 
+import { translateText } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 export interface TabItem {
@@ -21,7 +22,7 @@ export function Tabs({ tabs, activeTab, onChange, className }: TabsProps) {
   return (
     <div
       className={cn(
-        "premium-panel inline-flex flex-wrap gap-2 p-2",
+        "assistant-tabs-shell inline-flex flex-wrap gap-2 p-2",
         className,
       )}
       role="tablist"
@@ -42,12 +43,12 @@ export function Tabs({ tabs, activeTab, onChange, className }: TabsProps) {
               "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-300 focus-visible:ring-offset-0",
               "disabled:pointer-events-none disabled:opacity-40",
               isActive
-                ? "border-brand-400/20 bg-brand-500/15 text-white shadow-glow"
-                : "border-transparent text-surface-400 hover:border-white/8 hover:bg-white/6 hover:text-white",
+                ? "assistant-tab-active border-brand-400/20 bg-brand-500/15 text-white shadow-glow"
+                : "assistant-tab-idle border-transparent text-surface-400 hover:border-white/8 hover:bg-white/6 hover:text-white",
             )}
           >
             {tab.icon ? <span className="flex-shrink-0">{tab.icon}</span> : null}
-            <span>{tab.label}</span>
+            <span>{translateText(tab.label)}</span>
 
             {tab.count !== undefined ? (
               <span

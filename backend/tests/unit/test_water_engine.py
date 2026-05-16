@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� Water Footprint Engine Unit Tests
+BOS Pipeline v9.0 -Water Footprint Engine Unit Tests
 
 Tests the water footprint computation engine.
 """
@@ -32,7 +32,7 @@ class TestWaterEngine:
         assert result.engine_version == ENGINE_VERSION
 
     def test_higher_input_higher_footprint(self):
-        """More substrate �� larger water footprint."""
+        """More substrate - larger water footprint."""
         inp_small = WaterInput(dm_in=5.0, dm_out=1.0, water_direct_litres=200.0)
         inp_large = WaterInput(dm_in=20.0, dm_out=4.0, water_direct_litres=800.0)
 
@@ -78,7 +78,7 @@ class TestWaterEngine:
         assert r_high.scarcity_weighted_footprint > r_low.scarcity_weighted_footprint
 
     def test_component_sum(self):
-        """Blue + green + grey �� total (within rounding)."""
+        """Blue + green + grey - total (within rounding)."""
         inp = WaterInput(dm_in=10.0, dm_out=2.3, water_direct_litres=500.0)
         result = compute_water_footprint(inp)
 

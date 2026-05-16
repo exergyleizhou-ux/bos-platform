@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� Forecast Router
+BOS Pipeline v9.0 — Forecast Router
 
 API endpoints for time series forecasting of batch metrics.
 """

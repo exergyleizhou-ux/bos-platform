@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� Calculation Schemas
+BOS Pipeline v9.0 -Calculation Schemas
 """
 
 from datetime import datetime

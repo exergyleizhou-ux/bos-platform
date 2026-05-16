@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� Webhook Delivery Tasks
+BOS Pipeline v9.0 — Webhook Delivery Tasks
 
 Reliable webhook delivery with retries and circuit breaker.
 """
@@ -86,12 +86,12 @@ def deliver_webhook(
     except httpx.TimeoutException as exc:
         logger.warning(f"Webhook {webhook_id} timeout: {exc}")
         _update_webhook_status(webhook_id, success=False)
-        self.retry(exc=exc, countdown=min(30 * (2 ** self.request.retries), 600))
+        self.retry(exc=exc, countdown=min(30 * (2**self.request.retries), 600))
 
     except Exception as exc:
         logger.error(f"Webhook {webhook_id} error: {exc}")
         _update_webhook_status(webhook_id, success=False)
-        self.retry(exc=exc, countdown=min(30 * (2 ** self.request.retries), 600))
+        self.retry(exc=exc, countdown=min(30 * (2**self.request.retries), 600))
 
 
 @shared_task(name="app.tasks.webhook.deliver_pending")

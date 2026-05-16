@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� Water Footprint Router
+BOS Pipeline v9.0 -Water Footprint Router
 
 API endpoints for water footprint computation.
 """
@@ -45,9 +45,7 @@ async def compute_water_endpoint(
     start_time = time.perf_counter()
 
     # Verify batch
-    result = await db.execute(
-        select(Batch).where(Batch.id == body.batch_id, Batch.tenant_id == current_user.tenant_id)
-    )
+    result = await db.execute(select(Batch).where(Batch.id == body.batch_id, Batch.tenant_id == current_user.tenant_id))
     if not result.scalar_one_or_none():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Batch not found")
 

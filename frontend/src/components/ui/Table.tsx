@@ -1,6 +1,7 @@
 import { type HTMLAttributes, type ReactNode } from "react";
 import { ChevronDown, ChevronUp, ChevronsUpDown } from "lucide-react";
 
+import { translateNodeText } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import type { SortConfig } from "@/types/common";
 
@@ -101,7 +102,7 @@ export function TableHeaderCell({
       {...props}
     >
       <span className="inline-flex items-center gap-1">
-        {children}
+        {translateNodeText(children)}
         {sortable ? (
           <span className="flex-shrink-0">
             {direction === "asc" ? (

@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� Mass Balance Router
+BOS Pipeline v9.0 — Mass Balance Router
 
 API endpoints for mass balance reconciliation.
 """

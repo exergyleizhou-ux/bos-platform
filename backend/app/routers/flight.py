@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� Flight Envelope Router
+BOS Pipeline v9.0 — Flight Envelope Router
 
 API endpoints for operating envelope checks.
 """

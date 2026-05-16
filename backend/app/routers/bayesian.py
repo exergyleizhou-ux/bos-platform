@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� Bayesian A/B Testing Router
+BOS Pipeline v9.0 — Bayesian A/B Testing Router
 
 API endpoints for Bayesian hypothesis testing.
 """

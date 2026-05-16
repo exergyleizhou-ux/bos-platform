@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� PID Controller Router
+BOS Pipeline v9.0 — PID Controller Router
 
 API endpoints for PID control simulation and tuning.
 """
