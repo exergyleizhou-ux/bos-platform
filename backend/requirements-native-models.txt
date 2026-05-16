@@ -1,0 +1,15 @@
+# Optional native-model runtime dependencies for BOS.
+# Install these only when you are ready to run frontier open models locally.
+
+huggingface_hub>=0.31.0
+transformers>=4.50.0
+chronos-forecasting>=1.4.1
+ultralytics==8.4.37
+opencv-python==4.10.0.84
+onnxruntime>=1.24.4
+
+# Torch is required for live Chronos / Transformers inference.
+# On Windows or CPU-only targets, install the appropriate wheel for your host:
+# pip install torch --index-url https://download.pytorch.org/whl/cpu
+
+# Timer-S1 is intentionally gated in code because it is a much larger download/runtime footprint.

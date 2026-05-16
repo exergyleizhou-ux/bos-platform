@@ -1,0 +1,16 @@
+# Optional MinerU runtime dependency for staged reference ingestion.
+#
+# Prefer installing these into an isolated runtime rather than the main backend
+# environment:
+#   powershell -ExecutionPolicy Bypass -File backend/scripts/setup_mineru_runtime.ps1
+#
+# The application keeps a fallback parser for rollback-safe staging when the
+# MinerU CLI is unavailable.
+mineru
+
+# MinerU's pipeline backend imports torch even for text-first parsing.
+# Use the CPU wheel unless a GPU runtime is intentionally provisioned.
+torch
+torchvision
+transformers
+shapely
