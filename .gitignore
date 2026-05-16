@@ -79,3 +79,6 @@ secrets/
 *.bak
 tmp/
 temp/
+
+# Phase 0.5 archive of historical stack logs and disposable artifacts
+runtime/_archive/

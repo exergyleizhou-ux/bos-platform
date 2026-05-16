@@ -1,64 +1,103 @@
 """
-BOS Pipeline v9.0 �� Routers Package
+BOS Pipeline v9.0 routers package.
 
 Registers all API routers with the FastAPI application.
+
+Phase 0.5 (2026-05-16): 13 operational routers moved to ``_legacy/`` and
+mounted with ``deprecated=True``. URL prefixes are unchanged so existing
+frontend callers keep working; only OpenAPI metadata is affected.
 """
 
 from fastapi import APIRouter
 
 from app.routers import (
-    admin,
     anomaly,
-    api_keys,
+    assistant,
     audit,
     auth,
     batches,
     bayesian,
-    billing,
-    calibration,
+    bos,
+    bos_kernels,
     calculations,
+    calibration,
+    code,
+    compliance,
     controller,
     dashboard,
     did,
     energy,
+    evidence,
     export,
     feature_flags,
+    final_actions,
+    feedstocks,
     flight,
     forecast,
-    gdpr,
     ghg,
     health,
     lca,
     mass_balance,
+    release_packets,
     risk,
     sensitivity,
     ser,
     simulation,
+    simulation_lab,
     species,
+    sustainability_kernel,
     tea,
-    tenants,
     twin,
-    users,
     water,
-    webhooks,
     websocket_router,
+)
+from app.routers._legacy import (
+    admin,
+    api_keys,
+    billing,
+    external_sources,
+    gdpr,
+    governance,
+    manuscript_references,
+    media,
+    reference_ingestion,
+    tenants,
+    users,
+    webhooks,
+    wechat,
 )
 
 api_router = APIRouter()
 
-# ���� Public / infrastructure ����
+# Public and infrastructure
 api_router.include_router(health.router, prefix="/health", tags=["Health"])
 
-# ���� Auth ����
+# Authentication
 api_router.include_router(auth.router, prefix="/auth", tags=["Authentication"])
 
-# ���� Core CRUD ����
-api_router.include_router(users.router, prefix="/users", tags=["Users"])
-api_router.include_router(tenants.router, prefix="/tenants", tags=["Tenants"])
+# Core CRUD
+api_router.include_router(
+    users.router, prefix="/users", tags=["legacy-users"], deprecated=True,
+)
+api_router.include_router(
+    tenants.router, prefix="/tenants", tags=["legacy-tenants"], deprecated=True,
+)
 api_router.include_router(batches.router, prefix="/batches", tags=["Batches"])
 api_router.include_router(calculations.router, prefix="/calculations", tags=["Calculations"])
+api_router.include_router(bos.router, tags=["BOS"])
+api_router.include_router(assistant.router, tags=["Assistant"])
+api_router.include_router(evidence.router, tags=["Evidence"])
+api_router.include_router(release_packets.router, tags=["Release Packets"])
+api_router.include_router(final_actions.router, tags=["Final Actions"])
+api_router.include_router(
+    governance.router, tags=["legacy-governance"], deprecated=True,
+)
+api_router.include_router(compliance.router, tags=["Compliance"])
+api_router.include_router(sustainability_kernel.router, tags=["Sustainability"])
+api_router.include_router(bos_kernels.router, tags=["BOS Kernels"])
+api_router.include_router(code.router)
 
-# ���� Engine endpoints ����
+# Engine endpoints
 api_router.include_router(ser.router, prefix="/ser", tags=["SER Engine"])
 api_router.include_router(simulation.router, prefix="/simulation", tags=["Monte Carlo"])
 api_router.include_router(ghg.router, prefix="/ghg", tags=["GHG Balance"])
@@ -77,21 +116,53 @@ api_router.include_router(forecast.router, prefix="/forecast", tags=["Forecastin
 api_router.include_router(mass_balance.router, prefix="/mass-balance", tags=["Mass Balance"])
 api_router.include_router(controller.router, prefix="/controller", tags=["PID Controller"])
 api_router.include_router(species.router, prefix="/species", tags=["Species Database"])
+api_router.include_router(feedstocks.router, prefix="/feedstocks", tags=["Feedstock Database"])
+api_router.include_router(
+    manuscript_references.router,
+    prefix="/references",
+    tags=["legacy-manuscript-references"],
+    deprecated=True,
+)
+api_router.include_router(
+    reference_ingestion.router,
+    prefix="/references/ingestion",
+    tags=["legacy-reference-ingestion"],
+    deprecated=True,
+)
+api_router.include_router(
+    external_sources.router,
+    prefix="/external-sources",
+    tags=["legacy-external-sources"],
+    deprecated=True,
+)
+api_router.include_router(simulation_lab.router, prefix="/bos/simulation-lab", tags=["BOS Simulation Lab"])
 
-# ���� Digital twin ����
+# Digital twin
 api_router.include_router(twin.router, prefix="/twin", tags=["Digital Twin"])
 api_router.include_router(twin.router, prefix="/twins", tags=["Digital Twin"])
 
-# ���� Platform management ����
-api_router.include_router(admin.router, prefix="/admin", tags=["Admin"])
+# Platform management
+api_router.include_router(
+    admin.router, prefix="/admin", tags=["legacy-admin"], deprecated=True,
+)
 api_router.include_router(dashboard.router, prefix="/dashboard", tags=["Dashboard"])
 api_router.include_router(export.router, prefix="/export", tags=["Export"])
-api_router.include_router(billing.router, prefix="/billing", tags=["Billing"])
-api_router.include_router(webhooks.router, prefix="/webhooks", tags=["Webhooks"])
-api_router.include_router(api_keys.router, prefix="/api-keys", tags=["API Keys"])
-api_router.include_router(gdpr.router, prefix="/gdpr", tags=["GDPR"])
+api_router.include_router(
+    billing.router, prefix="/billing", tags=["legacy-billing"], deprecated=True,
+)
+api_router.include_router(
+    webhooks.router, prefix="/webhooks", tags=["legacy-webhooks"], deprecated=True,
+)
+api_router.include_router(
+    api_keys.router, prefix="/api-keys", tags=["legacy-api-keys"], deprecated=True,
+)
+api_router.include_router(
+    gdpr.router, prefix="/gdpr", tags=["legacy-gdpr"], deprecated=True,
+)
 api_router.include_router(audit.router, prefix="/audit", tags=["Audit Log"])
 api_router.include_router(feature_flags.router, prefix="/feature-flags", tags=["Feature Flags"])
+api_router.include_router(media.router, tags=["legacy-media"], deprecated=True)
+api_router.include_router(wechat.router, tags=["legacy-wechat"], deprecated=True)
 
-# ���� WebSocket ����
+# WebSocket
 api_router.include_router(websocket_router.router, tags=["WebSocket"])
