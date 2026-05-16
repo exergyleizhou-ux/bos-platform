@@ -1,0 +1,47 @@
+[
+  {
+    "id": "neural_core",
+    "label": "Neural Core",
+    "labelEN": "NEURAL CORE",
+    "ambience": "#00C8D4",
+    "path": "/assets/splats/neural_core.splat",
+    "camPos": [0, 0.5, 5.5],
+    "camLook": [0, 0, 0]
+  },
+  {
+    "id": "reactor_interior",
+    "label": "Reactor Interior",
+    "labelEN": "REACTOR INTERIOR",
+    "ambience": "#00C8D4",
+    "path": "/assets/splats/reactor.splat",
+    "camPos": [0, 1.5, 6],
+    "camLook": [0, 0, 0]
+  },
+  {
+    "id": "synaptic_web",
+    "label": "Synaptic Web",
+    "labelEN": "SYNAPTIC WEB",
+    "ambience": "#00A8B8",
+    "path": "/assets/splats/synaptic.splat",
+    "camPos": [1.5, 1, 5],
+    "camLook": [0, 0, 0]
+  },
+  {
+    "id": "data_void",
+    "label": "Data Void",
+    "labelEN": "DATA VOID",
+    "ambience": "#006878",
+    "path": "/assets/splats/data_void.splat",
+    "camPos": [-2, 0.5, 6],
+    "camLook": [0, 0, 0]
+  },
+  {
+    "id": "bio_matrix",
+    "label": "Bio Matrix",
+    "labelEN": "BIO MATRIX",
+    "ambience": "#00D480",
+    "path": "/assets/splats/bio_matrix.splat",
+    "camPos": [2.5, 1.5, 5.5],
+    "camLook": [0, 0, 0]
+  }
+]
