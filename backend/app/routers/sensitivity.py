@@ -1,7 +1,5 @@
 """
-BOS Pipeline v9.0 �� Sensitivity Analysis Router
-
-API endpoints for global sensitivity analysis.
+BOS Pipeline v9.0 sensitivity analysis router.
 """
 
 import time
@@ -13,8 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_async_session
 from app.deps import require_minimum_role
-from app.models import User, Calculation
 from app.engine.sensitivity_engine import SensitivityInput, run_sensitivity_analysis
+from app.models import Calculation, User
 
 router = APIRouter()
 
@@ -32,7 +30,7 @@ class SensitivityRequest(BaseModel):
             "n_larvae": [10.0, 50.0],
             "n_frass": [5.0, 30.0],
         },
-        description="Parameter name �� [min, max] bounds",
+        description="Parameter name -> [min, max] bounds",
     )
     seed: Optional[int] = None
 
@@ -50,7 +48,6 @@ async def analyze_sensitivity(
     """
     start_time = time.perf_counter()
 
-    # Convert [min, max] lists to tuples
     param_bounds: Dict[str, Tuple[float, float]] = {}
     for name, bounds in body.parameters.items():
         if len(bounds) != 2:
@@ -76,7 +73,6 @@ async def analyze_sensitivity(
             detail={"errors": sa_result.errors},
         )
 
-    # Persist
     calc = Calculation(
         batch_id=None,
         calc_type="sensitivity",
@@ -116,4 +112,3 @@ async def analyze_sensitivity(
         response["morris_sigma"] = sa_result.sigma
 
     return response
-

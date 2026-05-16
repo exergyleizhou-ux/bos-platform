@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� Dashboard Router Integration Tests
+BOS Pipeline v9.0 — Dashboard Router Integration Tests
 
 Tests the dashboard summary and analytics endpoints.
 """
@@ -30,6 +30,19 @@ class TestDashboardSummary:
         response = await client.get("/api/v1/dashboard/summary")
         assert response.status_code == 401
 
+    @pytest.mark.asyncio
+    async def test_bos_ledger_summary(self, client: AsyncClient, admin_headers):
+        """BOS ledger summary endpoint should always respond with stable payload keys."""
+        response = await client.get("/api/v1/dashboard/bos-ledger-summary", headers=admin_headers)
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "total_dm_in" in data
+        assert "total_dm_out" in data
+        assert "release_pass_rate" in data
+        assert "decision_counts" in data
+        assert "evidence_distribution" in data
+
 
 class TestDashboardSERTrend:
     """Tests for GET /api/v1/dashboard/ser-trend."""
@@ -53,6 +66,37 @@ class TestDashboardSERTrend:
         )
 
         assert response.status_code == 200
+
+
+class TestDashboardGradeDistribution:
+    """Tests for GET /api/v1/dashboard/grade-distribution."""
+
+    @pytest.mark.asyncio
+    async def test_grade_distribution_matches_ser_result_grading(self, client: AsyncClient, admin_headers):
+        """Low SER batches should use the same displayed grade as compute_ser results."""
+        batch_resp = await client.post("/api/v1/batches", json={
+            "batch_id": "DASH-GRADE-F",
+            "species": "BSF",
+            "dm_in": 10.0,
+            "dm_out": 0.8,
+        }, headers=admin_headers)
+        batch_id = batch_resp.json()["id"]
+
+        compute_resp = await client.post("/api/v1/ser/compute", json={
+            "batch_id": batch_id,
+            "dm_in": 10.0,
+            "dm_out": 0.8,
+        }, headers=admin_headers)
+
+        assert compute_resp.status_code == 200
+        assert compute_resp.json()["grade"] == "F"
+
+        response = await client.get("/api/v1/dashboard/grade-distribution", headers=admin_headers)
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["distribution"]["F"] >= 1
+        assert data["distribution"]["D"] == 0
 
 
 class TestDashboardSpeciesDistribution:

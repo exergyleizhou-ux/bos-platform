@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� SER Engine Unit Tests
+BOS Pipeline v9.0 — SER Engine Unit Tests
 
 Tests the core Substrate Efficiency Ratio computation engine.
 """
@@ -31,7 +31,7 @@ class TestComputeSER:
         assert result.engine_version == ENGINE_VERSION
 
     def test_high_efficiency(self):
-        """SER > 0.25 �� A+ grade."""
+        """SER > 0.25 → A+ grade."""
         inp = SERInput(dm_in=10.0, dm_out=3.0)
         result = compute_ser(inp)
 
@@ -41,7 +41,7 @@ class TestComputeSER:
         assert len(result.fail_codes) == 0
 
     def test_low_efficiency(self):
-        """SER < 0.10 �� F grade, fails."""
+        """SER < 0.10 → F grade, fails."""
         inp = SERInput(dm_in=10.0, dm_out=0.5)
         result = compute_ser(inp)
 
@@ -133,7 +133,7 @@ class TestComputeSER:
         assert isinstance(result.recommendations, list)
 
     def test_zero_dm_out(self):
-        """Zero output �� SER = 0, fails."""
+        """Zero output → SER = 0, fails."""
         inp = SERInput(dm_in=10.0, dm_out=0.0)
         result = compute_ser(inp)
 
@@ -142,7 +142,7 @@ class TestComputeSER:
         assert result.grade == "F"
 
     def test_dm_out_exceeds_dm_in(self):
-        """dm_out > dm_in �� SER > 1, still computes but flags warning."""
+        """dm_out > dm_in → SER > 1, still computes but flags warning."""
         inp = SERInput(dm_in=5.0, dm_out=6.0)
         result = compute_ser(inp)
 
@@ -150,7 +150,7 @@ class TestComputeSER:
         assert "SER_ABOVE_1" in result.fail_codes or len(result.recommendations) > 0
 
     def test_nitrogen_imbalance(self):
-        """Nitrogen out > nitrogen in �� flag N_IMBALANCE."""
+        """Nitrogen out > nitrogen in → flag N_IMBALANCE."""
         inp = SERInput(
             dm_in=10.0,
             dm_out=2.3,
@@ -160,7 +160,7 @@ class TestComputeSER:
         )
         result = compute_ser(inp)
 
-        # N_out = 25 + 15 = 40 > 30 = N_in �� imbalance
+        # N_out = 25 + 15 = 40 > 30 = N_in → imbalance
         assert result.nitrogen_balance > 1.0
         assert "N_IMBALANCE" in result.fail_codes
 

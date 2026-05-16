@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� Difference-in-Differences Router
+BOS Pipeline v9.0 -Difference-in-Differences Router
 
 API endpoints for causal inference via DiD analysis.
 """
@@ -64,60 +64,60 @@ async def analyze_did(
             detail={"errors": did_result.errors},
         )
 
-    # Persist
-    calc = Calculation(
-        batch_id=None,
-        calc_type="did",
-        status="completed",
-        inputs=body.model_dump(),
-        result={
-            "att": did_result.att,
-            "se": did_result.se,
-            "t_stat": did_result.t_stat,
-            "p_value": did_result.p_value,
-            "ci_lower": did_result.ci_lower,
-            "ci_upper": did_result.ci_upper,
-            "significant": did_result.significant,
-            "cohens_d": did_result.cohens_d,
-        },
-        duration_ms=round(duration_ms, 2),
-        engine_version=did_result.engine_version,
-        user_id=current_user.id,
-        tenant_id=current_user.tenant_id,
-    )
-    db.add(calc)
-    await db.commit()
+        # Persist
+        calc = Calculation(
+            batch_id=None,
+            calc_type="did",
+            status="completed",
+            inputs=body.model_dump(),
+            result={
+                "att": did_result.att,
+                "se": did_result.se,
+                "t_stat": did_result.t_stat,
+                "p_value": did_result.p_value,
+                "ci_lower": did_result.ci_lower,
+                "ci_upper": did_result.ci_upper,
+                "significant": did_result.significant,
+                "cohens_d": did_result.cohens_d,
+            },
+            duration_ms=round(duration_ms, 2),
+            engine_version=did_result.engine_version,
+            user_id=current_user.id,
+            tenant_id=current_user.tenant_id,
+        )
+        db.add(calc)
+        await db.commit()
 
-    return {
-        "treatment_effect": {
-            "att": did_result.att,
-            "se": did_result.se,
-            "t_stat": did_result.t_stat,
-            "p_value": did_result.p_value,
-            "ci": [did_result.ci_lower, did_result.ci_upper],
-            "significant": did_result.significant,
-            "cohens_d": did_result.cohens_d,
-        },
-        "group_means": {
-            "treatment_pre": did_result.treat_pre_mean,
-            "treatment_post": did_result.treat_post_mean,
-            "control_pre": did_result.control_pre_mean,
-            "control_post": did_result.control_post_mean,
-        },
-        "changes": {
-            "treatment": did_result.treat_change,
-            "control": did_result.control_change,
-        },
-        "parallel_trends": {
-            "plausible": did_result.parallel_trends_plausible,
-            "message": did_result.parallel_trends_message,
-        },
-        "sample_sizes": {
-            "treatment": did_result.n_treatment,
-            "control": did_result.n_control,
-        },
-        "outcome_name": did_result.outcome_name,
-        "treatment_name": did_result.treatment_name,
-        "confidence_level": did_result.confidence_level,
-        "computation_time_ms": round(duration_ms, 2),
-    }
+        return {
+            "treatment_effect": {
+                "att": did_result.att,
+                "se": did_result.se,
+                "t_stat": did_result.t_stat,
+                "p_value": did_result.p_value,
+                "ci": [did_result.ci_lower, did_result.ci_upper],
+                "significant": did_result.significant,
+                "cohens_d": did_result.cohens_d,
+            },
+            "group_means": {
+                "treatment_pre": did_result.treat_pre_mean,
+                "treatment_post": did_result.treat_post_mean,
+                "control_pre": did_result.control_pre_mean,
+                "control_post": did_result.control_post_mean,
+            },
+            "changes": {
+                "treatment": did_result.treat_change,
+                "control": did_result.control_change,
+            },
+            "parallel_trends": {
+                "plausible": did_result.parallel_trends_plausible,
+                "message": did_result.parallel_trends_message,
+            },
+            "sample_sizes": {
+                "treatment": did_result.n_treatment,
+                "control": did_result.n_control,
+            },
+            "outcome_name": did_result.outcome_name,
+            "treatment_name": did_result.treatment_name,
+            "confidence_level": did_result.confidence_level,
+            "computation_time_ms": round(duration_ms, 2),
+        }

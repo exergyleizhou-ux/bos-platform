@@ -1,56 +1,47 @@
 """
-BOS Pipeline v9.0 - simulation router.
+BOS Pipeline v9.0 Monte Carlo simulation router.
 
-This module exposes the richer v9 Monte Carlo endpoint and also keeps the
-frontend-compatible aliases grouped under `/simulation/*`.
+API endpoints for Monte Carlo, sensitivity, Bayesian A/B, and forecast workflows.
 """
 
 import time
-from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_async_session
 from app.deps import require_minimum_role
-from app.engine.bayesian_ab import (
-    BayesianABInput as LegacyBayesianABInput,
-    run_bayesian_ab as run_legacy_bayesian_ab,
-)
-from app.engine.forecast import ForecastInput as LegacyForecastInput, run_forecast
+from app.engine.bayesian_engine import BayesianABInput, run_bayesian_ab
+from app.engine.forecast import ForecastInput, run_forecast
 from app.engine.monte_carlo_engine import MCInput, run_monte_carlo
-from app.engine.sensitivity import (
-    SensitivityInput as LegacySensitivityInput,
-    run_sensitivity,
-)
+from app.engine.sensitivity_engine import SensitivityInput, run_sensitivity_analysis
 from app.models import Batch, Calculation, User
 from app.schemas import MonteCarloRequest, MonteCarloResponse
 
 router = APIRouter()
 
 
+@router.post("/monte-carlo", response_model=MonteCarloResponse)
 @router.post("/run", response_model=MonteCarloResponse)
 async def run_simulation(
     body: MonteCarloRequest,
     current_user: User = Depends(require_minimum_role("scientist")),
     db: AsyncSession = Depends(get_async_session),
 ):
-    """Run Monte Carlo simulation for SER uncertainty quantification."""
+    """
+    Run Monte Carlo simulation for SER uncertainty quantification.
+
+    Supports both the current `/monte-carlo` route and the legacy `/run` alias.
+    """
     start_time = time.perf_counter()
 
     result = await db.execute(
-        select(Batch).where(
-            Batch.id == body.batch_id,
-            Batch.tenant_id == current_user.tenant_id,
-        )
+        select(Batch).where(Batch.id == body.batch_id, Batch.tenant_id == current_user.tenant_id)
     )
     batch = result.scalar_one_or_none()
     if not batch:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Batch not found",
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Batch not found")
 
     mc_input = MCInput(
         n_samples=body.n_samples,
@@ -60,6 +51,7 @@ async def run_simulation(
         dm_out_std=body.dm_out_std,
         seed=body.seed,
     )
+
     mc_result = run_monte_carlo(mc_input)
     duration_ms = (time.perf_counter() - start_time) * 1000
 
@@ -128,6 +120,7 @@ async def quick_simulation(
         dm_out_std=dm_out_std,
     )
     mc_result = run_monte_carlo(mc_input)
+
     return {
         "ser_mean": mc_result.ser_mean,
         "ser_std": mc_result.ser_std,
@@ -137,124 +130,84 @@ async def quick_simulation(
     }
 
 
-@router.post("/monte-carlo")
-async def monte_carlo_alias(
-    body: MonteCarloRequest,
-    current_user: User = Depends(require_minimum_role("scientist")),
-    db: AsyncSession = Depends(get_async_session),
-):
-    """Frontend/test-compatible alias for Monte Carlo simulation."""
-    response = await run_simulation(body=body, current_user=current_user, db=db)
-    return {
-        "n_samples": response.n_samples,
-        "n_simulations": response.n_samples,
-        "ser_mean": response.ser_mean,
-        "ser_std": response.ser_std,
-        "ser_median": response.ser_median,
-        "ser_p5": response.percentiles.get("p5"),
-        "ser_p95": response.percentiles.get("p95"),
-        "ser_ci_lower": response.ser_ci_lower,
-        "ser_ci_upper": response.ser_ci_upper,
-        "percentiles": response.percentiles,
-        "pass_probability": response.pass_probability,
-        "histogram_bins": response.histogram_bins,
-        "histogram_counts": response.histogram_counts,
-        "computation_time_ms": response.computation_time_ms,
-    }
-
-
 @router.post("/sensitivity")
-async def sensitivity_alias(
-    body: dict[str, Any],
+async def sensitivity_simulation(
+    body: dict,
     current_user: User = Depends(require_minimum_role("scientist")),
 ):
-    """Frontend-compatible sensitivity analysis endpoint."""
+    """Run sensitivity analysis using the current engine."""
     del current_user
-    result = run_sensitivity(
-        LegacySensitivityInput(
-            dm_in=float(body.get("dm_in", 10.0)),
-            dm_out=float(body.get("dm_out", 8.0)),
-            n_in=float(body.get("n_in", 0.0) or 0.0),
-            n_larvae=float(body.get("n_larvae", 0.0) or 0.0),
-            n_frass=float(body.get("n_frass", 0.0) or 0.0),
-            variation_pct=float(body.get("variation_pct", 0.2)),
-            n_steps=int(body.get("n_steps", 10)),
-        )
+    sa_input = SensitivityInput(
+        method=body.get("method", "sobol"),
+        n_samples=body.get("n_samples", 1024),
+        parameters=body.get("parameters", {}),
+        seed=body.get("seed"),
     )
+    sa_result = run_sensitivity_analysis(sa_input)
+    if sa_result.errors:
+        raise HTTPException(status_code=422, detail={"errors": sa_result.errors})
     return {
-        "base_ser": result.base_ser,
-        "parameter_ranking": result.parameter_ranking,
-        "impact_scores": result.impact_scores,
-        "sweep_results": {
-            key: [
-                {
-                    "parameter_value": point["x"],
-                    "ser_value": point["ser"],
-                    "variation_pct": float(body.get("variation_pct", 0.2)),
-                }
-                for point in points
-            ]
-            for key, points in result.sweep_results.items()
-        },
+        "method": sa_result.method,
+        "parameter_ranking": sa_result.parameter_ranking,
+        "first_order": sa_result.first_order,
+        "total_order": sa_result.total_order,
+        "mu_star": sa_result.mu_star,
+        "sigma": sa_result.sigma,
+        "n_samples": sa_result.n_samples,
     }
 
 
 @router.post("/bayesian-ab")
-async def bayesian_ab_alias(
-    body: dict[str, Any],
+async def bayesian_ab_simulation(
+    body: dict,
     current_user: User = Depends(require_minimum_role("scientist")),
 ):
-    """Frontend-compatible Bayesian A/B endpoint."""
+    """Run Bayesian A/B comparison using the current engine."""
     del current_user
-    result = run_legacy_bayesian_ab(
-        LegacyBayesianABInput(
-            group_a=[float(item) for item in body.get("group_a", [])],
-            group_b=[float(item) for item in body.get("group_b", [])],
-            n_samples=int(body.get("n_samples", 10000)),
-        )
+    ab_input = BayesianABInput(
+        group_a_values=body.get("group_a_values"),
+        group_b_values=body.get("group_b_values"),
+        group_a_successes=body.get("group_a_successes"),
+        group_a_trials=body.get("group_a_trials"),
+        group_b_successes=body.get("group_b_successes"),
+        group_b_trials=body.get("group_b_trials"),
+        model=body.get("model", "normal"),
+        n_posterior_samples=body.get("n_posterior_samples", 100_000),
+        rope_lower=body.get("rope_lower", -0.01),
+        rope_upper=body.get("rope_upper", 0.01),
+        group_a_name=body.get("group_a_name", "Control"),
+        group_b_name=body.get("group_b_name", "Treatment"),
+        metric_name=body.get("metric_name", "SER"),
+        seed=body.get("seed"),
     )
-    effect_samples = [
-        b - a for a, b in zip(result.posterior_a, result.posterior_b)
-    ]
-    effect_samples.sort()
-    lower_idx = int(len(effect_samples) * 0.025)
-    upper_idx = int(len(effect_samples) * 0.975) - 1
+    ab_result = run_bayesian_ab(ab_input)
+    if ab_result.errors:
+        raise HTTPException(status_code=422, detail={"errors": ab_result.errors})
     return {
-        "mean_a": result.mean_a,
-        "mean_b": result.mean_b,
-        "std_a": 0.0,
-        "std_b": 0.0,
-        "prob_b_better": result.prob_b_better,
-        "effect_size": result.effect_size,
-        "ci_effect_lower": effect_samples[max(lower_idx, 0)],
-        "ci_effect_upper": effect_samples[max(upper_idx, 0)],
-        "decision": result.decision,
-        "confidence": result.confidence,
-        "posterior_a": result.posterior_a,
-        "posterior_b": result.posterior_b,
+        "decision": ab_result.recommendation,
+        "confidence": ab_result.confidence,
+        "prob_b_better": ab_result.prob_b_better,
+        "prob_a_better": ab_result.prob_a_better,
+        "prob_rope": ab_result.prob_rope,
     }
 
 
 @router.post("/forecast")
-async def forecast_alias(
-    body: dict[str, Any],
+async def forecast_simulation(
+    body: dict,
     current_user: User = Depends(require_minimum_role("scientist")),
 ):
-    """Frontend-compatible forecast endpoint."""
+    """Run time-series forecast using the legacy-compatible wrapper."""
     del current_user
-    method = str(body.get("method", "sma"))
-    if method == "ar":
-        method = "ewma"
-    result = run_forecast(
-        LegacyForecastInput(
-            values=[float(item) for item in body.get("values", [])],
-            method=method,
-            horizon=int(body.get("horizon", 5)),
-            window=int(body.get("window", 3) or 3),
-            alpha=float(body.get("alpha", 0.3) or 0.3),
-            beta=float(body.get("beta", 0.1) or 0.1),
-        )
+    forecast_input = ForecastInput(
+        values=body.get("values", []),
+        method=body.get("method", "sma"),
+        horizon=body.get("horizon", 3),
+        window=body.get("window", 3),
+        alpha=body.get("alpha", 0.3),
+        beta=body.get("beta", 0.1),
     )
+    result = run_forecast(forecast_input)
     return {
         "forecast": result.forecast,
         "ci_lower": result.ci_lower,

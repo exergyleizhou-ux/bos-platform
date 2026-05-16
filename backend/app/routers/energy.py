@@ -1,21 +1,19 @@
 """
-BOS Pipeline v9.0 �� Energy Balance Router
-
-API endpoints for energy balance computation.
+BOS Pipeline v9.0 energy balance router.
 """
 
 import time
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
-from typing import Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_async_session
 from app.deps import require_minimum_role
-from app.models import User, Batch, Calculation
 from app.engine.energy_engine import EnergyInput, compute_energy_balance
+from app.models import Batch, Calculation, User
 
 router = APIRouter()
 
@@ -50,7 +48,6 @@ async def compute_energy_endpoint(
     """Compute energy balance for a batch."""
     start_time = time.perf_counter()
 
-    # Verify batch
     result = await db.execute(
         select(Batch).where(Batch.id == body.batch_id, Batch.tenant_id == current_user.tenant_id)
     )
@@ -78,7 +75,6 @@ async def compute_energy_endpoint(
     energy_result = compute_energy_balance(energy_input)
     duration_ms = (time.perf_counter() - start_time) * 1000
 
-    # Persist
     calc = Calculation(
         batch_id=body.batch_id,
         calc_type="energy",
@@ -115,4 +111,3 @@ async def compute_energy_endpoint(
         "electricity_breakdown_mj": energy_result.electricity_breakdown,
         "computation_time_ms": round(duration_ms, 2),
     }
-

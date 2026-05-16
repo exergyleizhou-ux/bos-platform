@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� Anomaly Detection Engine Unit Tests
+BOS Pipeline v9.0 -Anomaly Detection Engine Unit Tests
 
 Tests the statistical anomaly detection engine.
 """
@@ -17,9 +17,29 @@ class TestAnomalyEngine:
     """Tests for the anomaly detection engine."""
 
     def test_no_anomalies(self):
-        """Normal data �� no anomalies detected."""
-        values = [0.20, 0.21, 0.19, 0.20, 0.21, 0.20, 0.19, 0.20, 0.21, 0.20,
-                  0.19, 0.20, 0.21, 0.20, 0.19, 0.20, 0.21, 0.20, 0.19, 0.20]
+        """Normal data - no anomalies detected."""
+        values = [
+            0.20,
+            0.21,
+            0.19,
+            0.20,
+            0.21,
+            0.20,
+            0.19,
+            0.20,
+            0.21,
+            0.20,
+            0.19,
+            0.20,
+            0.21,
+            0.20,
+            0.19,
+            0.20,
+            0.21,
+            0.20,
+            0.19,
+            0.20,
+        ]
         inp = AnomalyInput(values=values, method="zscore")
         result = detect_anomalies(inp)
 
@@ -28,8 +48,28 @@ class TestAnomalyEngine:
 
     def test_obvious_outlier(self):
         """Single extreme value is detected."""
-        values = [0.20, 0.21, 0.19, 0.20, 0.21, 0.20, 0.19, 0.20, 0.21, 0.20,
-                  0.19, 0.20, 0.21, 0.20, 0.19, 0.20, 0.21, 0.20, 0.19, 5.00]  # Outlier
+        values = [
+            0.20,
+            0.21,
+            0.19,
+            0.20,
+            0.21,
+            0.20,
+            0.19,
+            0.20,
+            0.21,
+            0.20,
+            0.19,
+            0.20,
+            0.21,
+            0.20,
+            0.19,
+            0.20,
+            0.21,
+            0.20,
+            0.19,
+            5.00,
+        ]  # Outlier
         inp = AnomalyInput(values=values, method="zscore")
         result = detect_anomalies(inp)
 
@@ -67,9 +107,9 @@ class TestAnomalyEngine:
         """Custom threshold changes sensitivity."""
         values = [0.20, 0.21, 0.19, 0.20, 0.28, 0.20, 0.19, 0.20, 0.21, 0.20]
 
-        # Strict threshold �� more anomalies
+        # Strict threshold - more anomalies
         result_strict = detect_anomalies(AnomalyInput(values=values, method="zscore", zscore_threshold=1.5))
-        # Lenient threshold �� fewer anomalies
+        # Lenient threshold - fewer anomalies
         result_lenient = detect_anomalies(AnomalyInput(values=values, method="zscore", zscore_threshold=4.0))
 
         assert result_strict.anomaly_count >= result_lenient.anomaly_count
@@ -106,7 +146,7 @@ class TestAnomalyEngine:
         assert result is not None
 
     def test_constant_series(self):
-        """Constant series �� zero std �� no anomalies (or special handling)."""
+        """Constant series - zero std - no anomalies (or special handling)."""
         values = [0.20] * 20
         inp = AnomalyInput(values=values, method="zscore")
         result = detect_anomalies(inp)

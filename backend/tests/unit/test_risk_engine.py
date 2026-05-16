@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� Risk Assessment Engine Unit Tests
+BOS Pipeline v9.0 -Risk Assessment Engine Unit Tests
 
 Tests the contaminant risk assessment engine.
 """
@@ -18,7 +18,7 @@ class TestRiskEngine:
     """Tests for the contaminant risk assessment engine."""
 
     def test_all_safe(self):
-        """All contaminants well below limits �� overall safe."""
+        """All contaminants well below limits - overall safe."""
         inp = RiskInput(
             contaminants=[
                 ContaminantReading(name="lead", value=0.1, unit="mg/kg", category="heavy_metal"),
@@ -36,7 +36,7 @@ class TestRiskEngine:
         assert result.engine_version == ENGINE_VERSION
 
     def test_single_exceedance(self):
-        """One contaminant exceeding limit �� not overall safe."""
+        """One contaminant exceeding limit - not overall safe."""
         inp = RiskInput(
             contaminants=[
                 ContaminantReading(name="lead", value=100.0, unit="mg/kg", category="heavy_metal"),
@@ -70,7 +70,7 @@ class TestRiskEngine:
         assert check.risk_level in ("negligible", "low", "medium", "high", "critical")
 
     def test_ratio_ordering(self):
-        """Higher value relative to limit �� higher ratio."""
+        """Higher value relative to limit - higher ratio."""
         inp = RiskInput(
             contaminants=[
                 ContaminantReading(name="lead", value=1.0, unit="mg/kg", category="heavy_metal"),
@@ -98,7 +98,7 @@ class TestRiskEngine:
         lead_feed = next(c for c in result_feed.checks if c.name == "lead")
         lead_food = next(c for c in result_food.checks if c.name == "lead")
 
-        # Food limit should be lower �� ratio should be higher for same value
+        # Food limit should be lower - ratio should be higher for same value
         assert lead_food.ratio >= lead_feed.ratio
 
     def test_pesticide_category(self):
@@ -143,13 +143,14 @@ class TestRiskEngine:
         assert len(result.recommendations) > 0
 
     def test_empty_contaminants(self):
-        """No contaminants �� trivially safe."""
+        """No contaminants - trivially safe."""
         inp = RiskInput(contaminants=[], species="BSF", product_use="feed")
         result = assess_risk(inp)
 
         assert result.overall_safe is True
         assert result.critical_count == 0
         assert len(result.checks) == 0
+        assert result.substrate_profile["key"] == "mixed_organic_waste"
 
     def test_deterministic(self):
         """Same input always produces same output."""
@@ -165,3 +166,30 @@ class TestRiskEngine:
 
         assert r1.overall_safe == r2.overall_safe
         assert r1.checks[0].ratio == r2.checks[0].ratio
+
+    def test_sludge_profile_adds_high_risk_warning(self):
+        """Sewage sludge should attach a high-risk substrate profile and warning."""
+        inp = RiskInput(contaminants=[], species="PB", product_use="feed", substrate_type="sewage_sludge")
+        result = assess_risk(inp)
+
+        assert result.substrate_profile["key"] == "sewage_sludge"
+        assert result.substrate_profile["heavy_metal_risk"] == "critical"
+        assert any("elevated contamination risk" in warning for warning in result.warnings)
+
+    def test_distillers_grains_profile_adds_storage_warning(self):
+        """Distillers grains should carry a lower contamination profile but retain storage/mycotoxin warning."""
+        inp = RiskInput(contaminants=[], species="MW", product_use="feed", substrate_type="distillers_grains")
+        result = assess_risk(inp)
+
+        assert result.substrate_profile["key"] == "distillers_grains"
+        assert result.substrate_profile["heavy_metal_risk"] == "low"
+        assert any("mycotoxins" in warning for warning in result.warnings)
+        assert result.substrate_profile["references"]
+
+    def test_tcm_residue_profile_adds_provenance_warning(self):
+        """Medicinal plant residue should warn on provenance and phytochemical carry-over."""
+        inp = RiskInput(contaminants=[], species="MW", product_use="feed", substrate_type="tcm_residue")
+        result = assess_risk(inp)
+
+        assert result.substrate_profile["key"] == "tcm_residue"
+        assert any("phytochemical" in warning for warning in result.warnings)

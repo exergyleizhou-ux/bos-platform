@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� FastAPI Application Entry Point
+BOS Pipeline v9.0 — FastAPI Application Entry Point
 
 Assembles the complete application:
   - Middleware stack
@@ -10,8 +10,8 @@ Assembles the complete application:
 """
 
 import logging
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
@@ -20,24 +20,24 @@ from fastapi.responses import JSONResponse
 
 from app.config import get_settings
 from app.db import engine
+from app.middleware.rate_limit import RateLimitMiddleware
 from app.middleware.request_id import RequestIDMiddleware
 from app.middleware.timing import TimingMiddleware
-from app.middleware.rate_limit import RateLimitMiddleware
 from app.routers import api_router
 
 settings = get_settings()
 logger = logging.getLogger("bos.main")
 
 
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# ═══════════════════════════════════════════════
 # Lifespan (startup / shutdown)
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# ═══════════════════════════════════════════════
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator:
     """Application lifespan: startup and shutdown logic."""
-    # ���� Startup ����
+    # ── Startup ──
     logger.info(f"?? Starting BOS Pipeline v{settings.APP_VERSION} ({settings.ENVIRONMENT})")
 
     # Initialize Redis connection
@@ -59,7 +59,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
 
     yield
 
-    # ���� Shutdown ����
+    # ── Shutdown ──
     logger.info("?? Shutting down BOS Pipeline...")
 
     # Close Redis
@@ -74,9 +74,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator:
     logger.info("?? Shutdown complete")
 
 
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# ═══════════════════════════════════════════════
 # Application Factory
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# ═══════════════════════════════════════════════
 
 
 def create_app() -> FastAPI:
@@ -86,7 +86,7 @@ def create_app() -> FastAPI:
         title=settings.APP_NAME,
         version=settings.APP_VERSION,
         description=(
-            "BOS Pipeline v9.0 �� Bioconversion Optimization System\n\n"
+            "BOS Pipeline v9.0 — Bioconversion Optimization System\n\n"
             "Full-stack platform for insect bioconversion data management, "
             "SER computation, sustainability analytics (GHG, water, energy, LCA, TEA), "
             "digital twin simulation, anomaly detection, and process optimization.\n\n"
@@ -99,9 +99,9 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    # ���� Middleware (order matters: last added = first executed) ����
+    # ── Middleware (order matters: last added = first executed) ──
 
-    # Rate limiting (outermost �� evaluated first)
+    # Rate limiting (outermost → evaluated first)
     app.add_middleware(RateLimitMiddleware)
 
     # Timing
@@ -126,18 +126,20 @@ def create_app() -> FastAPI:
         ],
     )
 
-    # ���� Exception Handlers ����
+    # ── Exception Handlers ──
 
     @app.exception_handler(RequestValidationError)
     async def validation_exception_handler(request: Request, exc: RequestValidationError):
         """Custom validation error response."""
         errors = []
         for err in exc.errors():
-            errors.append({
-                "field": " �� ".join(str(loc) for loc in err.get("loc", [])),
-                "message": err.get("msg", "Validation error"),
-                "type": err.get("type", "unknown"),
-            })
+            errors.append(
+                {
+                    "field": " → ".join(str(loc) for loc in err.get("loc", [])),
+                    "message": err.get("msg", "Validation error"),
+                    "type": err.get("type", "unknown"),
+                }
+            )
 
         return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -162,7 +164,7 @@ def create_app() -> FastAPI:
             },
         )
 
-    # ���� Root redirect ����
+    # ── Root redirect ──
 
     @app.get("/", include_in_schema=False)
     async def root():
@@ -173,7 +175,7 @@ def create_app() -> FastAPI:
             "health": "/api/v1/health/live",
         }
 
-    # ���� Register all routers ����
+    # ── Register all routers ──
     app.include_router(api_router, prefix="/api/v1")
 
     return app

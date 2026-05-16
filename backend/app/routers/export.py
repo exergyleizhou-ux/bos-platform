@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� Export Router
+BOS Pipeline v9.0 — Export Router
 
 Exports batch and calculation data in multiple formats:
   - CSV
@@ -54,9 +54,22 @@ async def export_batches_csv(
 
     # Determine columns
     default_columns = [
-        "id", "batch_id", "species", "status", "dm_in", "dm_out", "score",
-        "temperature", "moisture", "n_in", "n_larvae", "n_frass",
-        "operator", "notes", "batch_date", "created_at",
+        "id",
+        "batch_id",
+        "species",
+        "status",
+        "dm_in",
+        "dm_out",
+        "score",
+        "temperature",
+        "moisture",
+        "n_in",
+        "n_larvae",
+        "n_frass",
+        "operator",
+        "notes",
+        "batch_date",
+        "created_at",
     ]
     if columns:
         selected_cols = [c.strip() for c in columns.split(",")]
@@ -145,11 +158,11 @@ async def export_batches_xlsx(
     """Export batches as Excel (XLSX)."""
     try:
         import openpyxl
-    except ImportError:
+    except ImportError as exc:
         raise HTTPException(
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
             detail="openpyxl is not installed. Use CSV or JSON export.",
-        )
+        ) from exc
 
     batches = await _fetch_batches(db, current_user.tenant_id, species, status_filter, date_from, date_to)
 
@@ -161,17 +174,36 @@ async def export_batches_xlsx(
     ws.title = "Batches"
 
     headers = [
-        "ID", "Batch ID", "Species", "Status", "DM In (kg)", "DM Out (kg)",
-        "SER Score", "Temperature (��C)", "Moisture (%)", "Operator", "Batch Date",
+        "ID",
+        "Batch ID",
+        "Species",
+        "Status",
+        "DM In (kg)",
+        "DM Out (kg)",
+        "SER Score",
+        "Temperature (°C)",
+        "Moisture (%)",
+        "Operator",
+        "Batch Date",
     ]
     ws.append(headers)
 
     for b in batches:
-        ws.append([
-            b.id, b.batch_id, b.species, b.status, b.dm_in, b.dm_out,
-            b.score, b.temperature, b.moisture, b.operator,
-            b.batch_date.isoformat() if b.batch_date else None,
-        ])
+        ws.append(
+            [
+                b.id,
+                b.batch_id,
+                b.species,
+                b.status,
+                b.dm_in,
+                b.dm_out,
+                b.score,
+                b.temperature,
+                b.moisture,
+                b.operator,
+                b.batch_date.isoformat() if b.batch_date else None,
+            ]
+        )
 
     output = io.BytesIO()
     wb.save(output)
@@ -205,28 +237,30 @@ async def export_batches_parquet(
     try:
         import pyarrow as pa
         import pyarrow.parquet as pq
-    except ImportError:
+    except ImportError as exc:
         raise HTTPException(
             status_code=status.HTTP_501_NOT_IMPLEMENTED,
             detail="pyarrow is not installed.",
-        )
+        ) from exc
 
     batches = await _fetch_batches(db, current_user.tenant_id, species, status_filter, date_from, date_to)
 
     if not batches:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No batches found")
 
-    table = pa.table({
-        "id": [b.id for b in batches],
-        "batch_id": [b.batch_id for b in batches],
-        "species": [b.species for b in batches],
-        "status": [b.status for b in batches],
-        "dm_in": [float(b.dm_in) if b.dm_in else 0.0 for b in batches],
-        "dm_out": [float(b.dm_out) if b.dm_out else 0.0 for b in batches],
-        "score": [float(b.score) if b.score else 0.0 for b in batches],
-        "temperature": [float(b.temperature) if b.temperature else 0.0 for b in batches],
-        "moisture": [float(b.moisture) if b.moisture else 0.0 for b in batches],
-    })
+    table = pa.table(
+        {
+            "id": [b.id for b in batches],
+            "batch_id": [b.batch_id for b in batches],
+            "species": [b.species for b in batches],
+            "status": [b.status for b in batches],
+            "dm_in": [float(b.dm_in) if b.dm_in else 0.0 for b in batches],
+            "dm_out": [float(b.dm_out) if b.dm_out else 0.0 for b in batches],
+            "score": [float(b.score) if b.score else 0.0 for b in batches],
+            "temperature": [float(b.temperature) if b.temperature else 0.0 for b in batches],
+            "moisture": [float(b.moisture) if b.moisture else 0.0 for b in batches],
+        }
+    )
 
     output = io.BytesIO()
     pq.write_table(table, output)
@@ -264,11 +298,18 @@ async def export_calculations_csv(
     writer.writerow(["id", "batch_id", "calc_type", "status", "ser_value", "passed", "duration_ms", "created_at"])
 
     for c in calcs:
-        writer.writerow([
-            c.id, c.batch_id, c.calc_type, c.status, c.ser_value,
-            c.passed, c.duration_ms,
-            c.created_at.isoformat() if c.created_at else None,
-        ])
+        writer.writerow(
+            [
+                c.id,
+                c.batch_id,
+                c.calc_type,
+                c.status,
+                c.ser_value,
+                c.passed,
+                c.duration_ms,
+                c.created_at.isoformat() if c.created_at else None,
+            ]
+        )
 
     output.seek(0)
 
@@ -279,9 +320,9 @@ async def export_calculations_csv(
     )
 
 
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# ═══════════════════════════════════════════════
 # Helper
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# ═══════════════════════════════════════════════
 
 
 async def _fetch_batches(

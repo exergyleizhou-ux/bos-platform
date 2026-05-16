@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� Maintenance Tasks
+BOS Pipeline v9.0 — Maintenance Tasks
 
 Periodic database cleanup, digest, and housekeeping tasks.
 """
@@ -130,26 +130,30 @@ def generate_daily_digest() -> Dict[str, Any]:
     digests = []
     try:
         with Session(engine) as session:
-            tenants = session.execute(
-                select(Tenant).where(Tenant.is_active == True)
-            ).scalars().all()
+            tenants = session.execute(select(Tenant).where(Tenant.is_active.is_(True))).scalars().all()
 
             for tenant in tenants:
-                new_batches = session.execute(
-                    select(func.count()).where(
-                        Batch.tenant_id == tenant.id,
-                        Batch.created_at >= yesterday,
-                        Batch.created_at < today,
-                    )
-                ).scalar() or 0
+                new_batches = (
+                    session.execute(
+                        select(func.count()).where(
+                            Batch.tenant_id == tenant.id,
+                            Batch.created_at >= yesterday,
+                            Batch.created_at < today,
+                        )
+                    ).scalar()
+                    or 0
+                )
 
-                new_calcs = session.execute(
-                    select(func.count()).where(
-                        Calculation.tenant_id == tenant.id,
-                        Calculation.created_at >= yesterday,
-                        Calculation.created_at < today,
-                    )
-                ).scalar() or 0
+                new_calcs = (
+                    session.execute(
+                        select(func.count()).where(
+                            Calculation.tenant_id == tenant.id,
+                            Calculation.created_at >= yesterday,
+                            Calculation.created_at < today,
+                        )
+                    ).scalar()
+                    or 0
+                )
 
                 avg_ser = session.execute(
                     select(func.avg(Batch.score)).where(
@@ -160,13 +164,15 @@ def generate_daily_digest() -> Dict[str, Any]:
                     )
                 ).scalar()
 
-                digests.append({
-                    "tenant_id": tenant.id,
-                    "tenant_name": tenant.name,
-                    "new_batches": new_batches,
-                    "new_calculations": new_calcs,
-                    "avg_ser": round(float(avg_ser), 4) if avg_ser else None,
-                })
+                digests.append(
+                    {
+                        "tenant_id": tenant.id,
+                        "tenant_name": tenant.name,
+                        "new_batches": new_batches,
+                        "new_calculations": new_calcs,
+                        "avg_ser": round(float(avg_ser), 4) if avg_ser else None,
+                    }
+                )
 
         duration = (time.perf_counter() - start) * 1000
         logger.info(f"Daily digest generated for {len(digests)} tenants in {duration:.0f}ms")
@@ -196,7 +202,7 @@ def vacuum_tables() -> Dict[str, Any]:
     sync_url = settings.DATABASE_URL.replace("postgresql+asyncpg", "postgresql+psycopg2")
     engine = create_engine(sync_url, pool_pre_ping=True)
 
-    tables = ["batches", "calculations", "audit_log", "digital_twins"]
+    tables = ["batches", "calculations", "audit_logs", "digital_twins"]
     results = {}
 
     raw_conn = engine.raw_connection()

@@ -1,7 +1,5 @@
 """
-BOS Pipeline v9.0 �� GP Calibration Router
-
-API endpoints for Gaussian Process model calibration.
+BOS Pipeline v9.0 GP calibration router.
 """
 
 import time
@@ -9,13 +7,12 @@ from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_async_session
 from app.deps import require_minimum_role
-from app.models import User, Calculation
 from app.engine.calibration_engine import GPInput, fit_gp
+from app.models import Calculation, User
 
 router = APIRouter()
 
@@ -23,7 +20,7 @@ router = APIRouter()
 class GPCalibrationRequest(BaseModel):
     """GP calibration request."""
 
-    X_train: List[List[float]] = Field(..., min_length=2, description="Training features (n �� d)")
+    X_train: List[List[float]] = Field(..., min_length=2, description="Training features (n x d)")
     y_train: List[float] = Field(..., min_length=2, description="Training targets")
     X_predict: Optional[List[List[float]]] = None
     kernel: str = Field(default="matern52", pattern=r"^(rbf|matern52)$")
@@ -41,7 +38,7 @@ async def fit_gp_endpoint(
     """
     Fit a Gaussian Process model to data.
 
-    Returns predictions with uncertainty (posterior mean �� std).
+    Returns predictions with uncertainty (posterior mean and std).
     """
     start_time = time.perf_counter()
 
@@ -64,7 +61,6 @@ async def fit_gp_endpoint(
             detail={"errors": gp_result.errors},
         )
 
-    # Persist
     calc = Calculation(
         batch_id=None,
         calc_type="gp_calibration",

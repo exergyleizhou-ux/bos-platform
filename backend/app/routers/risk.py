@@ -1,6 +1,5 @@
-# Complete reissue used as authoritative body in the reconciled manuscript.
 """
-BOS Pipeline v9.0 �� Risk Assessment Router
+BOS Pipeline v9.0 risk assessment router.
 
 API endpoints for contaminant risk assessment.
 """
@@ -15,12 +14,17 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db import get_async_session
 from app.deps import require_minimum_role
-from app.models import User, Batch, Calculation
 from app.engine.risk_engine import (
+    HEAVY_METAL_LIMITS,
+    MICROBIAL_LIMITS,
+    MYCOTOXIN_LIMITS,
+    PESTICIDE_LIMITS,
+    SUBSTRATE_RISK_PROFILES,
     ContaminantReading,
     RiskInput,
     assess_risk,
 )
+from app.models import Batch, Calculation, User
 
 router = APIRouter()
 
@@ -31,10 +35,7 @@ class ContaminantItem(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     value: float = Field(..., ge=0)
     unit: str = Field(default="mg/kg")
-    category: str = Field(
-        default="heavy_metal",
-        pattern=r"^(heavy_metal|pesticide|mycotoxin|microbial)$",
-    )
+    category: str = Field(default="heavy_metal", pattern=r"^(heavy_metal|pesticide|mycotoxin|microbial)$")
 
 
 class RiskRequest(BaseModel):
@@ -44,7 +45,7 @@ class RiskRequest(BaseModel):
     contaminants: List[ContaminantItem]
     species: str = Field(default="BSF", max_length=100)
     product_use: str = Field(default="feed", pattern=r"^(feed|food|fertilizer)$")
-    substrate_type: str = Field(default="mixed_organic_waste", max_length=100)
+    substrate_type: str | None = Field(default=None, max_length=100)
 
 
 @router.post("/assess")
@@ -56,21 +57,15 @@ async def assess_risk_endpoint(
     """Perform contaminant risk assessment for a batch."""
     start_time = time.perf_counter()
 
-    # Verify batch
     result = await db.execute(
         select(Batch).where(Batch.id == body.batch_id, Batch.tenant_id == current_user.tenant_id)
     )
-    if not result.scalar_one_or_none():
+    batch = result.scalar_one_or_none()
+    if not batch:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Batch not found")
 
-    # Build engine input
     readings = [
-        ContaminantReading(
-            name=c.name,
-            value=c.value,
-            unit=c.unit,
-            category=c.category,
-        )
+        ContaminantReading(name=c.name, value=c.value, unit=c.unit, category=c.category)
         for c in body.contaminants
     ]
 
@@ -78,13 +73,12 @@ async def assess_risk_endpoint(
         contaminants=readings,
         species=body.species,
         product_use=body.product_use,
-        substrate_type=body.substrate_type,
+        substrate_type=body.substrate_type or batch.substrate or "mixed_organic_waste",
     )
 
     risk_result = assess_risk(risk_input)
     duration_ms = (time.perf_counter() - start_time) * 1000
 
-    # Persist
     calc = Calculation(
         batch_id=body.batch_id,
         calc_type="risk",
@@ -144,6 +138,7 @@ async def assess_risk_endpoint(
         ],
         "recommendations": risk_result.recommendations,
         "warnings": risk_result.warnings,
+        "substrate_profile": risk_result.substrate_profile,
         "regulatory_framework": risk_result.regulatory_framework,
         "computation_time_ms": round(duration_ms, 2),
     }
@@ -154,16 +149,11 @@ async def get_regulatory_limits(
     current_user: User = Depends(require_minimum_role("viewer")),
 ):
     """Get all regulatory limits used in risk assessment."""
-    from app.engine.risk_engine import (
-        HEAVY_METAL_LIMITS,
-        PESTICIDE_LIMITS,
-        MYCOTOXIN_LIMITS,
-        MICROBIAL_LIMITS,
-    )
-
+    del current_user
     return {
         "heavy_metals": HEAVY_METAL_LIMITS,
         "pesticides": PESTICIDE_LIMITS,
         "mycotoxins": MYCOTOXIN_LIMITS,
         "microbial": MICROBIAL_LIMITS,
+        "substrate_profiles": SUBSTRATE_RISK_PROFILES,
     }

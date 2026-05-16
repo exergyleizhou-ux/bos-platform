@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� LCA (Life Cycle Assessment) Router
+BOS Pipeline v9.0 — LCA (Life Cycle Assessment) Router
 
 API endpoints for simplified cradle-to-gate LCA.
 """
@@ -16,6 +16,8 @@ from app.db import get_async_session
 from app.deps import require_minimum_role
 from app.models import User, Batch, Calculation
 from app.engine.lca_engine import LCAInput, compute_lca
+from app.schemas.sustainability_kernel import LCACompareRequest, SustainabilityResultResponse
+from app.services.sustainability_kernel_service import compare_lca
 
 router = APIRouter()
 
@@ -97,3 +99,12 @@ async def compute_lca_endpoint(
         "names": lca_result.names,
         "computation_time_ms": round(duration_ms, 2),
     }
+
+
+@router.post("/compare", response_model=SustainabilityResultResponse)
+async def compare_lca_kernel_endpoint(
+    body: LCACompareRequest,
+    current_user: User = Depends(require_minimum_role("scientist")),
+    db: AsyncSession = Depends(get_async_session),
+):
+    return await compare_lca(db, tenant_id=current_user.tenant_id, user_id=current_user.id, payload=body)

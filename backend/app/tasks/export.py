@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� Export Tasks
+BOS Pipeline v9.0 — Export Tasks
 
 Async data export generation for large datasets.
 """
@@ -87,16 +87,37 @@ def _batches_to_csv(batches) -> str:
     """Convert batches to CSV string."""
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow([
-        "id", "batch_id", "species", "status", "dm_in", "dm_out",
-        "score", "temperature", "moisture", "operator", "batch_date",
-    ])
+    writer.writerow(
+        [
+            "id",
+            "batch_id",
+            "species",
+            "status",
+            "dm_in",
+            "dm_out",
+            "score",
+            "temperature",
+            "moisture",
+            "operator",
+            "batch_date",
+        ]
+    )
     for b in batches:
-        writer.writerow([
-            b.id, b.batch_id, b.species, b.status, b.dm_in, b.dm_out,
-            b.score, b.temperature, b.moisture, b.operator,
-            b.batch_date.isoformat() if b.batch_date else None,
-        ])
+        writer.writerow(
+            [
+                b.id,
+                b.batch_id,
+                b.species,
+                b.status,
+                b.dm_in,
+                b.dm_out,
+                b.score,
+                b.temperature,
+                b.moisture,
+                b.operator,
+                b.batch_date.isoformat() if b.batch_date else None,
+            ]
+        )
     return output.getvalue()
 
 

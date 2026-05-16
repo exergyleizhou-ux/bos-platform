@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� TEA (Techno-Economic Analysis) Router
+BOS Pipeline v9.0 — TEA (Techno-Economic Analysis) Router
 
 API endpoints for techno-economic analysis of bioconversion operations.
 """
@@ -16,6 +16,8 @@ from app.db import get_async_session
 from app.deps import require_minimum_role
 from app.models import User, Batch, Calculation
 from app.engine.tea_engine import TEAInput, compute_tea
+from app.schemas.sustainability_kernel import SustainabilityResultResponse, TEAEstimateRequest
+from app.services.sustainability_kernel_service import estimate_tea
 
 router = APIRouter()
 
@@ -166,3 +168,12 @@ async def compute_tea_endpoint(
         "cash_flows": tea_result.cash_flows,
         "computation_time_ms": round(duration_ms, 2),
     }
+
+
+@router.post("/estimate", response_model=SustainabilityResultResponse)
+async def estimate_tea_kernel_endpoint(
+    body: TEAEstimateRequest,
+    current_user: User = Depends(require_minimum_role("scientist")),
+    db: AsyncSession = Depends(get_async_session),
+):
+    return await estimate_tea(db, tenant_id=current_user.tenant_id, user_id=current_user.id, payload=body)

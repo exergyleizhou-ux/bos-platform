@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� Celery Application Configuration
+BOS Pipeline v9.0 — Celery Application Configuration
 
 Configures Celery for async task execution:
   - Redis as broker and result backend
@@ -13,6 +13,7 @@ from celery import Celery
 from celery.schedules import crontab
 
 from app.config import get_settings
+from app.tasks import code_runtime, compute, export, maintenance, webhook  # noqa: F401
 
 settings = get_settings()
 
@@ -27,32 +28,26 @@ celery_app.conf.update(
     task_serializer="json",
     accept_content=["json"],
     result_serializer="json",
-
     # Timezone
     timezone="UTC",
     enable_utc=True,
-
     # Task execution
     task_acks_late=True,
     worker_prefetch_multiplier=1,
     task_reject_on_worker_lost=True,
     task_track_started=True,
-
+    broker_connection_retry_on_startup=True,
     # Results
     result_expires=86400,  # 24h
     result_backend_transport_options={"visibility_timeout": 3600},
-
     # Concurrency
     worker_concurrency=4,
     worker_max_tasks_per_child=200,
-
     # Rate limits
     task_default_rate_limit="100/m",
-
     # Retry
     task_default_retry_delay=60,
     task_max_retries=3,
-
     # Routing
     task_routes={
         "app.tasks.compute.*": {"queue": "compute"},
@@ -60,10 +55,8 @@ celery_app.conf.update(
         "app.tasks.webhook.*": {"queue": "webhook"},
         "app.tasks.maintenance.*": {"queue": "maintenance"},
     },
-
     # Default queue
     task_default_queue="default",
-
     # Beat schedule (periodic tasks)
     beat_schedule={
         "cleanup-expired-calculations": {
@@ -86,8 +79,14 @@ celery_app.conf.update(
             "task": "app.tasks.maintenance.generate_daily_digest",
             "schedule": crontab(hour=6, minute=0),  # Daily at 06:00 UTC
         },
+        "bos-code-run-due-automation-jobs": {
+            "task": "app.tasks.code_runtime.run_due_automation_jobs",
+            "schedule": crontab(minute="*/1"),
+        },
     },
 )
 
-# Auto-discover tasks in the tasks package
+# Auto-discover tasks in the tasks package.
+# The explicit imports above make local Windows worker startup more reliable,
+# while autodiscovery still covers standard Celery flows.
 celery_app.autodiscover_tasks(["app.tasks"])

@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� SQLAlchemy ORM Models
+BOS Pipeline v9.0 — SQLAlchemy ORM Models
 
 All models use the shared Base from app.db and follow multi-tenant conventions:
 - Every tenant-scoped model has a tenant_id column
@@ -32,9 +32,10 @@ from app.db import Base
 SQLITE_BIGINT_PK = BigInteger().with_variant(Integer, "sqlite")
 
 
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# ═══════════════════════════════════════════════
 # 1. Tenant
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# ═══════════════════════════════════════════════
+
 
 class Tenant(Base):
     __tablename__ = "tenants"
@@ -51,7 +52,9 @@ class Tenant(Base):
     stripe_subscription_id: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     settings: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
     # Relationships
     users: Mapped[List["User"]] = relationship("User", back_populates="tenant", cascade="all, delete-orphan")
@@ -61,9 +64,10 @@ class Tenant(Base):
         return f"<Tenant(id={self.id}, name='{self.name}', plan='{self.plan}')>"
 
 
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# ═══════════════════════════════════════════════
 # 2. User
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# ═══════════════════════════════════════════════
+
 
 class User(Base):
     __tablename__ = "users"
@@ -74,7 +78,9 @@ class User(Base):
     full_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True, index=True)
     role: Mapped[str] = mapped_column(String(50), nullable=False, server_default="viewer", index=True)
-    tenant_id: Mapped[int] = mapped_column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    tenant_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true", index=True)
     last_login: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     failed_login_attempts: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
@@ -82,12 +88,16 @@ class User(Base):
     password_changed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     preferences: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
     # Relationships
     tenant: Mapped["Tenant"] = relationship("Tenant", back_populates="users")
     batches: Mapped[List["Batch"]] = relationship("Batch", back_populates="user", cascade="all, delete-orphan")
-    calculations: Mapped[List["Calculation"]] = relationship("Calculation", back_populates="user", cascade="all, delete-orphan")
+    calculations: Mapped[List["Calculation"]] = relationship(
+        "Calculation", back_populates="user", cascade="all, delete-orphan"
+    )
     api_keys: Mapped[List["ApiKey"]] = relationship("ApiKey", back_populates="user", cascade="all, delete-orphan")
     webhooks: Mapped[List["Webhook"]] = relationship("Webhook", back_populates="user", cascade="all, delete-orphan")
 
@@ -95,9 +105,74 @@ class User(Base):
         return f"<User(id={self.id}, username='{self.username}', role='{self.role}', tenant_id={self.tenant_id})>"
 
 
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+class UserRoleGrant(Base):
+    __tablename__ = "user_role_grants"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "user_id", "role", name="uq_user_role_grants_tenant_user_role"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    role: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    granted_by_user_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true", index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    def __repr__(self) -> str:
+        return (
+            f"<UserRoleGrant(id={self.id}, user_id={self.user_id}, role='{self.role}', "
+            f"tenant_id={self.tenant_id}, is_active={self.is_active})>"
+        )
+
+
+# ═══════════════════════════════════════════════
 # 3. Batch
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# ═══════════════════════════════════════════════
+
+
+class UserRoleGrantAuditRecord(Base):
+    __tablename__ = "user_role_grant_audit_records"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    role_grant_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("user_role_grants.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    actor_user_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    role: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    action: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
+    previous_is_active: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    new_is_active: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
+    previous_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    new_reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    previous_granted_by_user_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    new_granted_by_user_id: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    def __repr__(self) -> str:
+        return (
+            f"<UserRoleGrantAuditRecord(id={self.id}, user_id={self.user_id}, role='{self.role}', "
+            f"action='{self.action}', tenant_id={self.tenant_id})>"
+        )
+
 
 class Batch(Base):
     __tablename__ = "batches"
@@ -125,32 +200,43 @@ class Batch(Base):
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     tags: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
     metadata_json: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    tenant_id: Mapped[int] = mapped_column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    tenant_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     batch_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True, index=True)
     valid_from: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     valid_to: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="batches")
     tenant: Mapped["Tenant"] = relationship("Tenant", back_populates="batches")
-    calculations: Mapped[List["Calculation"]] = relationship("Calculation", back_populates="batch", cascade="all, delete-orphan")
+    calculations: Mapped[List["Calculation"]] = relationship(
+        "Calculation", back_populates="batch", cascade="all, delete-orphan"
+    )
 
     def __repr__(self) -> str:
         return f"<Batch(id={self.id}, batch_id='{self.batch_id}', species='{self.species}', status='{self.status}')>"
 
 
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# ═══════════════════════════════════════════════
 # 4. Calculation
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# ═══════════════════════════════════════════════
+
 
 class Calculation(Base):
     __tablename__ = "calculations"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    batch_id: Mapped[int] = mapped_column(Integer, ForeignKey("batches.id", ondelete="CASCADE"), nullable=False, index=True)
+    batch_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("batches.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     calc_type: Mapped[str] = mapped_column(String(50), nullable=False, server_default="ser", index=True)
     status: Mapped[str] = mapped_column(String(50), nullable=False, server_default="pending", index=True)
     inputs: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
@@ -161,8 +247,12 @@ class Calculation(Base):
     duration_ms: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     mc_samples: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     engine_version: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    tenant_id: Mapped[int] = mapped_column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    tenant_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships
@@ -170,12 +260,15 @@ class Calculation(Base):
     user: Mapped["User"] = relationship("User", back_populates="calculations")
 
     def __repr__(self) -> str:
-        return f"<Calculation(id={self.id}, calc_type='{self.calc_type}', status='{self.status}', passed={self.passed})>"
+        return (
+            f"<Calculation(id={self.id}, calc_type='{self.calc_type}', status='{self.status}', passed={self.passed})>"
+        )
 
 
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# ═══════════════════════════════════════════════
 # 5. Audit Log
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# ═══════════════════════════════════════════════
+
 
 class AuditLog(Base):
     __tablename__ = "audit_log"
@@ -200,9 +293,10 @@ class AuditLog(Base):
         return f"<AuditLog(id={self.id}, action='{self.action}', table='{self.table_name}')>"
 
 
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# ═══════════════════════════════════════════════
 # 6. API Key
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# ═══════════════════════════════════════════════
+
 
 class ApiKey(Base):
     __tablename__ = "api_keys"
@@ -218,8 +312,12 @@ class ApiKey(Base):
     usage_count: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
     rate_limit: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     scopes: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    tenant_id: Mapped[int] = mapped_column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    tenant_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships
@@ -229,13 +327,14 @@ class ApiKey(Base):
         return f"<ApiKey(id={self.id}, name='{self.name}', prefix='{self.prefix}')>"
 
 
-# Backward-compatible alias used by some routers/schemas.
+# Backward-compatible alias used by some routers.
 APIKey = ApiKey
 
 
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# ═══════════════════════════════════════════════
 # 7. Webhook
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# ═══════════════════════════════════════════════
+
 
 class Webhook(Base):
     __tablename__ = "webhooks"
@@ -250,28 +349,39 @@ class Webhook(Base):
     last_status_code: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     last_error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     headers: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    tenant_id: Mapped[int] = mapped_column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    tenant_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="webhooks")
-    deliveries: Mapped[List["WebhookDelivery"]] = relationship("WebhookDelivery", back_populates="webhook", cascade="all, delete-orphan")
+    deliveries: Mapped[List["WebhookDelivery"]] = relationship(
+        "WebhookDelivery", back_populates="webhook", cascade="all, delete-orphan"
+    )
 
     def __repr__(self) -> str:
         return f"<Webhook(id={self.id}, url='{self.url[:40]}...', events={self.events})>"
 
 
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# ═══════════════════════════════════════════════
 # 8. Webhook Delivery
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# ═══════════════════════════════════════════════
+
 
 class WebhookDelivery(Base):
     __tablename__ = "webhook_deliveries"
 
     id: Mapped[int] = mapped_column(SQLITE_BIGINT_PK, primary_key=True, autoincrement=True)
-    webhook_id: Mapped[int] = mapped_column(Integer, ForeignKey("webhooks.id", ondelete="CASCADE"), nullable=False, index=True)
+    webhook_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("webhooks.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     event: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
     payload: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     status_code: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
@@ -289,9 +399,10 @@ class WebhookDelivery(Base):
         return f"<WebhookDelivery(id={self.id}, event='{self.event}', success={self.success})>"
 
 
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# ═══════════════════════════════════════════════
 # 9. Digital Twin
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# ═══════════════════════════════════════════════
+
 
 class DigitalTwin(Base):
     __tablename__ = "digital_twins"
@@ -306,27 +417,38 @@ class DigitalTwin(Base):
     last_sync: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
     version: Mapped[int] = mapped_column(Integer, nullable=False, server_default="1")
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true", index=True)
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    tenant_id: Mapped[int] = mapped_column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    tenant_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
     # Relationships
-    snapshots: Mapped[List["DigitalTwinSnapshot"]] = relationship("DigitalTwinSnapshot", back_populates="twin", cascade="all, delete-orphan")
+    snapshots: Mapped[List["DigitalTwinSnapshot"]] = relationship(
+        "DigitalTwinSnapshot", back_populates="twin", cascade="all, delete-orphan"
+    )
 
     def __repr__(self) -> str:
         return f"<DigitalTwin(id={self.id}, twin_id='{self.twin_id}', name='{self.name}')>"
 
 
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# ═══════════════════════════════════════════════
 # 10. Digital Twin Snapshot
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# ═══════════════════════════════════════════════
+
 
 class DigitalTwinSnapshot(Base):
     __tablename__ = "digital_twin_snapshots"
 
     id: Mapped[int] = mapped_column(SQLITE_BIGINT_PK, primary_key=True, autoincrement=True)
-    twin_id: Mapped[int] = mapped_column(Integer, ForeignKey("digital_twins.id", ondelete="CASCADE"), nullable=False, index=True)
+    twin_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("digital_twins.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     state: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     parameters: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     trigger: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
@@ -340,9 +462,10 @@ class DigitalTwinSnapshot(Base):
         return f"<DigitalTwinSnapshot(id={self.id}, twin_id={self.twin_id}, trigger='{self.trigger}')>"
 
 
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# ═══════════════════════════════════════════════
 # 11. Feature Flag (DB model for runtime overrides)
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# ═══════════════════════════════════════════════
+
 
 class FeatureFlag(Base):
     __tablename__ = "feature_flags"
@@ -356,22 +479,29 @@ class FeatureFlag(Base):
     user_overrides: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     metadata_json: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
     def __repr__(self) -> str:
         return f"<FeatureFlag(id={self.id}, name='{self.name}', enabled={self.enabled})>"
 
 
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# ═══════════════════════════════════════════════
 # 12. Notification Preferences
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# ═══════════════════════════════════════════════
+
 
 class NotificationPreference(Base):
     __tablename__ = "notification_preferences"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True, index=True)
-    tenant_id: Mapped[int] = mapped_column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True, index=True
+    )
+    tenant_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     weekly_digest: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
     ser_alerts: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
     anomaly_alerts: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
@@ -379,15 +509,18 @@ class NotificationPreference(Base):
     email_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
     webhook_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="false")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
     def __repr__(self) -> str:
         return f"<NotificationPreference(id={self.id}, user_id={self.user_id})>"
 
 
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# ═══════════════════════════════════════════════
 # 13. Scheduled Report
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# ═══════════════════════════════════════════════
+
 
 class ScheduledReport(Base):
     __tablename__ = "scheduled_reports"
@@ -404,17 +537,22 @@ class ScheduledReport(Base):
     run_count: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
     last_error: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    tenant_id: Mapped[int] = mapped_column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True)
+    tenant_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
 
     def __repr__(self) -> str:
         return f"<ScheduledReport(id={self.id}, name='{self.name}', type='{self.report_type}')>"
 
 
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# ═══════════════════════════════════════════════
 # 14. Trace (internal request tracing)
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# ═══════════════════════════════════════════════
+
 
 class Trace(Base):
     __tablename__ = "traces"
@@ -437,15 +575,18 @@ class Trace(Base):
         return f"<Trace(id={self.id}, operation='{self.operation}', duration_ms={self.duration_ms})>"
 
 
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# ═══════════════════════════════════════════════
 # 15. GDPR Deletion Request
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# ═══════════════════════════════════════════════
+
 
 class GdprDeletionRequest(Base):
     __tablename__ = "gdpr_deletion_requests"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
     tenant_id: Mapped[int] = mapped_column(Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False)
     status: Mapped[str] = mapped_column(String(50), nullable=False, server_default="pending", index=True)
     reason: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
@@ -456,3 +597,131 @@ class GdprDeletionRequest(Base):
 
     def __repr__(self) -> str:
         return f"<GdprDeletionRequest(id={self.id}, user_id={self.user_id}, status='{self.status}')>"
+
+
+class WechatOfficialAccount(Base):
+    __tablename__ = "wechat_official_accounts"
+    __table_args__ = (UniqueConstraint("account_key", name="uq_wechat_official_accounts_account_key"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    tenant_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    default_user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    account_key: Mapped[str] = mapped_column(String(100), nullable=False, unique=True, index=True)
+    app_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    app_secret: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    token: Mapped[str] = mapped_column(String(255), nullable=False)
+    encoding_aes_key: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    welcome_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true", index=True)
+    last_access_token: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    access_token_expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    contacts: Mapped[List["WechatContactBinding"]] = relationship(
+        "WechatContactBinding", back_populates="official_account", cascade="all, delete-orphan"
+    )
+
+    def __repr__(self) -> str:
+        return f"<WechatOfficialAccount(id={self.id}, account_key='{self.account_key}', tenant_id={self.tenant_id})>"
+
+
+class WechatContactBinding(Base):
+    __tablename__ = "wechat_contact_bindings"
+    __table_args__ = (
+        UniqueConstraint("official_account_id", "openid", name="uq_wechat_contact_bindings_account_openid"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    official_account_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("wechat_official_accounts.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    tenant_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    openid: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    unionid: Mapped[Optional[str]] = mapped_column(String(128), nullable=True, index=True)
+    default_session_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("code_sessions.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    last_inbound_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    last_outbound_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    last_message_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+    )
+
+    official_account: Mapped["WechatOfficialAccount"] = relationship(
+        "WechatOfficialAccount", back_populates="contacts"
+    )
+
+    def __repr__(self) -> str:
+        return f"<WechatContactBinding(id={self.id}, openid='{self.openid}', tenant_id={self.tenant_id})>"
+
+
+from app.models_code import (  # noqa: E402,F401
+    CodeAgentRuntimeState,
+    CodeArtifact,
+    CodeAutomationJob,
+    CodeBranchState,
+    CodeEvent,
+    CodeLspSession,
+    CodeMemorySnapshot,
+    CodeMcpServer,
+    CodeReflectionRun,
+    CodeSession,
+    CodeSkill,
+    CodeSkillRevision,
+    CodeSubagentRun,
+    CodeTask,
+    CodeToolCall,
+    CodeTurn,
+    CodeVerificationRun,
+    CodeWorker,
+    CodeWorkerEvent,
+    CodeWorkspace,
+    CodeWorkspaceLease,
+)
+from app.models_bos import (  # noqa: E402,F401
+    AuditPacket,
+    AssistantConfirmationRequestRecord,
+    AssistantRunRecord,
+    AssistantToolCallRecord,
+    BatchAssayRecord,
+    BenchmarkCaseRecord,
+    BenchmarkRunRecord,
+    BoundaryLedger,
+    ControlAPIProfile,
+    EvidenceItemRecord,
+    EvidencePackRecord,
+    ExecutorProfile,
+    FinalActionAuditRecord,
+    FinalActionRequestDraftRecord,
+    FinalActionReviewPacketSnapshot,
+    HistoricalReplayRunRecord,
+    HumanApprovalRequestRecord,
+    InputSnapshotRecord,
+    KnowledgeRelationRecord,
+    LocalityProfile,
+    ModelRegistryRecord,
+    ModelVersionRecord,
+    PortabilityAudit,
+    ReleaseDecision,
+    ReleaseGateRecord,
+    ReleasePacketAttachmentRecord,
+    SignalBatch,
+    SimulationAuditEventRecord,
+    SimulationCycleRecord,
+    SimulationRunRecord,
+    SimulationScenarioRecord,
+    SustainabilityResultRecord,
+)

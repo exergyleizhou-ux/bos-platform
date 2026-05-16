@@ -1,9 +1,7 @@
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-# BOS Pipeline v9.0 �� Celery Worker Dockerfile
-# Shared base with the API, different entrypoint
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# BOS Pipeline v9.0 Celery worker Dockerfile
+# Shares the same base setup as the API image with a different entrypoint
 
-# ���� Stage 1: Builder ����
+# Stage 1: Builder
 FROM python:3.11-slim AS builder
 
 WORKDIR /build
@@ -16,7 +14,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
-# ���� Stage 2: Runtime ����
+# Stage 2: Runtime
 FROM python:3.11-slim AS runtime
 
 LABEL maintainer="BOS Pipeline Team"
@@ -38,11 +36,9 @@ RUN chown -R bos:bos /app
 
 USER bos
 
-# Health check: verify Celery is responsive
 HEALTHCHECK --interval=60s --timeout=15s --start-period=30s --retries=3 \
     CMD celery -A app.celery_app:celery_app inspect ping --timeout 10 || exit 1
 
-# Default: start worker listening on all queues
 CMD ["celery", "-A", "app.celery_app:celery_app", "worker", \
      "--loglevel=info", \
      "--concurrency=4", \

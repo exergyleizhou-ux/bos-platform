@@ -1,4 +1,4 @@
-"""001 �� Initial Schema: tenants, users, batches, calculations, audit_log
+"""001 — Initial Schema: tenants, users, batches, calculations, audit_log
 
 Revision ID: 001_initial
 Revises: None
@@ -16,9 +16,12 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+    is_sqlite = op.get_bind().dialect.name == "sqlite"
+    timestamp_default = sa.text("CURRENT_TIMESTAMP") if is_sqlite else sa.text("NOW()")
+    big_int_pk = sa.Integer() if is_sqlite else sa.BigInteger()
+    # ══════════════════════════════════════
     # 1. Tenants
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+    # ══════════════════════════════════════
     op.create_table(
         "tenants",
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
@@ -32,17 +35,17 @@ def upgrade() -> None:
         sa.Column("stripe_customer_id", sa.String(255), nullable=True),
         sa.Column("stripe_subscription_id", sa.String(255), nullable=True),
         sa.Column("settings", sa.JSON(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("NOW()"), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("NOW()"), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=timestamp_default, nullable=False),
+        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=timestamp_default, nullable=False),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index("ix_tenants_slug", "tenants", ["slug"], unique=True)
     op.create_index("ix_tenants_is_active", "tenants", ["is_active"])
     op.create_index("ix_tenants_plan", "tenants", ["plan"])
 
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+    # ══════════════════════════════════════
     # 2. Users
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+    # ══════════════════════════════════════
     op.create_table(
         "users",
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
@@ -58,8 +61,8 @@ def upgrade() -> None:
         sa.Column("locked_until", sa.DateTime(timezone=True), nullable=True),
         sa.Column("password_changed_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("preferences", sa.JSON(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("NOW()"), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("NOW()"), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=timestamp_default, nullable=False),
+        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=timestamp_default, nullable=False),
         sa.PrimaryKeyConstraint("id"),
         sa.ForeignKeyConstraint(["tenant_id"], ["tenants.id"], ondelete="CASCADE"),
     )
@@ -70,9 +73,9 @@ def upgrade() -> None:
     op.create_index("ix_users_is_active", "users", ["is_active"])
     op.create_index("ix_users_tenant_role", "users", ["tenant_id", "role"])
 
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+    # ══════════════════════════════════════
     # 3. Batches
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+    # ══════════════════════════════════════
     op.create_table(
         "batches",
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
@@ -101,10 +104,10 @@ def upgrade() -> None:
         sa.Column("user_id", sa.Integer(), nullable=False),
         sa.Column("tenant_id", sa.Integer(), nullable=False),
         sa.Column("batch_date", sa.Date(), nullable=True),
-        sa.Column("valid_from", sa.DateTime(timezone=True), server_default=sa.text("NOW()"), nullable=False),
+        sa.Column("valid_from", sa.DateTime(timezone=True), server_default=timestamp_default, nullable=False),
         sa.Column("valid_to", sa.DateTime(timezone=True), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("NOW()"), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("NOW()"), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=timestamp_default, nullable=False),
+        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=timestamp_default, nullable=False),
         sa.PrimaryKeyConstraint("id"),
         sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["tenant_id"], ["tenants.id"], ondelete="CASCADE"),
@@ -121,9 +124,9 @@ def upgrade() -> None:
     op.create_index("ix_batches_tenant_created", "batches", ["tenant_id", "created_at"])
     op.create_index("ix_batches_valid_range", "batches", ["valid_from", "valid_to"])
 
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+    # ══════════════════════════════════════
     # 4. Calculations
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+    # ══════════════════════════════════════
     op.create_table(
         "calculations",
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
@@ -140,7 +143,7 @@ def upgrade() -> None:
         sa.Column("engine_version", sa.String(50), nullable=True),
         sa.Column("user_id", sa.Integer(), nullable=False),
         sa.Column("tenant_id", sa.Integer(), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("NOW()"), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=timestamp_default, nullable=False),
         sa.PrimaryKeyConstraint("id"),
         sa.ForeignKeyConstraint(["batch_id"], ["batches.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
@@ -156,12 +159,12 @@ def upgrade() -> None:
     op.create_index("ix_calculations_tenant_type", "calculations", ["tenant_id", "calc_type"])
     op.create_index("ix_calculations_tenant_passed", "calculations", ["tenant_id", "passed"])
 
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+    # ══════════════════════════════════════
     # 5. Audit Log
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+    # ══════════════════════════════════════
     op.create_table(
         "audit_log",
-        sa.Column("id", sa.BigInteger(), autoincrement=True, nullable=False),
+        sa.Column("id", big_int_pk, autoincrement=True, nullable=False),
         sa.Column("table_name", sa.String(100), nullable=True),
         sa.Column("record_id", sa.Integer(), nullable=True),
         sa.Column("action", sa.String(50), nullable=False),
@@ -175,7 +178,7 @@ def upgrade() -> None:
         sa.Column("ip_address", sa.String(45), nullable=True),
         sa.Column("user_agent", sa.String(500), nullable=True),
         sa.Column("request_id", sa.String(100), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("NOW()"), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=timestamp_default, nullable=False),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index("ix_audit_log_tenant_id", "audit_log", ["tenant_id"])
@@ -186,197 +189,102 @@ def upgrade() -> None:
     op.create_index("ix_audit_log_tenant_action", "audit_log", ["tenant_id", "action"])
     op.create_index("ix_audit_log_tenant_created", "audit_log", ["tenant_id", "created_at"])
 
-    # Helper functions required by RLS policies and triggers
-    op.execute("""
-        CREATE OR REPLACE FUNCTION current_tenant_id()
-        RETURNS INTEGER
-        LANGUAGE plpgsql
-        STABLE
-        AS $$
-        BEGIN
-            RETURN COALESCE(
-                NULLIF(current_setting('app.current_tenant_id', true), '')::INTEGER,
-                0
-            );
-        END;
-        $$;
-    """)
-
-    op.execute("""
-        CREATE OR REPLACE FUNCTION current_app_user_id()
-        RETURNS INTEGER
-        LANGUAGE plpgsql
-        STABLE
-        AS $$
-        BEGIN
-            RETURN COALESCE(
-                NULLIF(current_setting('app.current_user_id', true), '')::INTEGER,
-                0
-            );
-        END;
-        $$;
-    """)
-
-    op.execute("""
-        CREATE OR REPLACE FUNCTION update_updated_at_column()
-        RETURNS TRIGGER
-        LANGUAGE plpgsql
-        AS $$
-        BEGIN
-            NEW.updated_at = NOW();
-            RETURN NEW;
-        END;
-        $$;
-    """)
-
-    op.execute("""
-        CREATE OR REPLACE FUNCTION prevent_tenant_change()
-        RETURNS TRIGGER
-        LANGUAGE plpgsql
-        AS $$
-        BEGIN
-            IF OLD.tenant_id IS DISTINCT FROM NEW.tenant_id THEN
-                RAISE EXCEPTION 'tenant_id cannot be changed after creation (attempted: % -> %)',
-                    OLD.tenant_id, NEW.tenant_id;
-            END IF;
-            RETURN NEW;
-        END;
-        $$;
-    """)
-
-    op.execute("""
-        CREATE OR REPLACE FUNCTION audit_trigger_func()
-        RETURNS TRIGGER
-        LANGUAGE plpgsql
-        AS $$
-        DECLARE
-            changed_fields JSONB;
-        BEGIN
-            IF TG_OP = 'INSERT' THEN
-                INSERT INTO audit_log (
-                    table_name, record_id, action, new_data,
-                    user_id, tenant_id, ip_address
-                ) VALUES (
-                    TG_TABLE_NAME, NEW.id, 'INSERT', to_jsonb(NEW),
-                    current_app_user_id(), current_tenant_id(),
-                    COALESCE(NULLIF(current_setting('app.client_ip', true), ''), 'unknown')
-                );
-                RETURN NEW;
-
-            ELSIF TG_OP = 'UPDATE' THEN
-                IF OLD IS DISTINCT FROM NEW THEN
-                    changed_fields := (
-                        SELECT jsonb_object_agg(key, value)
-                        FROM jsonb_each(to_jsonb(NEW))
-                        WHERE to_jsonb(NEW) -> key IS DISTINCT FROM to_jsonb(OLD) -> key
-                    );
-
-                    INSERT INTO audit_log (
-                        table_name, record_id, action, old_data, new_data, changed_fields,
-                        user_id, tenant_id, ip_address
-                    ) VALUES (
-                        TG_TABLE_NAME, NEW.id, 'UPDATE', to_jsonb(OLD), to_jsonb(NEW), changed_fields,
-                        current_app_user_id(), current_tenant_id(),
-                        COALESCE(NULLIF(current_setting('app.client_ip', true), ''), 'unknown')
-                    );
-                END IF;
-                RETURN NEW;
-
-            ELSIF TG_OP = 'DELETE' THEN
-                INSERT INTO audit_log (
-                    table_name, record_id, action, old_data,
-                    user_id, tenant_id, ip_address
-                ) VALUES (
-                    TG_TABLE_NAME, OLD.id, 'DELETE', to_jsonb(OLD),
-                    current_app_user_id(), current_tenant_id(),
-                    COALESCE(NULLIF(current_setting('app.client_ip', true), ''), 'unknown')
-                );
-                RETURN OLD;
-            END IF;
-
-            RETURN NULL;
-        END;
-        $$;
-    """)
-
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+    # ══════════════════════════════════════
     # 6. Row-Level Security Policies
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+    # ══════════════════════════════════════
     # Enable RLS on tenant-scoped tables
-    for table in ["users", "batches", "calculations", "audit_log"]:
-        op.execute(f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY")
-        op.execute(f"ALTER TABLE {table} FORCE ROW LEVEL SECURITY")
+    if not is_sqlite:
+        for table in ["users", "batches", "calculations", "audit_log"]:
+            op.execute(f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY")
+            op.execute(f"ALTER TABLE {table} FORCE ROW LEVEL SECURITY")
 
-        # Policy: users can only see rows belonging to their tenant
-        op.execute(f"""
-            CREATE POLICY tenant_isolation_select ON {table}
-            FOR SELECT
-            USING (tenant_id = current_tenant_id() OR current_tenant_id() = 0)
-        """)
+            # Policy: users can only see rows belonging to their tenant
+            op.execute(
+                f"""
+                CREATE POLICY tenant_isolation_select ON {table}
+                FOR SELECT
+                USING (tenant_id = current_tenant_id() OR current_tenant_id() = 0)
+            """
+            )
 
-        op.execute(f"""
-            CREATE POLICY tenant_isolation_insert ON {table}
-            FOR INSERT
-            WITH CHECK (tenant_id = current_tenant_id() OR current_tenant_id() = 0)
-        """)
+            op.execute(
+                f"""
+                CREATE POLICY tenant_isolation_insert ON {table}
+                FOR INSERT
+                WITH CHECK (tenant_id = current_tenant_id() OR current_tenant_id() = 0)
+            """
+            )
 
-        op.execute(f"""
-            CREATE POLICY tenant_isolation_update ON {table}
-            FOR UPDATE
-            USING (tenant_id = current_tenant_id() OR current_tenant_id() = 0)
-        """)
+            op.execute(
+                f"""
+                CREATE POLICY tenant_isolation_update ON {table}
+                FOR UPDATE
+                USING (tenant_id = current_tenant_id() OR current_tenant_id() = 0)
+            """
+            )
 
-        op.execute(f"""
-            CREATE POLICY tenant_isolation_delete ON {table}
-            FOR DELETE
-            USING (tenant_id = current_tenant_id() OR current_tenant_id() = 0)
-        """)
+            op.execute(
+                f"""
+                CREATE POLICY tenant_isolation_delete ON {table}
+                FOR DELETE
+                USING (tenant_id = current_tenant_id() OR current_tenant_id() = 0)
+            """
+            )
 
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+    # ══════════════════════════════════════
     # 7. Triggers
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+    # ══════════════════════════════════════
     # updated_at auto-timestamp
-    for table in ["tenants", "users", "batches"]:
-        op.execute(f"""
-            CREATE TRIGGER trg_{table}_updated_at
-            BEFORE UPDATE ON {table}
-            FOR EACH ROW
-            EXECUTE FUNCTION update_updated_at_column()
-        """)
+    if not is_sqlite:
+        for table in ["tenants", "users", "batches"]:
+            op.execute(
+                f"""
+                CREATE TRIGGER trg_{table}_updated_at
+                BEFORE UPDATE ON {table}
+                FOR EACH ROW
+                EXECUTE FUNCTION update_updated_at_column()
+            """
+            )
 
-    # Prevent tenant_id changes
-    for table in ["users", "batches", "calculations"]:
-        op.execute(f"""
-            CREATE TRIGGER trg_{table}_prevent_tenant_change
-            BEFORE UPDATE ON {table}
-            FOR EACH ROW
-            EXECUTE FUNCTION prevent_tenant_change()
-        """)
+        # Prevent tenant_id changes
+        for table in ["users", "batches", "calculations"]:
+            op.execute(
+                f"""
+                CREATE TRIGGER trg_{table}_prevent_tenant_change
+                BEFORE UPDATE ON {table}
+                FOR EACH ROW
+                EXECUTE FUNCTION prevent_tenant_change()
+            """
+            )
 
-    # Audit triggers on batches and calculations
-    for table in ["batches", "calculations"]:
-        op.execute(f"""
-            CREATE TRIGGER trg_{table}_audit
-            AFTER INSERT OR UPDATE OR DELETE ON {table}
-            FOR EACH ROW
-            EXECUTE FUNCTION audit_trigger_func()
-        """)
+        # Audit triggers on batches and calculations
+        for table in ["batches", "calculations"]:
+            op.execute(
+                f"""
+                CREATE TRIGGER trg_{table}_audit
+                AFTER INSERT OR UPDATE OR DELETE ON {table}
+                FOR EACH ROW
+                EXECUTE FUNCTION audit_trigger_func()
+            """
+            )
 
 
 def downgrade() -> None:
-    # Drop triggers
-    for table in ["batches", "calculations"]:
-        op.execute(f"DROP TRIGGER IF EXISTS trg_{table}_audit ON {table}")
-    for table in ["users", "batches", "calculations"]:
-        op.execute(f"DROP TRIGGER IF EXISTS trg_{table}_prevent_tenant_change ON {table}")
-    for table in ["tenants", "users", "batches"]:
-        op.execute(f"DROP TRIGGER IF EXISTS trg_{table}_updated_at ON {table}")
+    is_sqlite = op.get_bind().dialect.name == "sqlite"
+    if not is_sqlite:
+        # Drop triggers
+        for table in ["batches", "calculations"]:
+            op.execute(f"DROP TRIGGER IF EXISTS trg_{table}_audit ON {table}")
+        for table in ["users", "batches", "calculations"]:
+            op.execute(f"DROP TRIGGER IF EXISTS trg_{table}_prevent_tenant_change ON {table}")
+        for table in ["tenants", "users", "batches"]:
+            op.execute(f"DROP TRIGGER IF EXISTS trg_{table}_updated_at ON {table}")
 
-    # Drop RLS policies
-    for table in ["users", "batches", "calculations", "audit_log"]:
-        for action in ["select", "insert", "update", "delete"]:
-            op.execute(f"DROP POLICY IF EXISTS tenant_isolation_{action} ON {table}")
-        op.execute(f"ALTER TABLE {table} DISABLE ROW LEVEL SECURITY")
+        # Drop RLS policies
+        for table in ["users", "batches", "calculations", "audit_log"]:
+            for action in ["select", "insert", "update", "delete"]:
+                op.execute(f"DROP POLICY IF EXISTS tenant_isolation_{action} ON {table}")
+            op.execute(f"ALTER TABLE {table} DISABLE ROW LEVEL SECURITY")
 
     # Drop tables in reverse dependency order
     op.drop_table("audit_log")

@@ -1,8 +1,8 @@
 """
-BOS Pipeline v9.0 �� Timing Middleware
+BOS Pipeline v9.0 timing middleware.
 
 Measures and logs request processing time.
-Adds X-Process-Time header to every response.
+Adds an X-Process-Time header to every response.
 """
 
 import logging
@@ -17,31 +17,27 @@ from app.middleware.request_id import request_id_ctx
 
 logger = logging.getLogger("bos.timing")
 
-# Threshold for slow request warnings (ms)
 SLOW_REQUEST_THRESHOLD_MS = 2000
 
 
 class TimingMiddleware(BaseHTTPMiddleware):
-    """Measures request processing time."""
+    """Measure request processing time."""
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
         start = time.perf_counter()
-
         response = await call_next(request)
 
         duration_ms = (time.perf_counter() - start) * 1000
         response.headers["X-Process-Time"] = f"{duration_ms:.2f}ms"
 
-        # Log
         req_id = request_id_ctx.get("")
         method = request.method
         path = request.url.path
         status = response.status_code
-
-        log_msg = f"[{req_id[:8]}] {method} {path} �� {status} ({duration_ms:.1f}ms)"
+        log_msg = f"[{req_id[:8]}] {method} {path} -> {status} ({duration_ms:.1f}ms)"
 
         if duration_ms > SLOW_REQUEST_THRESHOLD_MS:
-            logger.warning(f"SLOW {log_msg}")
+            logger.warning("SLOW %s", log_msg)
         elif status >= 500:
             logger.error(log_msg)
         elif status >= 400:

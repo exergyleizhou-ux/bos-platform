@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� Sensitivity Analysis Engine Unit Tests
+BOS Pipeline v9.0 -Sensitivity Analysis Engine Unit Tests
 
 Tests the global sensitivity analysis engine (Sobol, Morris).
 """
@@ -72,7 +72,7 @@ class TestSensitivityEngine:
         assert isinstance(result.parameter_ranking[0], str)
 
     def test_first_order_sum_reasonable(self):
-        """Sum of first-order indices should be �� 1 (no strong interactions)
+        """Sum of first-order indices should be - 1 (no strong interactions)
         or > 1 (strong interactions)."""
         inp = SensitivityInput(
             method="sobol",
@@ -90,7 +90,7 @@ class TestSensitivityEngine:
         assert 0.0 <= s1_sum <= 2.0
 
     def test_total_order_geq_first_order(self):
-        """Total-order indices �� first-order indices for each parameter."""
+        """Total-order indices - first-order indices for each parameter."""
         inp = SensitivityInput(
             method="sobol",
             n_samples=1024,
@@ -108,7 +108,7 @@ class TestSensitivityEngine:
             assert result.total_order[param] >= result.first_order[param] - 0.05
 
     def test_reproducibility(self):
-        """Same seed �� same results."""
+        """Same seed - same results."""
         inp = SensitivityInput(
             method="sobol",
             n_samples=512,
@@ -122,7 +122,7 @@ class TestSensitivityEngine:
             assert r1.first_order[param] == pytest.approx(r2.first_order[param], abs=1e-10)
 
     def test_single_parameter(self):
-        """Single parameter �� trivial sensitivity (S1 �� 1)."""
+        """Single parameter - trivial sensitivity (S1 - 1)."""
         inp = SensitivityInput(
             method="sobol",
             n_samples=512,
@@ -146,14 +146,16 @@ class TestSensitivityEngine:
         assert result.computation_time_ms > 0
 
     def test_convergence_diagnostics(self):
-        """Larger N �� more stable indices."""
+        """Larger N - more stable indices."""
         inp_small = SensitivityInput(
-            method="sobol", n_samples=128,
+            method="sobol",
+            n_samples=128,
             parameters={"dm_in": (5.0, 20.0), "dm_out": (1.0, 5.0)},
             seed=42,
         )
         inp_large = SensitivityInput(
-            method="sobol", n_samples=2048,
+            method="sobol",
+            n_samples=2048,
             parameters={"dm_in": (5.0, 20.0), "dm_out": (1.0, 5.0)},
             seed=42,
         )

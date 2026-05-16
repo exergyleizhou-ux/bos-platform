@@ -1,26 +1,39 @@
 """
-BOS Pipeline v9.0 �� Test Configuration & Fixtures
+BOS Pipeline v9.0 test configuration and fixtures.
 
-Shared pytest fixtures for database, client, auth, and factory helpers.
+Shared pytest fixtures for database, client, auth, and sample payloads.
 """
 
-import asyncio
+from pathlib import Path
 import uuid
-from typing import AsyncGenerator, Generator
+from typing import AsyncGenerator
 
 import pytest
 import pytest_asyncio
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
-from app.main import app
-from app.config import get_settings
 from app.db import Base, get_async_session
+from app.main import app
 from app.models import Tenant, User
 from app.routers.auth import create_access_token, pwd_context
 
-settings = get_settings()
+TEST_DATABASE_FILE = Path(f"test-{uuid.uuid4().hex}.db")
+TEST_DATABASE_URL = f"sqlite+aiosqlite:///./{TEST_DATABASE_FILE.name}"
+collect_ignore_glob = ["*.backup.py"]
+
+test_engine = create_async_engine(
+    TEST_DATABASE_URL,
+    echo=False,
+    connect_args={"check_same_thread": False},
+)
+
+TestSessionLocal = async_sessionmaker(
+    bind=test_engine,
+    class_=AsyncSession,
+    expire_on_commit=False,
+)
 
 
 def _make_token(user: User) -> str:
@@ -64,51 +77,33 @@ async def _get_or_create_user(
     await db_session.refresh(user)
     return user
 
-# ���� Test database URL (SQLite async) ����
-TEST_DATABASE_URL = "sqlite+aiosqlite:///./test.db"
 
-test_engine = create_async_engine(
-    TEST_DATABASE_URL,
-    echo=False,
-    connect_args={"check_same_thread": False},
-)
-
-TestSessionLocal = async_sessionmaker(
-    bind=test_engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-)
-
-
-# ���� Event loop ����
-@pytest.fixture(scope="session")
-def event_loop() -> Generator[asyncio.AbstractEventLoop, None, None]:
-    loop = asyncio.new_event_loop()
-    yield loop
-    loop.close()
-
-
-# ���� Create / drop tables ����
 @pytest_asyncio.fixture(scope="session", autouse=True)
 async def setup_database():
+    """Create and drop all database tables for the test session."""
+    if TEST_DATABASE_FILE.exists():
+        TEST_DATABASE_FILE.unlink()
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     yield
     async with test_engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
+    if TEST_DATABASE_FILE.exists():
+        TEST_DATABASE_FILE.unlink()
 
 
-# ���� Session override ����
 @pytest_asyncio.fixture
 async def db_session() -> AsyncGenerator[AsyncSession, None]:
+    """Provide an isolated async database session per test."""
     async with TestSessionLocal() as session:
         yield session
         await session.rollback()
 
 
-# ���� Override dependency ����
 @pytest_asyncio.fixture(autouse=True)
 async def override_db(db_session: AsyncSession):
+    """Override the app database dependency with the test session."""
+
     async def _override():
         yield db_session
 
@@ -117,20 +112,17 @@ async def override_db(db_session: AsyncSession):
     app.dependency_overrides.clear()
 
 
-# ���� HTTP Client ����
 @pytest_asyncio.fixture
 async def client() -> AsyncGenerator[AsyncClient, None]:
+    """Provide an ASGI test client."""
     transport = ASGITransport(app=app)
-    async with AsyncClient(
-        transport=transport,
-        base_url="http://test",
-    ) as ac:
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
 
 
-# ���� Test User ����
 @pytest_asyncio.fixture
 async def test_tenant(db_session: AsyncSession) -> Tenant:
+    """Create a tenant for the current test."""
     tenant = Tenant(name="Test Tenant", slug=f"test-tenant-{uuid.uuid4().hex[:8]}")
     db_session.add(tenant)
     await db_session.commit()
@@ -140,6 +132,7 @@ async def test_tenant(db_session: AsyncSession) -> Tenant:
 
 @pytest_asyncio.fixture
 async def test_user(db_session: AsyncSession, test_tenant: Tenant) -> User:
+    """Create a regular operator user for the current test."""
     suffix = uuid.uuid4().hex[:8]
     user = User(
         username=f"testuser_{suffix}",
@@ -156,9 +149,9 @@ async def test_user(db_session: AsyncSession, test_tenant: Tenant) -> User:
     return user
 
 
-# ���� Admin User ����
 @pytest_asyncio.fixture
 async def admin_user(db_session: AsyncSession, test_tenant: Tenant) -> User:
+    """Create or reuse an admin user for the current test."""
     return await _get_or_create_user(
         db_session,
         username="test_admin",
@@ -172,6 +165,7 @@ async def admin_user(db_session: AsyncSession, test_tenant: Tenant) -> User:
 
 @pytest_asyncio.fixture
 async def operator_user(db_session: AsyncSession, test_tenant: Tenant) -> User:
+    """Create or reuse an operator user for the current test."""
     return await _get_or_create_user(
         db_session,
         username="test_operator",
@@ -185,6 +179,7 @@ async def operator_user(db_session: AsyncSession, test_tenant: Tenant) -> User:
 
 @pytest_asyncio.fixture
 async def scientist_user(db_session: AsyncSession, test_tenant: Tenant) -> User:
+    """Create or reuse a scientist user for the current test."""
     return await _get_or_create_user(
         db_session,
         username="test_scientist",
@@ -196,29 +191,28 @@ async def scientist_user(db_session: AsyncSession, test_tenant: Tenant) -> User:
     )
 
 
-# ���� Auth Headers ����
 @pytest_asyncio.fixture
 def auth_headers(test_user: User) -> dict[str, str]:
-    token = create_access_token(test_user.id, test_user.role, test_user.tenant_id)
-    return {"Authorization": f"Bearer {token}"}
+    """Authorization headers for the default test user."""
+    return {"Authorization": f"Bearer {_make_token(test_user)}"}
 
 
 @pytest_asyncio.fixture
 def admin_headers(admin_user: User) -> dict[str, str]:
-    token = create_access_token(admin_user.id, admin_user.role, admin_user.tenant_id)
-    return {"Authorization": f"Bearer {token}"}
+    """Authorization headers for the admin test user."""
+    return {"Authorization": f"Bearer {_make_token(admin_user)}"}
 
 
 @pytest_asyncio.fixture
 def operator_headers(operator_user: User) -> dict[str, str]:
-    token = create_access_token(operator_user.id, operator_user.role, operator_user.tenant_id)
-    return {"Authorization": f"Bearer {token}"}
+    """Authorization headers for the operator test user."""
+    return {"Authorization": f"Bearer {_make_token(operator_user)}"}
 
 
 @pytest_asyncio.fixture
 def scientist_headers(scientist_user: User) -> dict[str, str]:
-    token = create_access_token(scientist_user.id, scientist_user.role, scientist_user.tenant_id)
-    return {"Authorization": f"Bearer {token}"}
+    """Authorization headers for the scientist test user."""
+    return {"Authorization": f"Bearer {_make_token(scientist_user)}"}
 
 
 @pytest_asyncio.fixture
@@ -227,9 +221,9 @@ def test_admin(admin_user: User) -> User:
     return admin_user
 
 
-# ���� Sample Batch Data ����
 @pytest.fixture
 def sample_batch_payload() -> dict:
+    """Sample batch payload used by integration tests."""
     return {
         "batch_id": "BSF-TEST-001",
         "species": "BSF",
@@ -245,9 +239,9 @@ def sample_batch_payload() -> dict:
     }
 
 
-# ���� Sample SER Payload ����
 @pytest.fixture
 def sample_ser_payload() -> dict:
+    """Sample SER payload used by tests."""
     return {
         "dm_in": 10.0,
         "dm_out": 8.5,

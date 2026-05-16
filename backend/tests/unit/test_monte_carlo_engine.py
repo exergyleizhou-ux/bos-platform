@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� Monte Carlo Engine Unit Tests
+BOS Pipeline v9.0 -Monte Carlo Engine Unit Tests
 
 Tests the Monte Carlo simulation engine for SER uncertainty quantification.
 """
@@ -64,7 +64,7 @@ class TestMonteCarloEngine:
         assert r1.ser_mean != r2.ser_mean
 
     def test_zero_std(self):
-        """Zero std �� deterministic output, zero variance."""
+        """Zero std - deterministic output, zero variance."""
         inp = MCInput(
             n_samples=1000,
             dm_in_mean=10.0,
@@ -80,7 +80,7 @@ class TestMonteCarloEngine:
         assert result.pass_probability == 1.0  # deterministic pass
 
     def test_high_uncertainty(self):
-        """High std �� wider CI."""
+        """High std - wider CI."""
         inp_low = MCInput(n_samples=10000, dm_in_mean=10.0, dm_in_std=0.1, dm_out_mean=2.3, dm_out_std=0.05, seed=42)
         inp_high = MCInput(n_samples=10000, dm_in_mean=10.0, dm_in_std=2.0, dm_out_mean=2.3, dm_out_std=1.0, seed=42)
 
@@ -94,7 +94,14 @@ class TestMonteCarloEngine:
 
     def test_histogram_output(self):
         """MC result includes histogram bins and counts."""
-        inp = MCInput(n_samples=5000, dm_in_mean=10.0, dm_in_std=0.5, dm_out_mean=2.3, dm_out_std=0.15, seed=42)
+        inp = MCInput(
+            n_samples=5000,
+            dm_in_mean=10.0,
+            dm_in_std=0.5,
+            dm_out_mean=2.3,
+            dm_out_std=0.15,
+            seed=42,
+        )
         result = run_monte_carlo(inp)
 
         assert len(result.histogram_bins) > 0
@@ -103,7 +110,14 @@ class TestMonteCarloEngine:
 
     def test_percentiles_output(self):
         """MC result includes standard percentiles."""
-        inp = MCInput(n_samples=10000, dm_in_mean=10.0, dm_in_std=0.5, dm_out_mean=2.3, dm_out_std=0.15, seed=42)
+        inp = MCInput(
+            n_samples=10000,
+            dm_in_mean=10.0,
+            dm_in_std=0.5,
+            dm_out_mean=2.3,
+            dm_out_std=0.15,
+            seed=42,
+        )
         result = run_monte_carlo(inp)
 
         assert "p5" in result.percentiles
@@ -129,14 +143,28 @@ class TestMonteCarloEngine:
 
     def test_computation_time_recorded(self):
         """Engine records computation time."""
-        inp = MCInput(n_samples=1000, dm_in_mean=10.0, dm_in_std=0.5, dm_out_mean=2.3, dm_out_std=0.15, seed=42)
+        inp = MCInput(
+            n_samples=1000,
+            dm_in_mean=10.0,
+            dm_in_std=0.5,
+            dm_out_mean=2.3,
+            dm_out_std=0.15,
+            seed=42,
+        )
         result = run_monte_carlo(inp)
 
         assert result.computation_time_ms > 0
 
     def test_engine_version(self):
         """Engine version is set."""
-        inp = MCInput(n_samples=100, dm_in_mean=10.0, dm_in_std=0.5, dm_out_mean=2.3, dm_out_std=0.15, seed=42)
+        inp = MCInput(
+            n_samples=100,
+            dm_in_mean=10.0,
+            dm_in_std=0.5,
+            dm_out_mean=2.3,
+            dm_out_std=0.15,
+            seed=42,
+        )
         result = run_monte_carlo(inp)
 
         assert result.engine_version == ENGINE_VERSION

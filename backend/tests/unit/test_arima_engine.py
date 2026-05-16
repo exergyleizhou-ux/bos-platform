@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� ARIMA / Forecast Engine Unit Tests
+BOS Pipeline v9.0 -ARIMA / Forecast Engine Unit Tests
 
 Tests the time series forecasting engine.
 """
@@ -36,7 +36,7 @@ class TestForecastEngine:
 
         assert len(result.forecast) == 5
         assert result.method == "ewma"
-        # Upward trend �� forecast should be above recent values
+        # Upward trend - forecast should be above recent values
         assert result.forecast[0] >= 0.20
 
     def test_ar_forecast(self):
@@ -93,6 +93,7 @@ class TestForecastEngine:
         """Seasonal period triggers decomposition."""
         # Create data with clear seasonality
         import math
+
         values = [0.20 + 0.05 * math.sin(2 * math.pi * i / 7) for i in range(42)]
         inp = ForecastInput(values=values, horizon=7, method="ewma", seasonal_period=7)
         result = forecast_timeseries(inp)
@@ -111,7 +112,7 @@ class TestForecastEngine:
         assert len(result.forecast) == 3
 
     def test_constant_series(self):
-        """Constant series �� flat forecast."""
+        """Constant series - flat forecast."""
         values = [0.20] * 20
         inp = ForecastInput(values=values, horizon=5, method="ewma")
         result = forecast_timeseries(inp)
@@ -128,9 +129,14 @@ class TestForecastEngine:
         assert result.computation_time_ms > 0
 
     def test_invalid_window_too_large(self):
-        """SMA window larger than series length �� error or graceful fallback."""
+        """SMA window larger than series length - error or graceful fallback."""
         values = [0.20, 0.21, 0.22]
-        inp = ForecastInput(values=values, horizon=3, method="sma", sma_window=50)
+        inp = ForecastInput(
+            values=values,
+            horizon=3,
+            method="sma",
+            sma_window=50,
+        )
         result = forecast_timeseries(inp)
 
         # Either returns errors or adjusts window

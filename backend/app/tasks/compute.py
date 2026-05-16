@@ -1,16 +1,78 @@
 """
-BOS Pipeline v9.0 �� Compute Tasks
+BOS Pipeline v9.0 - Compute Tasks
 
 Heavy async computation tasks executed via Celery workers.
 """
 
+from __future__ import annotations
+
+from contextlib import contextmanager
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 from celery import shared_task
 from celery.utils.log import get_task_logger
 
 logger = get_task_logger(__name__)
+
+
+def _build_sync_database_url(database_url: str, database_url_sync: str | None = None) -> str:
+    if database_url_sync:
+        return database_url_sync
+    if database_url.startswith("postgresql+asyncpg://"):
+        return database_url.replace("postgresql+asyncpg://", "postgresql+psycopg2://", 1)
+    if database_url.startswith("sqlite+aiosqlite://"):
+        return database_url.replace("sqlite+aiosqlite://", "sqlite://", 1)
+    return database_url
+
+
+@contextmanager
+def _open_sync_session():
+    from sqlalchemy import create_engine
+    from sqlalchemy.orm import Session
+
+    from app.config import get_settings
+
+    settings = get_settings()
+    sync_url = _build_sync_database_url(settings.DATABASE_URL, getattr(settings, "DATABASE_URL_SYNC", None))
+    engine = create_engine(sync_url, pool_pre_ping=True)
+    try:
+        with Session(engine) as session:
+            yield session
+    finally:
+        engine.dispose()
+
+
+def _persist_calculation(**kwargs) -> bool:
+    """Persist a Calculation record using a sync DB session (Celery context)."""
+    from app.models import Calculation
+
+    batch_id = kwargs.get("batch_id")
+    if batch_id is None:
+        logger.warning(
+            "Skipping calculation persistence because batch_id is required",
+            extra={"calc_type": kwargs.get("calc_type", "unknown")},
+        )
+        return False
+
+    with _open_sync_session() as session:
+        calc = Calculation(
+            batch_id=batch_id,
+            calc_type=kwargs.get("calc_type", "unknown"),
+            status="completed",
+            inputs=kwargs.get("inputs"),
+            result=kwargs.get("result_data"),
+            ser_value=kwargs.get("ser_value"),
+            passed=kwargs.get("passed"),
+            mc_samples=kwargs.get("mc_samples"),
+            duration_ms=kwargs.get("duration_ms"),
+            engine_version=kwargs.get("engine_version"),
+            user_id=kwargs.get("user_id"),
+            tenant_id=kwargs.get("tenant_id"),
+        )
+        session.add(calc)
+        session.commit()
+    return True
 
 
 @shared_task(
@@ -30,12 +92,12 @@ def run_monte_carlo_async(
     dm_out_mean: float,
     dm_out_std: float,
     n_samples: int = 100_000,
-    seed: Optional[int] = None,
-) -> Dict[str, Any]:
+    seed: int | None = None,
+) -> dict[str, Any]:
     """Run Monte Carlo simulation asynchronously for large sample counts."""
     from app.engine.monte_carlo_engine import MCInput, run_monte_carlo
 
-    logger.info(f"Starting MC simulation: batch={batch_id}, n={n_samples}")
+    logger.info("Starting MC simulation: batch=%s, n=%s", batch_id, n_samples)
     start = time.perf_counter()
 
     try:
@@ -48,10 +110,8 @@ def run_monte_carlo_async(
             seed=seed,
         )
         result = run_monte_carlo(mc_input)
-
         duration = (time.perf_counter() - start) * 1000
 
-        # Persist to database
         _persist_calculation(
             batch_id=batch_id,
             tenant_id=tenant_id,
@@ -79,18 +139,16 @@ def run_monte_carlo_async(
             engine_version=result.engine_version,
         )
 
-        logger.info(f"MC simulation complete: SER={result.ser_mean:.4f}, {duration:.0f}ms")
-
+        logger.info("MC simulation complete: SER=%.4f, %.0fms", result.ser_mean, duration)
         return {
             "status": "completed",
             "ser_mean": result.ser_mean,
             "pass_probability": result.pass_probability,
             "computation_time_ms": round(duration, 2),
         }
-
     except Exception as exc:
-        logger.error(f"MC simulation failed: {exc}")
-        self.retry(exc=exc, countdown=60)
+        logger.error("MC simulation failed: %s", exc)
+        raise self.retry(exc=exc, countdown=60) from exc
 
 
 @shared_task(
@@ -106,18 +164,17 @@ def run_sensitivity_async(
     user_id: int,
     method: str,
     n_samples: int,
-    parameters: Dict[str, List[float]],
-    seed: Optional[int] = None,
-) -> Dict[str, Any]:
+    parameters: dict[str, list[float]],
+    seed: int | None = None,
+) -> dict[str, Any]:
     """Run global sensitivity analysis asynchronously."""
     from app.engine.sensitivity_engine import SensitivityInput, run_sensitivity_analysis
 
-    logger.info(f"Starting sensitivity analysis: method={method}, n={n_samples}")
+    logger.info("Starting sensitivity analysis: method=%s, n=%s", method, n_samples)
     start = time.perf_counter()
 
     try:
-        param_bounds = {k: (v[0], v[1]) for k, v in parameters.items()}
-
+        param_bounds = {key: (values[0], values[1]) for key, values in parameters.items()}
         sa_input = SensitivityInput(
             method=method,
             n_samples=n_samples,
@@ -143,17 +200,15 @@ def run_sensitivity_async(
             engine_version=result.engine_version,
         )
 
-        logger.info(f"Sensitivity analysis complete: {duration:.0f}ms")
-
+        logger.info("Sensitivity analysis complete: %.0fms", duration)
         return {
             "status": "completed",
             "parameter_ranking": result.parameter_ranking,
             "computation_time_ms": round(duration, 2),
         }
-
     except Exception as exc:
-        logger.error(f"Sensitivity analysis failed: {exc}")
-        self.retry(exc=exc, countdown=120)
+        logger.error("Sensitivity analysis failed: %s", exc)
+        raise self.retry(exc=exc, countdown=120) from exc
 
 
 @shared_task(
@@ -167,14 +222,14 @@ def run_gp_calibration_async(
     self,
     tenant_id: int,
     user_id: int,
-    X_train: List[List[float]],
-    y_train: List[float],
+    X_train: list[list[float]],
+    y_train: list[float],
     kernel: str = "matern52",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Run GP calibration asynchronously for large datasets."""
     from app.engine.calibration_engine import GPInput, fit_gp
 
-    logger.info(f"Starting GP calibration: n={len(X_train)}, kernel={kernel}")
+    logger.info("Starting GP calibration: n=%s, kernel=%s", len(X_train), kernel)
     start = time.perf_counter()
 
     try:
@@ -204,60 +259,20 @@ def run_gp_calibration_async(
             engine_version=result.engine_version,
         )
 
-        logger.info(f"GP calibration complete: R2={result.r_squared}, {duration:.0f}ms")
-
+        logger.info("GP calibration complete: R2=%s, %.0fms", result.r_squared, duration)
         return {
             "status": "completed",
             "r_squared": result.r_squared,
             "rmse": result.rmse,
             "computation_time_ms": round(duration, 2),
         }
-
     except Exception as exc:
-        logger.error(f"GP calibration failed: {exc}")
-        self.retry(exc=exc, countdown=60)
+        logger.error("GP calibration failed: %s", exc)
+        raise self.retry(exc=exc, countdown=60) from exc
 
 
 @shared_task(name="app.tasks.compute.check_twin_health")
-def check_twin_health() -> Dict[str, Any]:
+def check_twin_health() -> dict[str, Any]:
     """Periodic task: check health of all active digital twins."""
     logger.info("Checking digital twin health...")
-
-    # This would check for twins that haven't been updated in a long time,
-    # detect divergent states, etc.
     return {"status": "checked", "message": "Twin health check complete"}
-
-
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-# Helper: persist calculation via sync DB session
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-
-def _persist_calculation(**kwargs):
-    """Persist a Calculation record using a sync DB session (Celery context)."""
-    from sqlalchemy import create_engine
-    from sqlalchemy.orm import Session
-    from app.config import get_settings
-    from app.models import Calculation
-
-    settings = get_settings()
-    # Convert async URL to sync
-    sync_url = settings.DATABASE_URL.replace("postgresql+asyncpg", "postgresql+psycopg2")
-    engine = create_engine(sync_url, pool_pre_ping=True)
-
-    with Session(engine) as session:
-        calc = Calculation(
-            batch_id=kwargs.get("batch_id"),
-            calc_type=kwargs.get("calc_type", "unknown"),
-            status="completed",
-            inputs=kwargs.get("inputs"),
-            result=kwargs.get("result_data"),
-            ser_value=kwargs.get("ser_value"),
-            passed=kwargs.get("passed"),
-            mc_samples=kwargs.get("mc_samples"),
-            duration_ms=kwargs.get("duration_ms"),
-            engine_version=kwargs.get("engine_version"),
-            user_id=kwargs.get("user_id"),
-            tenant_id=kwargs.get("tenant_id"),
-        )
-        session.add(calc)
-        session.commit()

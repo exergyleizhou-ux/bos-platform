@@ -1,14 +1,11 @@
 """
-BOS Pipeline v9.0 �� Seed Data Migration
+BOS Pipeline v9.0 legacy seed data migration.
 
 Revision ID: 002
 Create Date: 2024-01-15 00:00:00.000000+00:00
-
-Inserts default tenant, admin user, and sample data for development.
 """
 
 from alembic import op
-from datetime import date, datetime, timezone
 from passlib.context import CryptContext
 
 revision = "002"
@@ -20,38 +17,41 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
 def upgrade() -> None:
-    # ���� Default Tenant ����
-    op.execute("""
+    op.execute(
+        """
         INSERT INTO tenants (id, name, slug, plan, max_users, max_batches, max_calculations)
         VALUES (1, 'BOS Demo', 'bos-demo', 'pro', 50, 10000, 50000)
         ON CONFLICT (slug) DO NOTHING
-    """)
+        """
+    )
 
-    # ���� Admin User ����
     admin_password = pwd_context.hash("AdminPass123!")
-    op.execute(f"""
+    op.execute(
+        f"""
         INSERT INTO users (id, username, hashed_password, full_name, email, role, tenant_id)
         VALUES (1, 'admin', '{admin_password}', 'System Administrator', 'admin@bos-pipeline.io', 'admin', 1)
         ON CONFLICT (username) DO NOTHING
-    """)
+        """
+    )
 
-    # ���� Demo Scientist ����
-    sci_password = pwd_context.hash("SciPass123!")
-    op.execute(f"""
+    scientist_password = pwd_context.hash("SciPass123!")
+    op.execute(
+        f"""
         INSERT INTO users (id, username, hashed_password, full_name, email, role, tenant_id)
-        VALUES (2, 'scientist', '{sci_password}', 'Dr. Jane Smith', 'scientist@bos-pipeline.io', 'scientist', 1)
+        VALUES (2, 'scientist', '{scientist_password}', 'Dr. Jane Smith', 'scientist@bos-pipeline.io', 'scientist', 1)
         ON CONFLICT (username) DO NOTHING
-    """)
+        """
+    )
 
-    # ���� Demo Operator ����
-    op_password = pwd_context.hash("OpPass123!")
-    op.execute(f"""
+    operator_password = pwd_context.hash("OpPass123!")
+    op.execute(
+        f"""
         INSERT INTO users (id, username, hashed_password, full_name, email, role, tenant_id)
-        VALUES (3, 'operator', '{op_password}', 'John Operator', 'operator@bos-pipeline.io', 'operator', 1)
+        VALUES (3, 'operator', '{operator_password}', 'John Operator', 'operator@bos-pipeline.io', 'operator', 1)
         ON CONFLICT (username) DO NOTHING
-    """)
+        """
+    )
 
-    # ���� Sample Batches ����
     sample_batches = [
         ("BATCH-2024-001", "BSF", "completed", 10.0, 2.3, 0.2300, 28.5, 68.0, "John Operator", "2024-01-10"),
         ("BATCH-2024-002", "BSF", "completed", 12.5, 2.8, 0.2240, 27.8, 72.0, "John Operator", "2024-01-15"),
@@ -67,12 +67,19 @@ def upgrade() -> None:
 
     for batch_id, species, status, dm_in, dm_out, score, temp, moist, operator, batch_date in sample_batches:
         score_sql = f"{score}" if score is not None else "NULL"
-        op.execute(f"""
-            INSERT INTO batches (batch_id, species, status, dm_in, dm_out, score, temperature, moisture, operator, batch_date, user_id, tenant_id)
-            VALUES ('{batch_id}', '{species}', '{status}', {dm_in}, {dm_out}, {score_sql}, {temp}, {moist}, '{operator}', '{batch_date}', 3, 1)
-        """)
+        op.execute(
+            f"""
+            INSERT INTO batches (
+                batch_id, species, status, dm_in, dm_out, score,
+                temperature, moisture, operator, batch_date, user_id, tenant_id
+            )
+            VALUES (
+                '{batch_id}', '{species}', '{status}', {dm_in}, {dm_out}, {score_sql},
+                {temp}, {moist}, '{operator}', '{batch_date}', 3, 1
+            )
+            """
+        )
 
-    # ���� Reset sequences ����
     op.execute("SELECT setval('tenants_id_seq', (SELECT COALESCE(MAX(id), 0) + 1 FROM tenants))")
     op.execute("SELECT setval('users_id_seq', (SELECT COALESCE(MAX(id), 0) + 1 FROM users))")
     op.execute("SELECT setval('batches_id_seq', (SELECT COALESCE(MAX(id), 0) + 1 FROM batches))")

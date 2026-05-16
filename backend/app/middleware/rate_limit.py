@@ -1,19 +1,11 @@
 """
-BOS Pipeline v9.0 �� Rate Limiting Middleware
+BOS Pipeline v9.0 rate limiting middleware.
 
-Per-tenant rate limiting using Redis sliding window.
-
-Limits:
-  - free       : 100 req/min
-  - starter    : 500 req/min
-  - pro        : 2000 req/min
-  - enterprise : 10000 req/min
-
-Returns 429 Too Many Requests when limit is exceeded.
+Per-tenant rate limiting using a Redis sliding window.
 """
 
 import time
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
@@ -30,7 +22,6 @@ PLAN_RATE_LIMITS = {
     "enterprise": 10000,
 }
 
-# Paths excluded from rate limiting
 EXCLUDED_PATHS = {
     "/api/v1/health/live",
     "/api/v1/health/ready",
@@ -42,41 +33,35 @@ EXCLUDED_PATHS = {
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
-    """Per-tenant rate limiting using Redis sliding window counter."""
+    """Per-tenant rate limiting using a Redis sliding window counter."""
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        # Skip excluded paths
         if request.url.path in EXCLUDED_PATHS:
             return await call_next(request)
 
-        # Skip if no Redis available
         redis = getattr(request.app.state, "redis", None)
         if not redis:
             return await call_next(request)
 
-        # Extract tenant from JWT (lightweight check)
         tenant_id, plan = await self._extract_tenant_info(request)
         if tenant_id is None:
-            # Unauthenticated �� use IP-based limiting
             client_ip = request.client.host if request.client else "unknown"
             rate_key = f"rl:ip:{client_ip}"
-            limit = 60  # 60 req/min for unauthenticated
+            limit = 60
         else:
             rate_key = f"rl:tenant:{tenant_id}"
             limit = PLAN_RATE_LIMITS.get(plan, PLAN_RATE_LIMITS["free"])
 
-        # Sliding window counter
         try:
             now = int(time.time())
-            window_key = f"{rate_key}:{now // 60}"  # Per-minute window
+            window_key = f"{rate_key}:{now // 60}"
 
             pipe = redis.pipeline()
             pipe.incr(window_key)
-            pipe.expire(window_key, 120)  # Expire 2 minutes after window
+            pipe.expire(window_key, 120)
             results = await pipe.execute()
 
             current_count = results[0]
-
             if current_count > limit:
                 retry_after = 60 - (now % 60)
                 return JSONResponse(
@@ -96,21 +81,16 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 )
 
             response = await call_next(request)
-
-            # Add rate limit headers
             remaining = max(limit - current_count, 0)
             response.headers["X-RateLimit-Limit"] = str(limit)
             response.headers["X-RateLimit-Remaining"] = str(remaining)
             response.headers["X-RateLimit-Reset"] = str(now + (60 - now % 60))
-
             return response
-
         except Exception:
-            # If Redis fails, don't block the request
             return await call_next(request)
 
     async def _extract_tenant_info(self, request: Request) -> tuple:
-        """Extract tenant_id and plan from the JWT without full validation."""
+        """Extract tenant information from the JWT without full validation."""
         auth_header = request.headers.get("authorization", "")
         if not auth_header.startswith("Bearer "):
             return None, None
@@ -118,15 +98,15 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         token = auth_header[7:]
         try:
             from jose import jwt
+
             payload = jwt.decode(
                 token,
                 settings.JWT_SECRET_KEY,
                 algorithms=[settings.JWT_ALGORITHM],
-                options={"verify_exp": False},  # We just need tenant info
+                options={"verify_exp": False},
             )
             tenant_id = payload.get("tenant_id")
 
-            # Cache plan lookup in Redis
             redis = getattr(request.app.state, "redis", None)
             if redis and tenant_id:
                 plan = await redis.get(f"tenant_plan:{tenant_id}")
@@ -134,7 +114,5 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                     return tenant_id, plan.decode()
 
             return tenant_id, "free"
-
         except Exception:
             return None, None
-

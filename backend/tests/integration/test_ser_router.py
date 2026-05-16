@@ -1,5 +1,5 @@
 """
-BOS Pipeline v9.0 �� SER Router Integration Tests
+BOS Pipeline v9.0 — SER Router Integration Tests
 
 Tests the SER computation API endpoint.
 """
@@ -87,7 +87,7 @@ class TestSERCompute:
         batch_resp = await client.post("/api/v1/batches", json={
             "batch_id": "SER-TEST-003",
             "dm_in": 10.0,
-            "dm_out": 0.5,  # Very low �� should generate recommendations
+            "dm_out": 0.5,  # Very low → should generate recommendations
         }, headers=admin_headers)
         batch_id = batch_resp.json()["id"]
 
@@ -101,6 +101,23 @@ class TestSERCompute:
         data = response.json()
         assert "recommendations" in data
         assert isinstance(data["recommendations"], list)
+
+    @pytest.mark.asyncio
+    async def test_ser_compute_manual_without_batch_id(self, client: AsyncClient, admin_headers):
+        """Manual SER compute should work even when batch_id is omitted."""
+        response = await client.post("/api/v1/ser/compute", json={
+            "dm_in": 10.0,
+            "dm_out": 2.3,
+            "n_in": 50.0,
+            "n_larvae": 30.0,
+            "n_frass": 15.0,
+        }, headers=admin_headers)
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["batch_id"] is None
+        assert "ser_value" in data
+        assert "computed_at" in data
 
 
 class TestSERBatchCompute:
@@ -129,3 +146,79 @@ class TestSERBatchCompute:
         data = response.json()
         assert "ser_value" in data
         assert data["ser_value"] > 0
+
+    @pytest.mark.asyncio
+    async def test_get_result_for_batch(self, client: AsyncClient, admin_headers):
+        """Get latest SER result for a batch via read endpoint."""
+        batch_resp = await client.post("/api/v1/batches", json={
+            "batch_id": "SER-BATCH-RESULT-001",
+            "dm_in": 9.0,
+            "dm_out": 2.2,
+        }, headers=admin_headers)
+        batch_id = batch_resp.json()["id"]
+
+        compute_resp = await client.post(
+            f"/api/v1/ser/compute-batch/{batch_id}",
+            headers=admin_headers,
+        )
+        assert compute_resp.status_code == 200
+
+        response = await client.get(f"/api/v1/ser/result/batch/{batch_id}", headers=admin_headers)
+        assert response.status_code == 200
+        data = response.json()
+        assert data["batch_id"] == batch_id
+        assert "grade" in data
+        assert "computed_at" in data
+
+
+class TestSERStatistics:
+    """Tests for GET /api/v1/ser/statistics."""
+
+    @pytest.mark.asyncio
+    async def test_statistics_use_result_grading(self, client: AsyncClient, admin_headers):
+        """Statistics should use the same user-facing grading as SER results."""
+        batch_resp = await client.post("/api/v1/batches", json={
+            "batch_id": "SER-STATS-F",
+            "dm_in": 10.0,
+            "dm_out": 0.8,
+        }, headers=admin_headers)
+        batch_id = batch_resp.json()["id"]
+
+        compute_resp = await client.post("/api/v1/ser/compute", json={
+            "batch_id": batch_id,
+            "dm_in": 10.0,
+            "dm_out": 0.8,
+        }, headers=admin_headers)
+
+        assert compute_resp.status_code == 200
+        assert compute_resp.json()["grade"] == "F"
+
+        response = await client.get("/api/v1/ser/statistics", headers=admin_headers)
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["stats"]["grade_distribution"]["F"] >= 1
+
+    @pytest.mark.asyncio
+    async def test_history_endpoint(self, client: AsyncClient, admin_headers):
+        """History endpoint returns paginated SER records."""
+        batch_resp = await client.post("/api/v1/batches", json={
+            "batch_id": "SER-HISTORY-001",
+            "dm_in": 10.0,
+            "dm_out": 2.0,
+        }, headers=admin_headers)
+        batch_id = batch_resp.json()["id"]
+
+        compute_resp = await client.post(
+            f"/api/v1/ser/compute-batch/{batch_id}",
+            headers=admin_headers,
+        )
+        assert compute_resp.status_code == 200
+
+        response = await client.get("/api/v1/ser/history?page=1&page_size=10", headers=admin_headers)
+        assert response.status_code == 200
+        data = response.json()
+        assert "items" in data
+        assert data["page"] == 1
+        assert data["page_size"] == 10
+        assert data["total"] >= 1

@@ -1,9 +1,10 @@
-"""003 �� Feature flags and notification preferences tables
+"""003 - Feature flags and notification preferences tables
 
 Revision ID: 003_feature_flags
 Revises: 002_api_keys_webhooks
 Create Date: 2024-02-01 00:03:00.000000+00:00
 """
+
 from typing import Sequence, Union
 
 from alembic import op
@@ -16,9 +17,9 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-    # 1. Feature Flags (runtime overrides)
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+    is_sqlite = op.get_bind().dialect.name == "sqlite"
+    timestamp_default = sa.text("CURRENT_TIMESTAMP") if is_sqlite else sa.text("NOW()")
+
     op.create_table(
         "feature_flags",
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
@@ -29,15 +30,12 @@ def upgrade() -> None:
         sa.Column("tenant_overrides", sa.JSON(), nullable=True),
         sa.Column("user_overrides", sa.JSON(), nullable=True),
         sa.Column("metadata_json", sa.JSON(), nullable=True),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("NOW()"), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("NOW()"), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=timestamp_default, nullable=False),
+        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=timestamp_default, nullable=False),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_index("ix_feature_flags_name", "feature_flags", ["name"], unique=True)
 
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-    # 2. Notification Preferences
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
     op.create_table(
         "notification_preferences",
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
@@ -49,8 +47,8 @@ def upgrade() -> None:
         sa.Column("batch_complete_alerts", sa.Boolean(), nullable=False, server_default=sa.text("false")),
         sa.Column("email_enabled", sa.Boolean(), nullable=False, server_default=sa.text("true")),
         sa.Column("webhook_enabled", sa.Boolean(), nullable=False, server_default=sa.text("false")),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("NOW()"), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("NOW()"), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=timestamp_default, nullable=False),
+        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=timestamp_default, nullable=False),
         sa.PrimaryKeyConstraint("id"),
         sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["tenant_id"], ["tenants.id"], ondelete="CASCADE"),
@@ -59,9 +57,6 @@ def upgrade() -> None:
     op.create_index("ix_notification_prefs_user_id", "notification_preferences", ["user_id"])
     op.create_index("ix_notification_prefs_tenant_id", "notification_preferences", ["tenant_id"])
 
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-    # 3. Scheduled Reports
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
     op.create_table(
         "scheduled_reports",
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
@@ -77,8 +72,8 @@ def upgrade() -> None:
         sa.Column("last_error", sa.Text(), nullable=True),
         sa.Column("user_id", sa.Integer(), nullable=False),
         sa.Column("tenant_id", sa.Integer(), nullable=False),
-        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.text("NOW()"), nullable=False),
-        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("NOW()"), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=timestamp_default, nullable=False),
+        sa.Column("updated_at", sa.DateTime(timezone=True), server_default=timestamp_default, nullable=False),
         sa.PrimaryKeyConstraint("id"),
         sa.ForeignKeyConstraint(["user_id"], ["users.id"], ondelete="CASCADE"),
         sa.ForeignKeyConstraint(["tenant_id"], ["tenants.id"], ondelete="CASCADE"),
@@ -87,42 +82,52 @@ def upgrade() -> None:
     op.create_index("ix_scheduled_reports_is_active", "scheduled_reports", ["is_active"])
     op.create_index("ix_scheduled_reports_next_run", "scheduled_reports", ["next_run"])
 
-    # ���� RLS for notification_preferences and scheduled_reports ����
-    for table in ["notification_preferences", "scheduled_reports"]:
-        op.execute(f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY")
-        op.execute(f"ALTER TABLE {table} FORCE ROW LEVEL SECURITY")
+    if not is_sqlite:
+        for table in ["notification_preferences", "scheduled_reports"]:
+            op.execute(f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY")
+            op.execute(f"ALTER TABLE {table} FORCE ROW LEVEL SECURITY")
 
-        for action in ["select", "insert", "update", "delete"]:
-            op.execute(f"""
-                CREATE POLICY tenant_isolation_{action} ON {table}
-                FOR {action.upper()}
-                {"USING" if action != "insert" else "WITH CHECK"} (tenant_id = current_tenant_id() OR current_tenant_id() = 0)
-            """)
+            for action, clause in [
+                ("select", "USING"),
+                ("insert", "WITH CHECK"),
+                ("update", "USING"),
+                ("delete", "USING"),
+            ]:
+                op.execute(
+                    f"""
+                    CREATE POLICY tenant_isolation_{action} ON {table}
+                    FOR {action.upper()}
+                    {clause} (tenant_id = current_tenant_id() OR current_tenant_id() = 0)
+                """
+                )
 
-    # ���� Triggers ����
-    op.execute("""
-        CREATE TRIGGER trg_feature_flags_updated_at
-        BEFORE UPDATE ON feature_flags
-        FOR EACH ROW
-        EXECUTE FUNCTION update_updated_at_column()
-    """)
+        op.execute(
+            """
+            CREATE TRIGGER trg_feature_flags_updated_at
+            BEFORE UPDATE ON feature_flags
+            FOR EACH ROW
+            EXECUTE FUNCTION update_updated_at_column()
+        """
+        )
+        op.execute(
+            """
+            CREATE TRIGGER trg_notification_prefs_updated_at
+            BEFORE UPDATE ON notification_preferences
+            FOR EACH ROW
+            EXECUTE FUNCTION update_updated_at_column()
+        """
+        )
+        op.execute(
+            """
+            CREATE TRIGGER trg_scheduled_reports_updated_at
+            BEFORE UPDATE ON scheduled_reports
+            FOR EACH ROW
+            EXECUTE FUNCTION update_updated_at_column()
+        """
+        )
 
-    op.execute("""
-        CREATE TRIGGER trg_notification_prefs_updated_at
-        BEFORE UPDATE ON notification_preferences
-        FOR EACH ROW
-        EXECUTE FUNCTION update_updated_at_column()
-    """)
-
-    op.execute("""
-        CREATE TRIGGER trg_scheduled_reports_updated_at
-        BEFORE UPDATE ON scheduled_reports
-        FOR EACH ROW
-        EXECUTE FUNCTION update_updated_at_column()
-    """)
-
-    # ���� Seed default feature flags ����
-    op.execute("""
+    op.execute(
+        """
         INSERT INTO feature_flags (name, description, enabled) VALUES
         ('enable_monte_carlo', 'Monte Carlo simulation engine', true),
         ('enable_digital_twin', 'Digital Twin management', true),
@@ -133,21 +138,21 @@ def upgrade() -> None:
         ('enable_multi_language', 'Multi-language i18n support', true),
         ('enable_dark_mode', 'Dark mode theme toggle', true)
         ON CONFLICT (name) DO NOTHING
-    """)
+    """
+    )
 
 
 def downgrade() -> None:
-    # Drop triggers
-    op.execute("DROP TRIGGER IF EXISTS trg_scheduled_reports_updated_at ON scheduled_reports")
-    op.execute("DROP TRIGGER IF EXISTS trg_notification_prefs_updated_at ON notification_preferences")
-    op.execute("DROP TRIGGER IF EXISTS trg_feature_flags_updated_at ON feature_flags")
+    is_sqlite = op.get_bind().dialect.name == "sqlite"
+    if not is_sqlite:
+        op.execute("DROP TRIGGER IF EXISTS trg_scheduled_reports_updated_at ON scheduled_reports")
+        op.execute("DROP TRIGGER IF EXISTS trg_notification_prefs_updated_at ON notification_preferences")
+        op.execute("DROP TRIGGER IF EXISTS trg_feature_flags_updated_at ON feature_flags")
 
-    # Drop RLS policies
-    for table in ["notification_preferences", "scheduled_reports"]:
-        for action in ["select", "insert", "update", "delete"]:
-            op.execute(f"DROP POLICY IF EXISTS tenant_isolation_{action} ON {table}")
+        for table in ["notification_preferences", "scheduled_reports"]:
+            for action in ["select", "insert", "update", "delete"]:
+                op.execute(f"DROP POLICY IF EXISTS tenant_isolation_{action} ON {table}")
 
-    # Drop tables
     op.drop_table("scheduled_reports")
     op.drop_table("notification_preferences")
     op.drop_table("feature_flags")

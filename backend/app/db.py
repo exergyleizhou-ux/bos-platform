@@ -1,19 +1,23 @@
 """
-BOS Pipeline v9.0 �� Database Engine & Session Factory
+BOS Pipeline v9.0 database engine and session factory.
 
 Provides async SQLAlchemy engine, session factory, and the declarative Base.
 """
 
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
+
 from app.config import get_settings
 
 settings = get_settings()
 
-# ���� Async Engine ����
-_engine_kwargs = {"echo": settings.DB_ECHO, "pool_pre_ping": True}
+_engine_kwargs = {
+    "echo": settings.DB_ECHO,
+    "pool_pre_ping": True,
+}
+
 if not settings.DATABASE_URL.startswith("sqlite"):
     _engine_kwargs.update(
         {
@@ -23,9 +27,9 @@ if not settings.DATABASE_URL.startswith("sqlite"):
             "pool_recycle": settings.DB_POOL_RECYCLE,
         }
     )
+
 engine = create_async_engine(settings.DATABASE_URL, **_engine_kwargs)
 
-# ���� Async Session Factory ����
 async_session_factory = async_sessionmaker(
     bind=engine,
     class_=AsyncSession,
@@ -35,21 +39,12 @@ async_session_factory = async_sessionmaker(
 )
 
 
-# ���� Declarative Base ����
 class Base(DeclarativeBase):
     """SQLAlchemy declarative base for all models."""
-    pass
 
 
 async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
-    """
-    Dependency that yields an async database session.
-
-    Usage in FastAPI:
-        @router.get("/items")
-        async def get_items(db: AsyncSession = Depends(get_async_session)):
-            ...
-    """
+    """Yield an async database session."""
     async with async_session_factory() as session:
         try:
             yield session
@@ -61,10 +56,7 @@ async def get_async_session() -> AsyncGenerator[AsyncSession, None]:
 
 
 async def init_db() -> None:
-    """
-    Initialize database tables.
-    Used for testing or initial setup. In production, use Alembic migrations.
-    """
+    """Initialize database tables."""
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 

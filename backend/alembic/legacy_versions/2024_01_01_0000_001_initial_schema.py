@@ -1,31 +1,14 @@
 """
-BOS Pipeline v9.0 �� Initial Database Schema
+BOS Pipeline v9.0 legacy initial database schema.
 
 Revision ID: 001
 Create Date: 2024-01-01 00:00:00.000000+00:00
-
-Creates all core tables:
-  - tenants
-  - users
-  - batches
-  - calculations
-  - digital_twins
-  - digital_twin_snapshots
-  - audit_logs
-  - webhooks
-  - api_keys
-
-Plus:
-  - Indexes for performance
-  - RLS policies for multi-tenant isolation
-  - Materialized views for dashboard
 """
 
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects.postgresql import JSONB
 
-# revision identifiers
 revision = "001"
 down_revision = None
 branch_labels = None
@@ -33,9 +16,6 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-    # tenants
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
     op.create_table(
         "tenants",
         sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
@@ -52,9 +32,6 @@ def upgrade() -> None:
         sa.Column("updated_at", sa.DateTime(timezone=True), server_default=sa.text("now()")),
     )
 
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-    # users
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
     op.create_table(
         "users",
         sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
@@ -76,9 +53,6 @@ def upgrade() -> None:
     op.create_index("ix_users_tenant_id", "users", ["tenant_id"])
     op.create_index("ix_users_email", "users", ["email"])
 
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-    # batches
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
     op.create_table(
         "batches",
         sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
@@ -117,9 +91,6 @@ def upgrade() -> None:
     op.create_index("ix_batches_tenant_species", "batches", ["tenant_id", "species"])
     op.create_index("ix_batches_tenant_status", "batches", ["tenant_id", "status"])
 
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-    # calculations
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
     op.create_table(
         "calculations",
         sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
@@ -144,9 +115,6 @@ def upgrade() -> None:
     op.create_index("ix_calculations_status", "calculations", ["status"])
     op.create_index("ix_calculations_tenant_type", "calculations", ["tenant_id", "calc_type"])
 
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-    # digital_twins
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
     op.create_table(
         "digital_twins",
         sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
@@ -165,9 +133,6 @@ def upgrade() -> None:
     )
     op.create_index("ix_digital_twins_tenant_id", "digital_twins", ["tenant_id"])
 
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-    # digital_twin_snapshots
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
     op.create_table(
         "digital_twin_snapshots",
         sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
@@ -179,9 +144,6 @@ def upgrade() -> None:
     )
     op.create_index("ix_dt_snapshots_twin_id", "digital_twin_snapshots", ["twin_id"])
 
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-    # audit_logs
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
     op.create_table(
         "audit_logs",
         sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
@@ -201,9 +163,6 @@ def upgrade() -> None:
     op.create_index("ix_audit_logs_created_at", "audit_logs", ["created_at"])
     op.create_index("ix_audit_logs_user_id", "audit_logs", ["user_id"])
 
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-    # webhooks
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
     op.create_table(
         "webhooks",
         sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
@@ -221,9 +180,6 @@ def upgrade() -> None:
     )
     op.create_index("ix_webhooks_tenant_id", "webhooks", ["tenant_id"])
 
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-    # api_keys
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
     op.create_table(
         "api_keys",
         sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
@@ -241,21 +197,18 @@ def upgrade() -> None:
     op.create_index("ix_api_keys_tenant_id", "api_keys", ["tenant_id"])
     op.create_index("ix_api_keys_key_hash", "api_keys", ["key_hash"])
 
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-    # Row-Level Security Policies
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
     rls_tables = ["batches", "calculations", "digital_twins", "audit_logs", "webhooks", "api_keys"]
     for table in rls_tables:
         op.execute(f"ALTER TABLE {table} ENABLE ROW LEVEL SECURITY")
-        op.execute(f"""
+        op.execute(
+            f"""
             CREATE POLICY {table}_tenant_isolation ON {table}
             USING (tenant_id = current_setting('app.current_tenant_id', true)::int)
-        """)
+            """
+        )
 
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-    # Materialized Views
-    # �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
-    op.execute("""
+    op.execute(
+        """
         CREATE MATERIALIZED VIEW IF NOT EXISTS mv_tenant_batch_stats AS
         SELECT
             tenant_id,
@@ -267,10 +220,12 @@ def upgrade() -> None:
             MAX(created_at) AS last_batch_at
         FROM batches
         GROUP BY tenant_id
-    """)
+        """
+    )
     op.execute("CREATE UNIQUE INDEX ON mv_tenant_batch_stats (tenant_id)")
 
-    op.execute("""
+    op.execute(
+        """
         CREATE MATERIALIZED VIEW IF NOT EXISTS mv_ser_daily_trend AS
         SELECT
             tenant_id,
@@ -281,10 +236,12 @@ def upgrade() -> None:
         WHERE batch_date IS NOT NULL AND score IS NOT NULL
         GROUP BY tenant_id, batch_date
         ORDER BY tenant_id, batch_date
-    """)
+        """
+    )
     op.execute("CREATE UNIQUE INDEX ON mv_ser_daily_trend (tenant_id, batch_date)")
 
-    op.execute("""
+    op.execute(
+        """
         CREATE MATERIALIZED VIEW IF NOT EXISTS mv_species_distribution AS
         SELECT
             tenant_id,
@@ -293,23 +250,21 @@ def upgrade() -> None:
             AVG(score) FILTER (WHERE score IS NOT NULL) AS avg_ser
         FROM batches
         GROUP BY tenant_id, species
-    """)
+        """
+    )
     op.execute("CREATE UNIQUE INDEX ON mv_species_distribution (tenant_id, species)")
 
 
 def downgrade() -> None:
-    # Drop materialized views
     op.execute("DROP MATERIALIZED VIEW IF EXISTS mv_species_distribution")
     op.execute("DROP MATERIALIZED VIEW IF EXISTS mv_ser_daily_trend")
     op.execute("DROP MATERIALIZED VIEW IF EXISTS mv_tenant_batch_stats")
 
-    # Drop RLS policies
     rls_tables = ["batches", "calculations", "digital_twins", "audit_logs", "webhooks", "api_keys"]
     for table in rls_tables:
         op.execute(f"DROP POLICY IF EXISTS {table}_tenant_isolation ON {table}")
         op.execute(f"ALTER TABLE {table} DISABLE ROW LEVEL SECURITY")
 
-    # Drop tables in reverse dependency order
     op.drop_table("api_keys")
     op.drop_table("webhooks")
     op.drop_table("audit_logs")

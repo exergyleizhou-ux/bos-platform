@@ -1,24 +1,23 @@
 """
-BOS Pipeline v9.0 �� Authentication Router
+BOS Pipeline v9.0 — Authentication Router
 
 Handles login, token refresh, password change, and logout.
 Uses JWT access + refresh token pair with bcrypt password hashing.
 """
 
-import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from jose import jwt
-from passlib.context import CryptContext
-from sqlalchemy import select, text, update
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
 from app.db import get_async_session
 from app.deps import get_current_user
 from app.models import User, AuditLog
+from app.security.passwords import pwd_context
 from app.schemas import (
     ChangePasswordRequest,
     LoginRequest,
@@ -29,39 +28,13 @@ from app.schemas import (
 
 router = APIRouter()
 settings = get_settings()
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-logger = logging.getLogger("bos.auth")
 
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# ═══════════════════════════════════════════════
 # Token Helpers
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# ═══════════════════════════════════════════════
 
 MAX_FAILED_ATTEMPTS = 5
 LOCK_DURATION_MINUTES = 30
-
-
-async def _save_audit_safe(db: AsyncSession, audit: AuditLog) -> None:
-    """
-    Best-effort audit persistence.
-
-    Authentication should not fail just because audit storage is temporarily unhealthy
-    (e.g. dev SQLite schema mismatch).
-    """
-    if audit.id is None and db.bind is not None and db.bind.dialect.name == "sqlite":
-        try:
-            next_id = await db.scalar(
-                text("SELECT COALESCE(MAX(id), 0) + 1 FROM audit_log")
-            )
-            audit.id = int(next_id or 1)
-        except Exception:
-            pass
-
-    db.add(audit)
-    try:
-        await db.commit()
-    except Exception as exc:
-        await db.rollback()
-        logger.warning("Failed to persist audit log (non-blocking): %s", exc)
 
 
 def create_access_token(user_id: int, role: str, tenant_id: int) -> str:
@@ -90,9 +63,9 @@ def create_refresh_token(user_id: int) -> str:
     return jwt.encode(payload, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM)
 
 
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# ═══════════════════════════════════════════════
 # Endpoints
-# �T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T�T
+# ═══════════════════════════════════════════════
 
 
 @router.post("/login", response_model=TokenResponse)
@@ -111,9 +84,7 @@ async def login(
     - Audit logging
     """
     # Fetch user
-    result = await db.execute(
-        select(User).where(User.username == body.username)
-    )
+    result = await db.execute(select(User).where(User.username == body.username))
     user = result.scalar_one_or_none()
 
     if not user:
@@ -172,7 +143,8 @@ async def login(
         ip_address=request.client.host if request.client else None,
         user_agent=request.headers.get("user-agent", "")[:500],
     )
-    await _save_audit_safe(db, audit)
+    db.add(audit)
+    await db.commit()
 
     return TokenResponse(
         access_token=access_token,
@@ -246,7 +218,7 @@ async def logout(
     db: AsyncSession = Depends(get_async_session),
 ):
     """
-    Logout �� record audit event.
+    Logout — record audit event.
     Token invalidation is handled client-side (discard token).
     For server-side invalidation, implement a token blacklist in Redis.
     """
@@ -258,7 +230,8 @@ async def logout(
         tenant_id=current_user.tenant_id,
         ip_address=request.client.host if request.client else None,
     )
-    await _save_audit_safe(db, audit)
+    db.add(audit)
+    await db.commit()
 
     return MessageResponse(message="Logged out successfully")
 
