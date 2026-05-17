@@ -1,9 +1,14 @@
-# BOS Agent — Phase A runtime dependencies.
-# NOT installed in Phase 0.5. Install only when Phase A begins.
+# BOS Agent - Phase A runtime dependencies.
+# Install when Phase A3 begins:
+#   cd backend && pip install -r agent/requirements.txt
 
 langgraph>=0.2
 langchain-core>=0.3
+langchain-anthropic>=0.3    # default LLM provider: claude-sonnet-4-5
 httpx>=0.27
 pydantic>=2.6
 fastapi>=0.109
 uvicorn[standard]>=0.27
+
+# Optional providers (loaded lazily by agent/llm.py if LLM_PROVIDER set):
+#   langchain-openai>=0.2     # openai / qwen (OpenAI-compatible) / deepseek
