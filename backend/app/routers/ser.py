@@ -1,9 +1,21 @@
 """
-BOS Pipeline v9.0 — SER Engine Router
+BOS Pipeline v9.0 / Phase A — SER Engine Router
 
-API endpoints for the System Efficiency Ratio computation engine.
-Provides single-batch and multi-batch SER calculation with
-result persistence and audit logging.
+V5 (Phase A) contract:
+  POST /api/v1/ser/compute         — paper-strict, stateless, schema-frozen.
+                                     Backed by SerComputeRequest/Response
+                                     in app.schemas.ser. See PHASE_A_PLAN §2.1.
+
+V9 (legacy, deprecated) contract:
+  POST /api/v1/ser/compute_legacy  — persists a Calculation row, uses the
+                                     SERRequest/SERResponse legacy schemas.
+                                     Deprecated 2026-05-16, sunset 2027-05-16
+                                     (PHASE_A_PLAN §4 D1).
+  POST /api/v1/ser/compute-batch
+  POST /api/v1/ser/compute-batch/{batch_id}
+  GET  /api/v1/ser/result/batch/{batch_id}
+  GET  /api/v1/ser/history
+  GET  /api/v1/ser/statistics
 """
 
 import time
@@ -18,19 +30,183 @@ from app.db import get_async_session
 from app.deps import PaginationParams, get_pagination, require_minimum_role, set_tenant_context
 from app.models import User, Batch, Calculation
 from app.schemas import SERRequest, SERResponse
-from app.engine.ser_engine import SERInput, compute_ser, compute_ser_batch, compute_ser_statistics
+from app.schemas.ser import (
+    DistSpec,
+    McSummary,
+    MonteCarloConfig,
+    SerComputeRequest,
+    SerComputeResponse,
+)
+from app.engine.ser_engine import (
+    ENGINE_VERSION as SER_ENGINE_VERSION,
+    SERInput,
+    compute_ser,
+    compute_ser_batch,
+    compute_ser_statistics,
+)
+from app.engine.monte_carlo_engine import MCInput, run_monte_carlo
 
 router = APIRouter()
 
 
-@router.post("/compute", response_model=SERResponse)
+# ════════════════════════════════════════════════════════════════════
+# Phase A (V5) — paper-strict, stateless SER compute.
+# ════════════════════════════════════════════════════════════════════
+
+
+def _build_mc_input(
+    base: SerComputeRequest, cfg: MonteCarloConfig
+) -> tuple[MCInput, str]:
+    """Map V5 MonteCarloConfig + base request into engine MCInput.
+
+    Phase A supports a single distribution family per call. If the request
+    mixes families, we reject. Returns (MCInput, distribution_kind).
+    """
+    kinds = {d.kind for d in cfg.distributions.values()}
+    if len(kinds) > 1:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Phase A MC supports one distribution family per call.",
+        )
+    kind = kinds.pop() if kinds else "normal"
+
+    # Pull (mean, std) per field, fall back to point value with std=0 when
+    # the user did not declare uncertainty on that axis.
+    def m_s(field_name: str, point: float) -> tuple[float, float]:
+        spec = cfg.distributions.get(field_name)
+        if spec is None:
+            return float(point), 0.0
+        return float(spec.mean), float(spec.std)
+
+    dm_in_mean, dm_in_std = m_s("dm_in", base.dm_in)
+    dm_out_mean, dm_out_std = m_s("dm_out", base.dm_out)
+    n_in_mean, n_in_std = m_s("n_in", base.n_in)
+    # The engine MCInput expresses recovered N as n_larvae for BSF-style runs.
+    n_larvae_mean, n_larvae_std = m_s("n_rec", base.n_rec)
+
+    return (
+        MCInput(
+            n_samples=cfg.n_samples,
+            dm_in_mean=dm_in_mean,
+            dm_in_std=dm_in_std,
+            dm_out_mean=dm_out_mean,
+            dm_out_std=dm_out_std,
+            n_in_mean=n_in_mean,
+            n_in_std=n_in_std,
+            n_larvae_mean=n_larvae_mean,
+            n_larvae_std=n_larvae_std,
+            n_frass_mean=0.0,
+            n_frass_std=0.0,
+            distribution=kind,
+            seed=cfg.seed,
+        ),
+        kind,
+    )
+
+
+@router.post(
+    "/compute",
+    response_model=SerComputeResponse,
+    summary="Phase A — paper-strict, stateless SER compute",
+)
+async def compute_ser_v5_endpoint(
+    body: SerComputeRequest,
+    current_user: User = Depends(require_minimum_role("operator")),
+) -> SerComputeResponse:
+    """
+    Compute SER deterministically; optionally propagate MC uncertainty.
+
+    Paper map: Eq. 1–3 (deterministic SER), Eq. 7 (Monte Carlo uncertainty).
+
+    This handler is **stateless** — no Calculation row is written. For the
+    persisted V9 behavior, use ``POST /api/v1/ser/compute_legacy``.
+    """
+    # Deterministic SER. The engine ignores d_prime/g_prime/species/feedstock
+    # in v9; we still require them on the V5 contract for paper conformance
+    # and for forward compatibility with Phase B–D rewrites.
+    ser_input = SERInput(
+        dm_in=body.dm_in,
+        dm_out=body.dm_out,
+        n_in=body.n_in,
+        n_larvae=body.n_rec,
+        n_frass=0.0,
+    )
+    ser_result = compute_ser(ser_input)
+
+    # If the engine threw hard errors (e.g. zero dm_in — but the schema
+    # already enforces gt=0 so this is belt-and-braces), surface as 422.
+    hard_errors = [code for code in (ser_result.fail_codes or []) if code.startswith("E")]
+    if hard_errors:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"engine_errors": hard_errors},
+        )
+
+    ser_point = float(ser_result.ser_value)
+    # SER ratio can be > 1 in pathological data; clamp for the response
+    # invariant (Response field has le=1.0). We surface the warning in
+    # evidence_level downgrade.
+    evidence_level: str
+    if ser_point > 1.0:
+        ser_point = 1.0
+        evidence_level = "planned"  # engine flagged SER_ABOVE_1
+    else:
+        evidence_level = "supported"
+
+    ci_lower: float | None = None
+    ci_upper: float | None = None
+    ser_std: float | None = None
+    mc_summary: McSummary | None = None
+
+    if body.monte_carlo is not None:
+        mc_input, _kind = _build_mc_input(body, body.monte_carlo)
+        mc_result = run_monte_carlo(mc_input)
+        if any(e.startswith("E_MC_") for e in (mc_result.errors or [])):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail={"monte_carlo_errors": mc_result.errors},
+            )
+        # Clamp the response invariants ([0, 1]).
+        ci_lower = max(0.0, min(1.0, float(mc_result.ser_ci_lower)))
+        ci_upper = max(0.0, min(1.0, float(mc_result.ser_ci_upper)))
+        ser_std = max(0.0, float(mc_result.ser_std))
+        mc_summary = McSummary(
+            n_samples=int(mc_result.n_samples),
+            ess=float(mc_result.effective_samples) or None,
+            divergences=None,
+        )
+
+    return SerComputeResponse(
+        ser_point=ser_point,
+        ser_ci_lower=ci_lower,
+        ser_ci_upper=ci_upper,
+        ser_std=ser_std,
+        delta_ser=None,
+        engine_version=SER_ENGINE_VERSION,
+        monte_carlo=mc_summary,
+        evidence_level=evidence_level,
+    )
+
+
+# ════════════════════════════════════════════════════════════════════
+# V9 (legacy) — persisted, V9 schema. Deprecated 2026-05-16,
+# sunset 2027-05-16. Behavior unchanged from Phase 0.5.
+# ════════════════════════════════════════════════════════════════════
+
+
+@router.post(
+    "/compute_legacy",
+    response_model=SERResponse,
+    deprecated=True,
+    summary="DEPRECATED — V9 persisted SER compute (sunset 2027-05-16)",
+)
 async def compute_ser_endpoint(
     body: SERRequest,
     current_user: User = Depends(require_minimum_role("operator")),
     db: AsyncSession = Depends(get_async_session),
 ):
     """
-    Compute SER for a single batch.
+    Compute SER for a single batch (V9 legacy).
 
     Creates a Calculation record and returns the result.
     """

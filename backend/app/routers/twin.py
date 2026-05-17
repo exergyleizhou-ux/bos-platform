@@ -29,8 +29,159 @@ from app.engine.digital_twin_engine import (
     update_step,
     simulate_trajectory,
 )
+# Phase A V5 strict schemas live in schemas/twin.py alongside the V9
+# CRUD DTOs. Imported here under alias names so they don't collide with
+# the engine's dataclass TwinState above.
+from app.schemas.twin import (
+    InnovationStats as RunInnovationStats,
+    TwinConfig as RunTwinConfig,
+    TwinRunRequest,
+    TwinRunResponse,
+    TwinSnapshot as RunTwinSnapshot,
+    TwinState as RunTwinState,
+)
 
 router = APIRouter()
+
+
+# ════════════════════════════════════════════════════════════════════
+# Phase A — POST /api/v1/twin/run (stateless V5 contract)
+# ════════════════════════════════════════════════════════════════════
+#
+# This handler is intentionally added before the path-parameter routes
+# (/{twin_id}/...) so the static segment "/run" matches first. FastAPI
+# does match static literals before path params regardless of order,
+# but lexical order also matches the V5 contract intent.
+
+
+def _engine_state_to_v5(es: TwinState) -> RunTwinState:
+    """digital_twin_engine.TwinState (dataclass) → V5 pydantic TwinState."""
+    return RunTwinState(
+        biomass_kg=round(float(es.biomass), 6),
+        substrate_kg=round(float(es.substrate), 6),
+        temperature_c=round(float(es.temperature), 4),
+        moisture_pct=round(float(es.moisture), 4),
+        # The engine carries nitrogen in grams; the V5 contract is kg.
+        nitrogen_kg=round(float(es.nitrogen) / 1000.0, 6),
+    )
+
+
+def _v5_state_to_engine(v5: RunTwinState, t: float = 0.0) -> TwinState:
+    return TwinState(
+        biomass=float(v5.biomass_kg),
+        substrate=float(v5.substrate_kg),
+        temperature=float(v5.temperature_c),
+        moisture=float(v5.moisture_pct),
+        nitrogen=float(v5.nitrogen_kg) * 1000.0,  # back to engine units (g)
+        timestamp_hours=t,
+    )
+
+
+@router.post(
+    "/run",
+    response_model=TwinRunResponse,
+    summary="Phase A — stateless digital-twin run (V5)",
+)
+async def twin_run_endpoint(
+    body: TwinRunRequest,
+    current_user: User = Depends(require_minimum_role("operator")),
+) -> TwinRunResponse:
+    """Run the digital twin forward over an explicit input schedule.
+
+    No DB persistence, no twin record required. If ``observations`` is
+    provided and ``enable_ekf=True``, each predict step is followed by
+    an EKF update. Innovation statistics are aggregated across the run.
+    """
+    cfg = body.config
+    params = TwinParameters(
+        mu_max=cfg.mu_max, K_s=cfg.K_s, Y=cfg.Y, k_death=cfg.k_death,
+        k_n=cfg.k_n, tau_T=cfg.tau_T, tau_M=cfg.tau_M,
+        T_env=cfg.T_env, M_env=cfg.M_env,
+    )
+
+    state = _v5_state_to_engine(body.initial_state, t=0.0)
+    cumulative_t = 0.0
+
+    snapshots: list[RunTwinSnapshot] = []
+    estimated_states: list[RunTwinState] = []
+    innovations: list[list[float]] = []
+    n_updates = 0
+    has_obs = body.observations is not None and body.enable_ekf
+
+    for i, inp in enumerate(body.inputs):
+        # ---- Predict step ----
+        ctrl = {
+            "feed_rate": float(inp.feed_rate_kg_h),
+            "ventilation": float(inp.ventilation_m3_h),
+            "heating": float(inp.heating_kw),
+        }
+        pred = predict_step(state, ctrl, params, float(inp.dt_hours))
+        state = pred.state
+        cumulative_t = float(state.timestamp_hours)
+
+        v5_predicted = _engine_state_to_v5(state)
+        snap = RunTwinSnapshot(
+            step_index=i,
+            cumulative_time_h=round(cumulative_t, 4),
+            state=v5_predicted,
+            growth_rate_kg_h=float(pred.growth_rate),
+            ser_instantaneous=float(pred.ser_instantaneous),
+        )
+        snapshots.append(snap)
+
+        # ---- Optional EKF update ----
+        if has_obs:
+            obs = body.observations[i]
+            obs_dict: dict[str, float] = {}
+            if obs.weight_kg is not None:
+                obs_dict["weight"] = float(obs.weight_kg)
+            if obs.temperature_c is not None:
+                obs_dict["temperature"] = float(obs.temperature_c)
+            if obs.moisture_pct is not None:
+                obs_dict["moisture"] = float(obs.moisture_pct)
+            if obs_dict:
+                upd = update_step(state, obs_dict, params)
+                state = upd.state
+                n_updates += 1
+                if upd.innovation is not None:
+                    innovations.append(list(upd.innovation))
+
+        # estimated_states tracks the post-update (corrected) view if EKF
+        # ran this step, otherwise the predicted state.
+        estimated_states.append(_engine_state_to_v5(state))
+
+    # ---- Innovation aggregation ----
+    if innovations:
+        import numpy as _np
+        arr = _np.asarray(innovations)
+        channels = ["weight", "temperature", "moisture"]
+        mean_abs = {ch: float(round(_np.mean(_np.abs(arr[:, k])), 6))
+                    for k, ch in enumerate(channels[: arr.shape[1]])}
+        rms = {ch: float(round(_np.sqrt(_np.mean(arr[:, k] ** 2)), 6))
+               for k, ch in enumerate(channels[: arr.shape[1]])}
+    else:
+        mean_abs, rms = {}, {}
+
+    innovation_stats = RunInnovationStats(
+        n_updates=n_updates,
+        mean_abs_innovation=mean_abs,
+        rms_innovation=rms,
+    )
+
+    # ---- Evidence level ----
+    # EKF-corrected runs with real observations earn "supported"; pure
+    # forward predictions (no observations) are "planned" because there
+    # is no measurement loop closing the uncertainty.
+    evidence_level = "supported" if n_updates > 0 else "planned"
+
+    return TwinRunResponse(
+        trajectory=snapshots,
+        estimated_states=estimated_states,
+        final_state=estimated_states[-1],
+        innovation_stats=innovation_stats,
+        evidence_level=evidence_level,
+        engine_version="9.0.0",
+    )
 
 
 async def _get_twin_or_404(db: AsyncSession, *, twin_id: int, tenant_id: int) -> DigitalTwin:
@@ -170,7 +321,15 @@ class TwinPredictRequest(BaseModel):
     dt: float = Field(default=1.0, gt=0, le=24, description="Time step in hours")
 
 
-@router.post("/{twin_id}/predict")
+@router.post(
+    "/{twin_id}/predict",
+    deprecated=True,
+    description=(
+        "DEPRECATED (Phase A V5 D1 sunset): use POST /api/v1/twin/run for "
+        "stateless predictions. Old stateful path stays callable until "
+        "2027-05-17 (T0 + 12 months from Phase A start)."
+    ),
+)
 async def predict_twin_step(
     twin_id: int,
     body: TwinPredictRequest,
@@ -231,7 +390,15 @@ class TwinUpdateObsRequest(BaseModel):
     )
 
 
-@router.post("/{twin_id}/update")
+@router.post(
+    "/{twin_id}/update",
+    deprecated=True,
+    description=(
+        "DEPRECATED (Phase A V5 D1 sunset): use POST /api/v1/twin/run with "
+        "an observations array for stateless EKF correction. Old stateful "
+        "path stays callable until 2027-05-17."
+    ),
+)
 async def update_twin_observations(
     twin_id: int,
     body: TwinUpdateObsRequest,
@@ -300,7 +467,15 @@ class TwinSimulateRequest(BaseModel):
     dt: float = Field(default=1.0, gt=0, le=24)
 
 
-@router.post("/{twin_id}/simulate")
+@router.post(
+    "/{twin_id}/simulate",
+    deprecated=True,
+    description=(
+        "DEPRECATED (Phase A V5 D1 sunset): use POST /api/v1/twin/run for "
+        "stateless trajectory simulation. Old stateful path stays callable "
+        "until 2027-05-17."
+    ),
+)
 async def simulate_twin(
     twin_id: int,
     body: TwinSimulateRequest,

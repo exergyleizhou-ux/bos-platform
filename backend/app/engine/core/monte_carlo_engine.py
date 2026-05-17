@@ -353,3 +353,202 @@ def run_monte_carlo_detailed(inp: MCInput) -> MCResult:
         computation_time_ms=round(computation_time_ms, 2),
         errors=errors,
     )
+
+
+# ═══════════════════════════════════════════════
+# Phase A — Generic propagate() interface
+# ═══════════════════════════════════════════════
+#
+# Reference: PHASE_A_PLAN.md §2.4 + D5 ("while implementing SER,
+# extract a single MC interface; A4 will reuse it as a thin wrapper").
+#
+# This function is purely additive on top of run_monte_carlo and is
+# used by app.routers.mc (/api/v1/mc/propagate).
+
+
+_SOBOL_TOTAL_FALLBACK_FRACTION = 0.6
+# When compute_sobol is requested in Phase A we don't run a real
+# Saltelli-style analysis (Phase B / sensitivity_engine upgrade). We
+# return a *placeholder* normalised by per-variable std so the API
+# contract is exercised end-to-end. evidence_level is downgraded to
+# "planned" when sobol indices are requested in Phase A.
+
+
+def _sample_one(rng, kind: str, mean: float, std: float, n: int):
+    sampler = SAMPLERS.get(kind, _sample_normal)
+    return sampler(rng, mean, std, n)
+
+
+def _percentiles(samples: NDArray) -> Tuple[float, float]:
+    """95% CI (2.5–97.5) percentiles from samples."""
+    if samples.size == 0:
+        return 0.0, 0.0
+    lo, hi = np.percentile(samples, [2.5, 97.5])
+    return float(lo), float(hi)
+
+
+def _eval_ser_target(
+    samples_by_var: Dict[str, NDArray],
+    target_cfg: Dict[str, object],
+) -> NDArray:
+    """Evaluate the SER target per Monte-Carlo sample.
+
+    Required keys in samples_by_var: dm_in, dm_out.
+    Optional: n_in, n_larvae, n_frass.
+    Constant fields can be passed via target_cfg["constants"] dict.
+    """
+    constants = target_cfg.get("constants", {}) if isinstance(target_cfg, dict) else {}
+    n = next(iter(samples_by_var.values())).shape[0]
+
+    def _col(name: str, default: float = 0.0) -> NDArray:
+        if name in samples_by_var:
+            return samples_by_var[name]
+        return np.full(n, float(constants.get(name, default)))
+
+    dm_in = _col("dm_in", 1.0)
+    dm_out = _col("dm_out", 0.0)
+    n_in_arr = _col("n_in", 0.0)
+    n_larvae_arr = _col("n_larvae", 0.0)
+    n_frass_arr = _col("n_frass", 0.0)
+
+    ser_vals = np.empty(n, dtype=np.float64)
+    for i in range(n):
+        try:
+            r = compute_ser(SERInput(
+                dm_in=float(max(dm_in[i], 1e-9)),
+                dm_out=float(max(dm_out[i], 0.0)),
+                n_in=float(max(n_in_arr[i], 0.0)),
+                n_larvae=float(max(n_larvae_arr[i], 0.0)),
+                n_frass=float(max(n_frass_arr[i], 0.0)),
+            ))
+            ser_vals[i] = float(r.ser_value)
+        except Exception:  # pragma: no cover — engine should not raise
+            ser_vals[i] = 0.0
+    return ser_vals
+
+
+def _eval_constant_target(
+    samples_by_var: Dict[str, NDArray],
+    target_cfg: Dict[str, object],
+    name: str,
+) -> NDArray:
+    """Placeholder evaluator for non-SER targets (sfi_score / relay_final_state
+    / custom). Returns a deterministic linear combination of the input
+    samples so the API + diagnostics path can be exercised end-to-end
+    without invoking the full downstream engine for every sample
+    (which would explode runtime in Phase A).
+
+    The output is downgraded to evidence_level='planned' by the router.
+    """
+    coeffs = target_cfg.get("coeffs", {}) if isinstance(target_cfg, dict) else {}
+    intercept = float(target_cfg.get("intercept", 0.0)) if isinstance(target_cfg, dict) else 0.0
+    n = next(iter(samples_by_var.values())).shape[0]
+    out = np.full(n, intercept, dtype=np.float64)
+    for var, arr in samples_by_var.items():
+        c = float(coeffs.get(var, 1.0 / max(len(samples_by_var), 1)))
+        out = out + c * arr
+    return out
+
+
+_TARGET_LABEL = {
+    "ser": "ser_compute",
+    "sfi_score": "sfi_check",
+    "relay_final_state": "relay_simulate",
+    "custom": "custom_target",
+}
+
+
+def propagate(
+    target_func: str,
+    target_func_config: Dict[str, object],
+    inputs: Dict[str, Dict[str, object]],
+    n_samples: int,
+    seed: Optional[int],
+    return_samples: bool = False,
+    compute_sobol: bool = False,
+) -> Dict[str, object]:
+    """Run a generic Monte Carlo propagation.
+
+    Parameters
+    ----------
+    target_func : {"ser", "sfi_score", "relay_final_state", "custom"}
+    target_func_config : per-target configuration (see schemas)
+    inputs : {var_name: {kind, mean, std}}
+    n_samples : number of MC samples (validated by router schema)
+    seed : optional PRNG seed
+    return_samples : include raw sample array in the result
+    compute_sobol : compute first-order + total Sobol indices
+
+    Returns
+    -------
+    dict shaped like ``McPropagateResponse`` (without Pydantic wrapping).
+    """
+    start = time.perf_counter()
+    rng = np.random.default_rng(seed)
+
+    # Sample each input variable.
+    samples_by_var: Dict[str, NDArray] = {}
+    dist_kinds: Dict[str, str] = {}
+    for var, spec in inputs.items():
+        kind = str(spec.get("kind", "normal"))
+        mean = float(spec.get("mean", 0.0))
+        std = float(spec.get("std", 0.0))
+        samples_by_var[var] = _sample_one(rng, kind, mean, std, n_samples)
+        dist_kinds[var] = kind
+
+    # Evaluate target.
+    if target_func == "ser":
+        out_arr = _eval_ser_target(samples_by_var, target_func_config)
+        target_evidence = "supported"
+    else:
+        out_arr = _eval_constant_target(
+            samples_by_var, target_func_config, _TARGET_LABEL.get(target_func, "custom")
+        )
+        # Non-SER targets in Phase A use a placeholder evaluator; mark planned.
+        target_evidence = "planned"
+
+    target_mean = float(np.mean(out_arr))
+    target_std = float(np.std(out_arr))
+    ci_lo, ci_hi = _percentiles(out_arr)
+
+    # Sobol indices: Phase A placeholder (see comment above).
+    sobol = None
+    if compute_sobol:
+        first_order: Dict[str, float] = {}
+        total: Dict[str, float] = {}
+        # Per-variable variance contribution proxy: corr(X_i, Y)^2.
+        for var, arr in samples_by_var.items():
+            if np.std(arr) > 0 and target_std > 0:
+                # Pearson correlation^2 ∈ [0, 1] is a cheap S1 proxy.
+                r = np.corrcoef(arr, out_arr)[0, 1]
+                first_order[var] = float(round(r * r, 4))
+            else:
+                first_order[var] = 0.0
+            total[var] = float(round(
+                min(1.0, first_order[var] / _SOBOL_TOTAL_FALLBACK_FRACTION), 4
+            ))
+        sobol = {"first_order": first_order, "total": total}
+        # Sobol via correlation proxy is not validated; downgrade if not already.
+        if target_evidence == "supported":
+            target_evidence = "planned"
+
+    elapsed_ms = (time.perf_counter() - start) * 1000.0
+
+    return {
+        "target_mean": round(target_mean, 6),
+        "target_std": round(target_std, 6),
+        "ci_lower": round(ci_lo, 6),
+        "ci_upper": round(ci_hi, 6),
+        "samples": [round(float(v), 6) for v in out_arr.tolist()] if return_samples else None,
+        "sobol_indices": sobol,
+        "diagnostics": {
+            "n_samples": int(n_samples),
+            "effective_samples": int(out_arr.size),
+            "seed": seed,
+            "distribution_kinds": dist_kinds,
+            "computation_time_ms": round(elapsed_ms, 2),
+            "convergence_check": False,
+        },
+        "evidence_level": target_evidence,
+        "engine_version": ENGINE_VERSION,
+    }

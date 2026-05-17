@@ -38,10 +38,13 @@ from app.routers import (
     health,
     lca,
     mass_balance,
+    mc,
     release_packets,
     risk,
+    relay,
     sensitivity,
     ser,
+    sfi,
     simulation,
     simulation_lab,
     species,
@@ -107,6 +110,9 @@ api_router.include_router(tea.router, prefix="/tea", tags=["TEA"])
 api_router.include_router(lca.router, prefix="/lca", tags=["LCA"])
 api_router.include_router(risk.router, prefix="/risk", tags=["Risk Assessment"])
 api_router.include_router(flight.router, prefix="/flight-envelope", tags=["Flight Envelope"])
+api_router.include_router(sfi.router, prefix="/sfi", tags=["SFI (Phase A)"])
+api_router.include_router(relay.router, prefix="/relay", tags=["Relay (Phase A)"])
+api_router.include_router(mc.router, prefix="/mc", tags=["MC (Phase A)"])
 api_router.include_router(calibration.router, prefix="/calibration", tags=["GP Calibration"])
 api_router.include_router(anomaly.router, prefix="/anomaly", tags=["Anomaly Detection"])
 api_router.include_router(sensitivity.router, prefix="/sensitivity", tags=["Sensitivity Analysis"])

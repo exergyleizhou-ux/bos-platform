@@ -45,6 +45,9 @@ _ENGINE_LOCATION: dict[str, str] = {
     "energy_engine": "core",
     "species_db": "core",
     "feedstock_db": "core",
+    # ---- Phase A additions (core) ----
+    "sfi_engine": "core",
+    "relay_engine": "core",
     # ---- extended (23) ----
     "bayesian_engine": "extended",
     "bayesian_ab": "extended",
