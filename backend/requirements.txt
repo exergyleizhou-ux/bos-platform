@@ -1,4 +1,8 @@
 # BOS Pipeline v9.0 Python dependencies
+#
+# Phase B B1: numpy 2.x migration + causal libs
+# See _reports/PHASE_B_B0_5_NUMPY_AUDIT.md for audit
+# See _reports/PHASE_B_B1_COMPLETION.md for landing report
 
 # Web framework
 fastapi==0.109.2
@@ -14,6 +18,7 @@ asyncpg==0.29.0
 psycopg2-binary==2.9.9
 alembic==1.13.1
 greenlet==3.0.3
+aiosqlite>=0.22         # test SQLite async driver (B0.5 F1)
 
 # Authentication
 python-jose[cryptography]==3.3.0
@@ -21,8 +26,8 @@ passlib[bcrypt]==1.7.4
 bcrypt==4.1.2
 
 # Validation
-pydantic[email]==2.6.1
-pydantic-core==2.16.2
+pydantic[email]>=2.6,<3.0  # B0.5 F5: bumped from 2.6.1 (langchain-core pulls 2.13+)
+# pydantic-core pin dropped — let pydantic resolve a matching version
 pydantic-settings==2.1.0
 email-validator==2.1.0
 
@@ -34,12 +39,22 @@ celery[redis]==5.3.6
 httpx==0.27.0
 
 # Scientific computing
-numpy==1.26.4
-scipy==1.12.0
+numpy>=2.0,<3.0         # B0.5 audit validated against 2.4.5
+scipy>=1.13             # B0.5 F3: bumped from 1.12.0 (numpy 2.x binary compat)
 
 # Data export
 openpyxl==3.1.2
-pyarrow==15.0.0
+pyarrow>=16             # B0.5 F2: bumped from 15.0.0 (numpy 2.x C-API)
+
+# Causal inference (Phase B)
+dowhy==0.14             # 4-step pipeline: model / identify / estimate / refute
+econml==0.16.0          # DML estimators + DML mediation (D9 = α, D14 = γ)
+
+# LLM / Agent (Phase A inlined per B0.5 F4 — was agent/requirements.txt only)
+langchain-core>=0.3
+langgraph>=0.2
+langchain-anthropic>=0.3
+anthropic>=0.40
 
 # Logging and monitoring
 structlog==24.1.0
