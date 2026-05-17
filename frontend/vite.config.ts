@@ -22,6 +22,13 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      // Phase A6: forward /agent/* to the BOS Agent service on :8001.
+      // Override target via VITE_AGENT_URL at dev time if needed.
+      "/agent": {
+        target: process.env.VITE_AGENT_URL ?? "http://localhost:8001",
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
   build: {

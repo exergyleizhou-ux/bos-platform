@@ -183,14 +183,80 @@ A6.
 
 ---
 
-## What's next (Phase A6)
+## A6 — Frontend V2 wired up (2026-05-18)
 
-1. Wire the agent server to accept a bearer token from the caller and
-   forward it via the shared `httpx.AsyncClient` default headers, so
-   the cross-process demo can run a full authenticated SER round-trip
-   without the script doing a side-channel direct Core call.
-2. Replace the V2 frontend stub at
-   `frontend/src/pages/BOSAssistantV2Page.tsx` with a chat surface
-   posting to `http://localhost:8001/agent/runs` (or via Vite proxy).
-3. Re-run this demo with the V2 frontend in a browser pointing at the
-   Compose stack.
+The V2 stub at `frontend/src/pages/BOSAssistantV2Page.tsx` is now a
+real chat surface that POSTs to the BOS Agent.
+
+### Artefacts
+
+| File | Role |
+|---|---|
+| `frontend/src/pages/BOSAssistantV2Page.tsx` (~210 lines) | Chat surface: input + thread state + ToolCallRecord audit drawer + V1 fallback link |
+| `frontend/src/api/agentApi.ts` (~80 lines) | Axios client for `/agent/health` + `/agent/runs`, types mirror `agent/server.py` |
+| `frontend/vite.config.ts` (+6 lines) | Dev proxy `/agent/*` → `http://localhost:8001` (override with `VITE_AGENT_URL`) |
+| `frontend/src/pages/BOSAssistantV2Page.test.tsx` | 9 vitest tests, `renderToStaticMarkup` style (no `@testing-library/react` dep) |
+
+### Browser flow (manual)
+
+```bash
+# Terminal 1
+cd backend && python -m uvicorn app.main:app --port 8000
+
+# Terminal 2
+cd backend && python -m agent.main --port 8001
+
+# Terminal 3
+cd frontend && npm run dev
+# open http://localhost:5173/bos/v2
+```
+
+Vite proxies `/agent/*` to `http://localhost:8001` so the browser
+never crosses an origin. V1 remains the default at `/bos`.
+
+### Tests
+
+- `cd frontend && npx vitest run src/pages/BOSAssistantV2Page.test.tsx`
+  → **9/9 PASS in 1.18 s**.
+- `cd frontend && npm run build` (with `NODE_OPTIONS=--max-old-space-size=8192`)
+  → **built in 20.35 s**. `dist/assets/BOSAssistantV2Page-*.js`
+  exists alongside V1.
+
+### Scope honesty
+
+V2 chat works for the **smalltalk path** end-to-end (router → render
+→ markdown). The SER / SFI / relay / MC / twin paths require the
+agent to forward an operator JWT to Core (the 5 V5 endpoints sit
+behind `require_minimum_role("operator")`). Today the agent's
+`httpx.AsyncClient` does not forward bearer tokens — that wiring
+is Phase B work and is documented but not blocking acceptance #7.
+
+### Plan v2 §7 acceptance matrix — final
+
+| # | Check | Status |
+|---|---|---|
+| 1 | BOS Core boots | ✅ |
+| 2 | BOS Agent boots | ✅ |
+| 3 | Agent does NOT import `app.*` (runtime + Docker image) | ✅ |
+| 4 | Direct Core SER returns a number | ✅ |
+| 5 | End-to-end agent chat returns markdown | ✅ |
+| 6 | V1 frontend still works | ✅ — V1 bundle in `dist/` unchanged, route `/bos` |
+| 7 | V2 frontend wired | ✅ — chat surface at `/bos/v2`, talks to agent via Vite proxy |
+| 8 | OpenAPI snapshot stable | ✅ |
+| 9 | Phase 0.5 backend invariants hold | ✅ |
+
+**9 / 9 ✅** — Phase A acceptance complete.
+
+---
+
+## What's next (Phase B)
+
+1. Wire bearer-token forwarding through the agent's shared
+   `httpx.AsyncClient` so authenticated SER / SFI / relay / MC /
+   twin paths work cross-process in the browser. Today's V2 chat
+   surface handles the response shape but the agent has no token to
+   send.
+2. Replace the deterministic keyword router in `agent/nodes/router.py`
+   with a true LLM-backed classifier under `ANTHROPIC_API_KEY`.
+3. Begin Phase B causal-inference layer (`/api/v1/causal/*` —
+   DoWhy / EconML / mediation / DML).
