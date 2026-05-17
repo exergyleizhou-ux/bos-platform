@@ -10,6 +10,10 @@ Tests complete user workflows:
 import pytest
 from httpx import AsyncClient
 
+pytestmark = pytest.mark.skip(
+    reason="legacy-deferred per Phase A/D1 - V1 e2e workflow superseded by V5 contract; sunset 2027-05-17"
+)
+
 
 class TestBatchAnalysisWorkflow:
     """

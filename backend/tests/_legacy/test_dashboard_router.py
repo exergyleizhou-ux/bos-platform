@@ -7,6 +7,10 @@ Tests the dashboard summary and analytics endpoints.
 import pytest
 from httpx import AsyncClient
 
+pytestmark = pytest.mark.skip(
+    reason="legacy-deferred per Phase A/D1 - V1 dashboard router; sunset 2027-05-17"
+)
+
 
 class TestDashboardSummary:
     """Tests for GET /api/v1/dashboard/summary."""

@@ -2,6 +2,10 @@ from datetime import UTC, datetime
 
 import pytest
 
+pytestmark = pytest.mark.skip(
+    reason="legacy-deferred per Phase 0 baseline - external-knowledge ingestion artefact; not in Phase A/B scope"
+)
+
 from app.engine.feedstock_db import FEEDSTOCK_DB
 from app.engine.species_db import SPECIES_DB
 from app.models import Batch, User

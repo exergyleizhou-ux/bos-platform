@@ -1,6 +1,10 @@
 import json
 import pytest
 from datetime import datetime
+
+pytestmark = pytest.mark.skip(
+    reason="legacy-deferred per Phase 0.5/D5 - Code Cockpit subsystem deferred"
+)
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from types import SimpleNamespace

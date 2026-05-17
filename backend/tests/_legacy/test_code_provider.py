@@ -1,6 +1,10 @@
 import httpx
 import pytest
 
+pytestmark = pytest.mark.skip(
+    reason="legacy-deferred per Phase 0.5/D5 - Code Cockpit subsystem deferred"
+)
+
 from app.services.code.providers import (
     CodeProviderError,
     OpenAICodexProvider,

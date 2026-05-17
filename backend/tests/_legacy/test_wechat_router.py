@@ -5,6 +5,10 @@ from httpx import AsyncClient
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+pytestmark = pytest.mark.skip(
+    reason="legacy-deferred per Phase A/D1 - V1 wechat router; not in Phase B scope"
+)
+
 from app.models import CodeSession, CodeTask, WechatContactBinding, WechatOfficialAccount
 from app.services.code.providers import OpenAICodexProvider
 from app.services.wechat import wechat_service

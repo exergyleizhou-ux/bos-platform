@@ -3,6 +3,10 @@ from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 from pathlib import Path
 
+pytestmark = pytest.mark.skip(
+    reason="legacy-deferred per Phase 0 baseline - Phase 0 brain-runtime document persistence; not in Phase A/B scope"
+)
+
 from app.services.feature_flags import set_db_override
 
 

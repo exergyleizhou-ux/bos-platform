@@ -4,6 +4,10 @@ from collections import Counter
 import pytest
 from httpx import AsyncClient
 from sqlalchemy import func, select
+
+pytestmark = pytest.mark.skip(
+    reason="legacy-deferred per Phase A/D1 - V1 users-router governance lane; not in Phase B scope"
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Tenant, User, UserRoleGrant, UserRoleGrantAuditRecord

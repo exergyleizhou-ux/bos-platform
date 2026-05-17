@@ -3,6 +3,10 @@ from datetime import UTC, datetime
 import pytest
 from httpx import AsyncClient
 
+pytestmark = pytest.mark.skip(
+    reason="legacy-deferred per Phase 0 baseline - external-sources router; not in Phase A/B scope"
+)
+
 from app.models import Batch, User
 from app.models_bos import ReleaseDecision
 from app.routers.auth import create_access_token

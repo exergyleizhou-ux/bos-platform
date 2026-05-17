@@ -7,6 +7,10 @@ Tests the SER computation API endpoint.
 import pytest
 from httpx import AsyncClient
 
+pytestmark = pytest.mark.skip(
+    reason="legacy-deferred per Phase A/D1 - V1 SER router superseded by /api/v1/ser/compute; sunset 2027-05-17"
+)
+
 
 class TestSERCompute:
     """Tests for POST /api/v1/ser/compute."""

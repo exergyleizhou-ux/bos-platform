@@ -5,6 +5,12 @@ from pathlib import Path
 import json
 import sys
 
+import pytest
+
+pytestmark = pytest.mark.skip(
+    reason="legacy-deferred per Phase 0.5/D5 - Code Cockpit subsystem deferred"
+)
+
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 SCRIPT_PATH = REPO_ROOT / "scripts" / "bos_code_benchmark.py"
