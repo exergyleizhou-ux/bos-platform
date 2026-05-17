@@ -1,0 +1,73 @@
+# BOS Phase A demo stack — two services, real TCP between them.
+#
+# Usage from repo root:
+#   docker compose -f docker-compose.phase-a.yml up --build
+#
+# Then in another terminal:
+#   curl http://localhost:8001/agent/health
+#   curl -X POST http://localhost:8001/agent/runs \
+#        -H 'Content-Type: application/json' \
+#        -d '{"message":"compute SER for batch","state":{
+#            "dm_in":10.0,"dm_out":2.5,"n_in":1.0,"n_rec":0.3,
+#            "d_prime":0.7,"g_prime":0.6,"species_code":"BSF_LARVA"}}'
+#
+# The agent process never imports app.*; it talks to bos-core only
+# over HTTP at BOS_CORE_URL=http://bos-core:8000/api/v1.
+
+services:
+
+  bos-core:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: bos-core:phase-a
+    container_name: bos-core-phase-a
+    environment:
+      # SQLite is fine for the demo; Postgres support is unchanged from
+      # the v9 backend Dockerfile and can be enabled via DATABASE_URL.
+      - DATABASE_URL=sqlite+aiosqlite:////srv/data/bos-demo.db
+      - SECRET_KEY=phase-a-demo-secret-not-for-prod
+      - DEBUG=false
+      - LOG_LEVEL=info
+    volumes:
+      - bos-core-data:/srv/data
+    ports:
+      - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/api/v1/health/live',timeout=2).status==200 else 1)"]
+      interval: 15s
+      timeout: 3s
+      start_period: 10s
+      retries: 3
+    restart: unless-stopped
+
+  bos-agent:
+    build:
+      context: .
+      dockerfile: backend/agent/Dockerfile
+    image: bos-agent:phase-a
+    container_name: bos-agent-phase-a
+    environment:
+      - BOS_CORE_URL=http://bos-core:8000/api/v1
+      - AGENT_HOST=0.0.0.0
+      - AGENT_PORT=8001
+      - AGENT_LOG_LEVEL=info
+      # Force the deterministic keyword router for the demo so the
+      # stack runs without an LLM API key. Remove + set ANTHROPIC_API_KEY
+      # to enable the LLM router.
+      - AGENT_ROUTER_USE_LLM=0
+    ports:
+      - "8001:8001"
+    depends_on:
+      bos-core:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8001/agent/health',timeout=2).status==200 else 1)"]
+      interval: 15s
+      timeout: 3s
+      start_period: 10s
+      retries: 3
+    restart: unless-stopped
+
+volumes:
+  bos-core-data: {}
