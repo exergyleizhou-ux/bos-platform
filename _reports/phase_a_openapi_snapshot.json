@@ -1,0 +1,2716 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "BOS Core — Phase A V5 contract",
+    "version": "A.1",
+    "description": "Frozen Phase A surface. Covers /ser/compute /sfi/check /relay/simulate /mc/propagate /twin/run plus D1 sunset legacy twin compute endpoints."
+  },
+  "paths": {
+    "/api/v1/mc/propagate": {
+      "post": {
+        "tags": [
+          "MC (Phase A)"
+        ],
+        "summary": "Phase A — generic Monte Carlo uncertainty propagation (Eq.7)",
+        "description": "Run the V5 MC propagation.\n\nPaper map: Eq.7 (sample-and-evaluate Monte Carlo). For\n``target_func=\"ser\"`` the SER engine is the per-sample evaluator\n(evidence_level=supported). For other targets the engine returns\na deterministic placeholder so the full request/response contract\ncan be exercised (evidence_level=planned).",
+        "operationId": "mc_propagate_endpoint_api_v1_mc_propagate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/McPropagateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/McPropagateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/relay/simulate": {
+      "post": {
+        "tags": [
+          "Relay (Phase A)"
+        ],
+        "summary": "Phase A — three-stage M1→M2→M3 relay simulation",
+        "description": "Run the V5 relay simulation.\n\nPaper map: M1 (deconstruction) → M2 (assimilation, signal decay per\nEq.6) → M3 (stabilization). Each stage emits a BoundaryLedger via\nmass_balance.reconcile, so closure_pct < 95% produces a warning.",
+        "operationId": "relay_simulate_endpoint_api_v1_relay_simulate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RelaySimulateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RelaySimulateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/ser/compute": {
+      "post": {
+        "tags": [
+          "SER Engine"
+        ],
+        "summary": "Phase A — paper-strict, stateless SER compute",
+        "description": "Compute SER deterministically; optionally propagate MC uncertainty.\n\nPaper map: Eq. 1–3 (deterministic SER), Eq. 7 (Monte Carlo uncertainty).\n\nThis handler is **stateless** — no Calculation row is written. For the\npersisted V9 behavior, use ``POST /api/v1/ser/compute_legacy``.",
+        "operationId": "compute_ser_v5_endpoint_api_v1_ser_compute_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SerComputeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SerComputeResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/sfi/check": {
+      "post": {
+        "tags": [
+          "SFI (Phase A)"
+        ],
+        "summary": "Phase A — paper-strict SFI envelope check (Eq.5-6)",
+        "description": "Run the V5 SFI check.\n\nPaper map: Eq.5 (per-axis envelope), Eq.6 (physical horizon\ntau_max = ln(s0/s_min)/k_decay).\nHonest k_decay treatment: provenance drives evidence_level.",
+        "operationId": "sfi_check_endpoint_api_v1_sfi_check_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SfiCheckRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SfiCheckResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/twin/run": {
+      "post": {
+        "tags": [
+          "Digital Twin"
+        ],
+        "summary": "Phase A — stateless digital-twin run (V5)",
+        "description": "Run the digital twin forward over an explicit input schedule.\n\nNo DB persistence, no twin record required. If ``observations`` is\nprovided and ``enable_ekf=True``, each predict step is followed by\nan EKF update. Innovation statistics are aggregated across the run.",
+        "operationId": "twin_run_endpoint_api_v1_twin_run_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TwinRunRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TwinRunResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/twin/{twin_id}/predict": {
+      "post": {
+        "tags": [
+          "Digital Twin"
+        ],
+        "summary": "Predict Twin Step",
+        "description": "DEPRECATED (Phase A V5 D1 sunset): use POST /api/v1/twin/run for stateless predictions. Old stateful path stays callable until 2027-05-17 (T0 + 12 months from Phase A start).",
+        "operationId": "predict_twin_step_api_v1_twin__twin_id__predict_post",
+        "deprecated": true,
+        "parameters": [
+          {
+            "name": "twin_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Twin Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TwinPredictRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/twin/{twin_id}/simulate": {
+      "post": {
+        "tags": [
+          "Digital Twin"
+        ],
+        "summary": "Simulate Twin",
+        "description": "DEPRECATED (Phase A V5 D1 sunset): use POST /api/v1/twin/run for stateless trajectory simulation. Old stateful path stays callable until 2027-05-17.",
+        "operationId": "simulate_twin_api_v1_twin__twin_id__simulate_post",
+        "deprecated": true,
+        "parameters": [
+          {
+            "name": "twin_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Twin Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TwinSimulateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/twin/{twin_id}/update": {
+      "post": {
+        "tags": [
+          "Digital Twin"
+        ],
+        "summary": "Update Twin Observations",
+        "description": "DEPRECATED (Phase A V5 D1 sunset): use POST /api/v1/twin/run with an observations array for stateless EKF correction. Old stateful path stays callable until 2027-05-17.",
+        "operationId": "update_twin_observations_api_v1_twin__twin_id__update_post",
+        "deprecated": true,
+        "parameters": [
+          {
+            "name": "twin_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Twin Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TwinUpdateObsRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Action": {
+        "properties": {
+          "action_type": {
+            "type": "string",
+            "enum": [
+              "cool_down",
+              "heat_up",
+              "irrigate",
+              "ventilate",
+              "ph_adjust",
+              "feed_reduce",
+              "feed_increase",
+              "harvest_now",
+              "rest_and_review",
+              "horizon_exceeds_physical_limit"
+            ],
+            "title": "Action Type",
+            "description": "Discrete action category."
+          },
+          "urgency": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ],
+            "title": "Urgency"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 512,
+            "title": "Description"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "action_type",
+          "urgency",
+          "description"
+        ],
+        "title": "Action",
+        "description": "Operator-facing remediation hint."
+      },
+      "AxisStatus": {
+        "properties": {
+          "axis": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Axis"
+          },
+          "value": {
+            "type": "number",
+            "title": "Value"
+          },
+          "unit": {
+            "type": "string",
+            "maxLength": 16,
+            "title": "Unit"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pass",
+              "warn",
+              "fail"
+            ],
+            "title": "Status"
+          },
+          "margin_to_breach": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Margin To Breach",
+            "description": "Absolute distance to the nearest envelope breach in axis units. Negative means already over the boundary."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "axis",
+          "value",
+          "unit",
+          "status"
+        ],
+        "title": "AxisStatus",
+        "description": "Per-axis verdict returned to the caller."
+      },
+      "BoundaryLedger": {
+        "properties": {
+          "stage": {
+            "type": "string",
+            "enum": [
+              "M1",
+              "M2",
+              "M3"
+            ],
+            "title": "Stage"
+          },
+          "mass_in_kg": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Mass In Kg"
+          },
+          "mass_out_kg": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Mass Out Kg"
+          },
+          "mass_residual_kg": {
+            "type": "number",
+            "title": "Mass Residual Kg",
+            "description": "Closure residual [kg]. Should be near zero. Negative means more out than in (likely measurement/sim error)."
+          },
+          "nitrogen_in_g": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Nitrogen In G"
+          },
+          "nitrogen_out_g": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Nitrogen Out G"
+          },
+          "nitrogen_residual_g": {
+            "type": "number",
+            "title": "Nitrogen Residual G"
+          },
+          "closure_pct": {
+            "type": "number",
+            "maximum": 200.0,
+            "minimum": 0.0,
+            "title": "Closure Pct",
+            "description": "Mass closure percentage from mass_balance.reconcile. Ideal = 100. Below 95 raises a poor_boundary_closure warning."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "stage",
+          "mass_in_kg",
+          "mass_out_kg",
+          "mass_residual_kg",
+          "nitrogen_in_g",
+          "nitrogen_out_g",
+          "nitrogen_residual_g",
+          "closure_pct"
+        ],
+        "title": "BoundaryLedger",
+        "description": "Mass/N closure ledger for a single relay stage."
+      },
+      "ControlProfile": {
+        "properties": {
+          "profile_type": {
+            "type": "string",
+            "enum": [
+              "constant",
+              "ramp",
+              "step",
+              "custom"
+            ],
+            "title": "Profile Type",
+            "description": "Shape of the setpoint profile."
+          },
+          "setpoints": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "minProperties": 1,
+            "title": "Setpoints",
+            "description": "Per-axis setpoint targets."
+          },
+          "tolerance": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Tolerance",
+            "description": "Fractional tolerance band around each setpoint.",
+            "default": 0.1
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "profile_type",
+          "setpoints"
+        ],
+        "title": "ControlProfile",
+        "description": "Optional setpoint-driven control profile applied across all stages."
+      },
+      "DistSpec": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "normal",
+              "lognormal",
+              "triangular",
+              "uniform"
+            ],
+            "title": "Kind",
+            "description": "Distribution family (paper Eq.7 inputs).",
+            "examples": [
+              "normal"
+            ]
+          },
+          "mean": {
+            "type": "number",
+            "title": "Mean",
+            "description": "Distribution mean.",
+            "examples": [
+              120.0
+            ]
+          },
+          "std": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Std",
+            "description": "Standard deviation (or scale-equivalent).",
+            "examples": [
+              5.0
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "mean",
+          "std"
+        ],
+        "title": "DistSpec",
+        "description": "Per-field uncertainty distribution spec for Monte Carlo propagation.\n\nThe engine maps these to ``app.engine.core.monte_carlo_engine.MCInput``.\nFor Phase A the supported distributions are the same set the engine\nalready implements."
+      },
+      "ForecastBreach": {
+        "properties": {
+          "earliest_breach_hour": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Earliest Breach Hour",
+            "description": "Hours from t0 until the predicted breach."
+          },
+          "axis": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Axis"
+          },
+          "confidence": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Confidence",
+            "description": "Confidence the breach occurs within horizon."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "earliest_breach_hour",
+          "axis",
+          "confidence"
+        ],
+        "title": "ForecastBreach",
+        "description": "Earliest predicted envelope breach within ``horizon_hours``."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "InnovationStats": {
+        "properties": {
+          "n_updates": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "N Updates",
+            "description": "Count of EKF update steps applied."
+          },
+          "mean_abs_innovation": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Mean Abs Innovation",
+            "description": "Mean absolute innovation per observed channel (weight / temperature / moisture)."
+          },
+          "rms_innovation": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Rms Innovation",
+            "description": "Root-mean-square innovation per observed channel."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "n_updates"
+        ],
+        "title": "InnovationStats",
+        "description": "Aggregate EKF innovation diagnostics across the run."
+      },
+      "KDecayBand": {
+        "properties": {
+          "point": {
+            "type": "number",
+            "maximum": 10.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Point",
+            "description": "Point estimate of k_decay [1/h] (Eq.6).",
+            "examples": [
+              0.045
+            ]
+          },
+          "low": {
+            "type": "number",
+            "maximum": 10.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Low",
+            "description": "Lower bound of the uncertainty band [1/h].",
+            "examples": [
+              0.03
+            ]
+          },
+          "high": {
+            "type": "number",
+            "maximum": 10.0,
+            "exclusiveMinimum": 0.0,
+            "title": "High",
+            "description": "Upper bound of the uncertainty band [1/h].",
+            "examples": [
+              0.06
+            ]
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "literature",
+              "fitted",
+              "measured"
+            ],
+            "title": "Source",
+            "description": "Provenance of the value. Drives evidence_level downgrade: 'measured' -> validated, 'fitted' -> supported, 'literature' -> planned.",
+            "examples": [
+              "literature"
+            ]
+          },
+          "citation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Citation",
+            "description": "Optional reference (DOI, paper ID, internal dataset)."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "point",
+          "low",
+          "high",
+          "source"
+        ],
+        "title": "KDecayBand",
+        "description": "Uncertainty band for the first-order decay constant k_decay.\n\nHonest: callers MUST declare ``source`` so the API can downgrade\n``evidence_level`` when the value is literature-prior rather than\nmeasured (paper §SFI honesty rule)."
+      },
+      "McDiagnostics": {
+        "properties": {
+          "n_samples": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "N Samples"
+          },
+          "effective_samples": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Effective Samples",
+            "description": "Samples surviving filtering / validity checks."
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 4294967295.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed"
+          },
+          "distribution_kinds": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Distribution Kinds",
+            "description": "Per-input distribution family used (echo)."
+          },
+          "computation_time_ms": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Computation Time Ms"
+          },
+          "convergence_check": {
+            "type": "boolean",
+            "title": "Convergence Check",
+            "description": "Engine-defined cheap convergence proxy (e.g. CI width vs /sqrt(n) decay). False does not imply non-convergence, only that the proxy was not run.",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "n_samples",
+          "effective_samples",
+          "computation_time_ms"
+        ],
+        "title": "McDiagnostics",
+        "description": "Estimator diagnostics for the propagation run."
+      },
+      "McInput": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "normal",
+              "lognormal",
+              "triangular",
+              "uniform"
+            ],
+            "title": "Kind",
+            "description": "Sampling family.",
+            "examples": [
+              "normal"
+            ]
+          },
+          "mean": {
+            "type": "number",
+            "title": "Mean",
+            "description": "Distribution centre. Interpretation per family: normal/lognormal/triangular → mean; uniform → centre of band.",
+            "examples": [
+              10.0
+            ]
+          },
+          "std": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Std",
+            "description": "Standard deviation (≥ 0). Zero collapses to a constant.",
+            "examples": [
+              0.5
+            ]
+          },
+          "units": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 32
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Units",
+            "description": "Optional axis units for downstream provenance.",
+            "examples": [
+              "kg"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "kind",
+          "mean",
+          "std"
+        ],
+        "title": "McInput",
+        "description": "Per-variable distribution specification (Eq.7 input)."
+      },
+      "McPropagateRequest": {
+        "properties": {
+          "inputs": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/McInput"
+            },
+            "type": "object",
+            "maxProperties": 64,
+            "minProperties": 1,
+            "title": "Inputs",
+            "description": "Per-variable distribution spec; keys are the target function's input variable names."
+          },
+          "target_func": {
+            "type": "string",
+            "enum": [
+              "ser",
+              "sfi_score",
+              "relay_final_state",
+              "custom"
+            ],
+            "title": "Target Func",
+            "description": "Which downstream BOS compute to propagate through.",
+            "examples": [
+              "ser"
+            ]
+          },
+          "target_func_config": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Target Func Config",
+            "description": "Target-specific config — schema is per-target and validated by the engine. This is the single Phase A loose-typed escape hatch."
+          },
+          "n_samples": {
+            "type": "integer",
+            "maximum": 200000.0,
+            "minimum": 100.0,
+            "title": "N Samples",
+            "description": "MC sample count. Eq.7 estimator variance scales 1/√N.",
+            "default": 10000
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 4294967295.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed",
+            "description": "PRNG seed for reproducibility."
+          },
+          "return_samples": {
+            "type": "boolean",
+            "title": "Return Samples",
+            "description": "If True, response includes raw sample array (can be large).",
+            "default": false
+          },
+          "compute_sobol": {
+            "type": "boolean",
+            "title": "Compute Sobol",
+            "description": "If True, compute first-order + total Sobol indices.",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "inputs",
+          "target_func",
+          "target_func_config"
+        ],
+        "title": "McPropagateRequest",
+        "description": "Phase A Monte Carlo propagation input — paper-strict per §2.4."
+      },
+      "McPropagateResponse": {
+        "properties": {
+          "target_mean": {
+            "type": "number",
+            "title": "Target Mean"
+          },
+          "target_std": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Target Std"
+          },
+          "ci_lower": {
+            "type": "number",
+            "title": "Ci Lower"
+          },
+          "ci_upper": {
+            "type": "number",
+            "title": "Ci Upper"
+          },
+          "samples": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Samples",
+            "description": "Raw sample array; returned only when return_samples=True."
+          },
+          "sobol_indices": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SobolIndices"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Returned only when compute_sobol=True."
+          },
+          "diagnostics": {
+            "$ref": "#/components/schemas/McDiagnostics"
+          },
+          "evidence_level": {
+            "type": "string",
+            "enum": [
+              "validated",
+              "supported",
+              "planned"
+            ],
+            "title": "Evidence Level"
+          },
+          "engine_version": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$",
+            "title": "Engine Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "target_mean",
+          "target_std",
+          "ci_lower",
+          "ci_upper",
+          "diagnostics",
+          "evidence_level",
+          "engine_version"
+        ],
+        "title": "McPropagateResponse",
+        "description": "Phase A Monte Carlo propagation response — paper-strict."
+      },
+      "McSummary": {
+        "properties": {
+          "n_samples": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "N Samples"
+          },
+          "ess": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ess",
+            "description": "Effective sample size (None when not computed)."
+          },
+          "divergences": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Divergences"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "n_samples"
+        ],
+        "title": "McSummary",
+        "description": "Diagnostics returned when monte_carlo was requested."
+      },
+      "MonteCarloConfig": {
+        "properties": {
+          "n_samples": {
+            "type": "integer",
+            "maximum": 100000.0,
+            "minimum": 100.0,
+            "title": "N Samples",
+            "description": "Number of MC samples. Eq.7 estimator variance scales 1/sqrt(N).",
+            "default": 10000,
+            "examples": [
+              10000
+            ]
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 4294967295.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed",
+            "description": "PRNG seed for reproducibility.",
+            "examples": [
+              42
+            ]
+          },
+          "distributions": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/DistSpec"
+            },
+            "type": "object",
+            "title": "Distributions",
+            "description": "Per-field uncertainty spec. Keys must be SerComputeRequest field names (dm_in, dm_out, n_in, n_rec)."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "distributions"
+        ],
+        "title": "MonteCarloConfig",
+        "description": "MC propagation config; omit on the request to get deterministic only."
+      },
+      "RelayConfig": {
+        "properties": {
+          "tau_m2_h": {
+            "type": "number",
+            "maximum": 720.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Tau M2 H",
+            "description": "M2 assimilation time constant [hours] (Eq.4).",
+            "examples": [
+              24.0
+            ]
+          },
+          "k_decay_band": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/KDecayBand"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Uncertainty band for k_decay (Eq.6). Reused from SFI schema — see app.schemas.sfi.KDecayBand."
+          },
+          "s0": {
+            "type": "number",
+            "maximum": 1000000000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "S0",
+            "description": "Initial signal activity (Eq.4 IC).",
+            "examples": [
+              100.0
+            ]
+          },
+          "s_min": {
+            "type": "number",
+            "maximum": 1000000000.0,
+            "minimum": 0.0,
+            "title": "S Min",
+            "description": "Minimum signal activity before relay-to-M3.",
+            "examples": [
+              10.0
+            ]
+          },
+          "tau_max_h": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100000.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tau Max H",
+            "description": "Eq.6 physical horizon tau_max = ln(s0/s_min)/k_decay [hours]. Computed by the engine when omitted; passed-through when caller pre-computes."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "tau_m2_h",
+          "s0",
+          "s_min"
+        ],
+        "title": "RelayConfig",
+        "description": "Relay timing + decay parameters (Eq.4–6)."
+      },
+      "RelayHealth": {
+        "properties": {
+          "overall_status": {
+            "type": "string",
+            "enum": [
+              "nominal",
+              "degraded",
+              "failed"
+            ],
+            "title": "Overall Status"
+          },
+          "stage_completion": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "propertyNames": {
+              "enum": [
+                "M1",
+                "M2",
+                "M3"
+              ]
+            },
+            "type": "object",
+            "title": "Stage Completion",
+            "description": "Per-stage completion fraction in [0, 1]. 1.0 means the stage ran to its scheduled end without abort. Partial values mean an internal stop (e.g. k_decay violation)."
+          },
+          "sfi_check_passed_at_each_stage": {
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "propertyNames": {
+              "enum": [
+                "M1",
+                "M2",
+                "M3"
+              ]
+            },
+            "type": "object",
+            "title": "Sfi Check Passed At Each Stage"
+          },
+          "k_decay_violation_at_step": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "K Decay Violation At Step",
+            "description": "First step index where Eq.6 horizon was exceeded, or None."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "overall_status",
+          "stage_completion",
+          "sfi_check_passed_at_each_stage"
+        ],
+        "title": "RelayHealth",
+        "description": "Aggregate health verdict for the whole relay simulation."
+      },
+      "RelaySimulateRequest": {
+        "properties": {
+          "initial_state": {
+            "$ref": "#/components/schemas/app__schemas__relay__TwinState",
+            "description": "Initial biomass / substrate / T / M / N / signal state."
+          },
+          "relay_config": {
+            "$ref": "#/components/schemas/RelayConfig"
+          },
+          "horizon_steps": {
+            "type": "integer",
+            "maximum": 10000.0,
+            "minimum": 1.0,
+            "title": "Horizon Steps",
+            "description": "Number of dt-sized steps to simulate."
+          },
+          "dt_hours": {
+            "type": "number",
+            "maximum": 24.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Dt Hours",
+            "description": "Integration step size [hours]."
+          },
+          "species_code": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[A-Z0-9_\\-]+$",
+            "title": "Species Code",
+            "description": "Code from engine/core/species_db.",
+            "examples": [
+              "BSF_LARVA"
+            ]
+          },
+          "monte_carlo": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MonteCarloConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional MC propagation on final_ser."
+          },
+          "control_profile": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ControlProfile"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "initial_state",
+          "relay_config",
+          "horizon_steps",
+          "dt_hours",
+          "species_code"
+        ],
+        "title": "RelaySimulateRequest",
+        "description": "Phase A relay simulation input — paper-strict per §2.3."
+      },
+      "RelaySimulateResponse": {
+        "properties": {
+          "trajectory": {
+            "items": {
+              "$ref": "#/components/schemas/app__schemas__relay__TwinSnapshot"
+            },
+            "type": "array",
+            "maxItems": 100000,
+            "minItems": 1,
+            "title": "Trajectory"
+          },
+          "boundary_ledger": {
+            "items": {
+              "$ref": "#/components/schemas/BoundaryLedger"
+            },
+            "type": "array",
+            "title": "Boundary Ledger",
+            "description": "Exactly three entries: M1, M2, M3."
+          },
+          "relay_health": {
+            "$ref": "#/components/schemas/RelayHealth"
+          },
+          "final_ser": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Final Ser"
+          },
+          "final_ser_ci": {
+            "anyOf": [
+              {
+                "prefixItems": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "number"
+                  }
+                ],
+                "type": "array",
+                "maxItems": 2,
+                "minItems": 2
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Final Ser Ci",
+            "description": "MC 95% CI on final_ser if monte_carlo was requested."
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/Warning"
+            },
+            "type": "array",
+            "maxItems": 200,
+            "title": "Warnings"
+          },
+          "engine_version": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$",
+            "title": "Engine Version"
+          },
+          "evidence_level": {
+            "type": "string",
+            "enum": [
+              "validated",
+              "supported",
+              "planned"
+            ],
+            "title": "Evidence Level"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "trajectory",
+          "boundary_ledger",
+          "relay_health",
+          "final_ser",
+          "engine_version",
+          "evidence_level"
+        ],
+        "title": "RelaySimulateResponse",
+        "description": "Phase A relay simulation response — paper-strict."
+      },
+      "SerComputeRequest": {
+        "properties": {
+          "dm_in": {
+            "type": "number",
+            "maximum": 1000000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Dm In",
+            "description": "Input dry matter [kg]. Eq.1 denominator.",
+            "examples": [
+              120.0
+            ]
+          },
+          "dm_out": {
+            "type": "number",
+            "maximum": 1000000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Dm Out",
+            "description": "Recovered dry matter [kg]. Must be <= dm_in (validator).",
+            "examples": [
+              36.0
+            ]
+          },
+          "n_in": {
+            "type": "number",
+            "maximum": 100000.0,
+            "minimum": 0.0,
+            "title": "N In",
+            "description": "Input N [kg].",
+            "examples": [
+              2.8
+            ]
+          },
+          "n_rec": {
+            "type": "number",
+            "maximum": 100000.0,
+            "minimum": 0.0,
+            "title": "N Rec",
+            "description": "Recovered N [kg]. Must be <= n_in (validator).",
+            "examples": [
+              0.91
+            ]
+          },
+          "d_prime": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "D Prime",
+            "description": "Normalized deconstruction rate D' in [0,1] (paper Eq.3).",
+            "examples": [
+              0.72
+            ]
+          },
+          "g_prime": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "G Prime",
+            "description": "Normalized growth rate G' in [0,1] (paper Eq.3).",
+            "examples": [
+              0.65
+            ]
+          },
+          "species_code": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[A-Z0-9_\\-]+$",
+            "title": "Species Code",
+            "description": "Code from engine/core/species_db.",
+            "examples": [
+              "BSF_LARVA"
+            ]
+          },
+          "feedstock_code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64,
+                "pattern": "^[A-Z0-9_\\-]+$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Feedstock Code",
+            "description": "Optional feedstock code from engine/core/feedstock_db.",
+            "examples": [
+              "FOOD_WASTE_MIXED"
+            ]
+          },
+          "monte_carlo": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MonteCarloConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Omit for deterministic-only result."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "dm_in",
+          "dm_out",
+          "n_in",
+          "n_rec",
+          "d_prime",
+          "g_prime",
+          "species_code"
+        ],
+        "title": "SerComputeRequest",
+        "description": "Phase A SER compute input — paper-strict per §2.1 of PHASE_A_PLAN."
+      },
+      "SerComputeResponse": {
+        "properties": {
+          "ser_point": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Ser Point",
+            "description": "Deterministic SER in [0,1] (Eq.1)."
+          },
+          "ser_ci_lower": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ser Ci Lower",
+            "description": "MC lower 95% CI bound; None if MC not run."
+          },
+          "ser_ci_upper": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ser Ci Upper",
+            "description": "MC upper 95% CI bound; None if MC not run."
+          },
+          "ser_std": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ser Std"
+          },
+          "delta_ser": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": -1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delta Ser",
+            "description": "SER delta vs baseline; positive = improvement."
+          },
+          "engine_version": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$",
+            "title": "Engine Version"
+          },
+          "monte_carlo": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/McSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "evidence_level": {
+            "type": "string",
+            "enum": [
+              "validated",
+              "supported",
+              "planned"
+            ],
+            "title": "Evidence Level",
+            "description": "Evidence tier for the result (per BOS evidence policy)."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "ser_point",
+          "engine_version",
+          "evidence_level"
+        ],
+        "title": "SerComputeResponse",
+        "description": "Phase A SER compute response — paper-strict."
+      },
+      "SetpointProfile": {
+        "properties": {
+          "target_state": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "maxProperties": 16,
+            "minProperties": 1,
+            "title": "Target State",
+            "description": "Per-axis target values. Keys must match SfiMeasurements fields (e.g. temperature_c, moisture_pct, ph)."
+          },
+          "tolerance_pct": {
+            "type": "number",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Tolerance Pct",
+            "description": "Tolerance as % of axis range; bracketed forecast band.",
+            "default": 10.0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "target_state"
+        ],
+        "title": "SetpointProfile",
+        "description": "Desired operating envelope for the forecast-breach check."
+      },
+      "SfiCheckRequest": {
+        "properties": {
+          "species_code": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[A-Z0-9_\\-]+$",
+            "title": "Species Code",
+            "description": "Code from engine/core/species_db.",
+            "examples": [
+              "BSF_LARVA"
+            ]
+          },
+          "measurements": {
+            "$ref": "#/components/schemas/SfiMeasurements",
+            "description": "Current sensor snapshot."
+          },
+          "setpoint_profile": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SetpointProfile"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "If provided, enables forecast-breach computation."
+          },
+          "horizon_hours": {
+            "type": "integer",
+            "maximum": 720.0,
+            "minimum": 1.0,
+            "title": "Horizon Hours",
+            "description": "Forward-projection horizon (1 h to 30 days).",
+            "default": 24,
+            "examples": [
+              24
+            ]
+          },
+          "k_decay_band": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/KDecayBand"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Uncertainty band for k_decay (Eq.6 input). Required to enable the physical-horizon check."
+          },
+          "s0": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1000000.0,
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "S0",
+            "description": "Initial substrate pool [kg]. Combined with s_min + k_decay to evaluate Eq.6 tau_max = ln(s0/s_min)/k_decay."
+          },
+          "s_min": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1000000.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "S Min",
+            "description": "Minimum substrate threshold [kg]."
+          },
+          "monte_carlo": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/MonteCarloConfig"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional MC propagation on the composite score."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "species_code",
+          "measurements"
+        ],
+        "title": "SfiCheckRequest",
+        "description": "Phase A SFI check input — paper-strict per §2.2."
+      },
+      "SfiCheckResponse": {
+        "properties": {
+          "sfi_pass": {
+            "type": "boolean",
+            "title": "Sfi Pass"
+          },
+          "zone": {
+            "type": "string",
+            "enum": [
+              "safe",
+              "caution",
+              "danger",
+              "out_of_envelope"
+            ],
+            "title": "Zone"
+          },
+          "composite_score": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Composite Score"
+          },
+          "per_axis": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/AxisStatus"
+            },
+            "type": "object",
+            "title": "Per Axis",
+            "description": "Keys are SfiMeasurements field names."
+          },
+          "forecast_breach": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ForecastBreach"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Earliest predicted envelope breach within horizon."
+          },
+          "recommended_actions": {
+            "items": {
+              "$ref": "#/components/schemas/Action"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Recommended Actions"
+          },
+          "evidence_level": {
+            "type": "string",
+            "enum": [
+              "validated",
+              "supported",
+              "planned"
+            ],
+            "title": "Evidence Level"
+          },
+          "k_decay_used": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/KDecayBand"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Echo of the k_decay_band actually used (for audit)."
+          },
+          "engine_version": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$",
+            "title": "Engine Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "sfi_pass",
+          "zone",
+          "composite_score",
+          "per_axis",
+          "evidence_level",
+          "engine_version"
+        ],
+        "title": "SfiCheckResponse",
+        "description": "Phase A SFI check response — paper-strict."
+      },
+      "SfiMeasurements": {
+        "properties": {
+          "temperature_c": {
+            "type": "number",
+            "maximum": 80.0,
+            "minimum": -10.0,
+            "title": "Temperature C",
+            "description": "Ambient temperature [°C].",
+            "examples": [
+              28.0
+            ]
+          },
+          "moisture_pct": {
+            "type": "number",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Moisture Pct",
+            "description": "Substrate moisture [% w/w].",
+            "examples": [
+              65.0
+            ]
+          },
+          "density_kg_m3": {
+            "type": "number",
+            "maximum": 2000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Density Kg M3",
+            "description": "Bulk density [kg/m³].",
+            "examples": [
+              680.0
+            ]
+          },
+          "ph": {
+            "type": "number",
+            "maximum": 14.0,
+            "minimum": 0.0,
+            "title": "Ph",
+            "description": "Substrate pH.",
+            "examples": [
+              6.8
+            ]
+          },
+          "ammonia_ppm": {
+            "type": "number",
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Ammonia Ppm",
+            "description": "Ammonia in headspace [ppm v/v].",
+            "examples": [
+              120.0
+            ]
+          },
+          "oxygen_pct": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Oxygen Pct",
+            "description": "Atmospheric O2 [% v/v] (optional sensor).",
+            "examples": [
+              19.5
+            ]
+          },
+          "co2_pct": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Co2 Pct",
+            "description": "Atmospheric CO2 [% v/v] (optional sensor).",
+            "examples": [
+              2.5
+            ]
+          },
+          "feed_rate_g_per_larva_day": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 10.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Feed Rate G Per Larva Day",
+            "description": "Feed rate [g DM / larva / day] (optional)."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "temperature_c",
+          "moisture_pct",
+          "density_kg_m3",
+          "ph",
+          "ammonia_ppm"
+        ],
+        "title": "SfiMeasurements",
+        "description": "Current sensor snapshot. Each axis bounded by physical limits."
+      },
+      "SobolIndices": {
+        "properties": {
+          "first_order": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "First Order",
+            "description": "Per-variable first-order index S_i ∈ [0, 1]."
+          },
+          "total": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Total",
+            "description": "Per-variable total index S_T,i ∈ [0, 1]."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "first_order",
+          "total"
+        ],
+        "title": "SobolIndices",
+        "description": "First-order + total Sobol sensitivity indices."
+      },
+      "TwinConfig": {
+        "properties": {
+          "mu_max": {
+            "type": "number",
+            "maximum": 10.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Mu Max",
+            "description": "Max specific growth rate [1/h].",
+            "default": 0.025
+          },
+          "K_s": {
+            "type": "number",
+            "maximum": 1000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "K S",
+            "description": "Half-saturation constant [kg DM].",
+            "default": 5.0
+          },
+          "Y": {
+            "type": "number",
+            "maximum": 1.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Y",
+            "description": "Yield coefficient [kg biomass / kg substrate].",
+            "default": 0.22
+          },
+          "k_death": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "K Death",
+            "description": "Death rate [1/h].",
+            "default": 0.001
+          },
+          "k_n": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "K N",
+            "description": "Nitrogen uptake coefficient.",
+            "default": 0.02
+          },
+          "tau_T": {
+            "type": "number",
+            "maximum": 10000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Tau T",
+            "description": "Thermal time constant [h].",
+            "default": 10.0
+          },
+          "tau_M": {
+            "type": "number",
+            "maximum": 10000.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Tau M",
+            "description": "Moisture time constant [h].",
+            "default": 20.0
+          },
+          "T_env": {
+            "type": "number",
+            "maximum": 80.0,
+            "minimum": -10.0,
+            "title": "T Env",
+            "description": "Ambient temperature [°C].",
+            "default": 25.0
+          },
+          "M_env": {
+            "type": "number",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "M Env",
+            "description": "Ambient moisture [%].",
+            "default": 60.0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "TwinConfig",
+        "description": "Kinetic parameters passed to digital_twin_engine.TwinParameters."
+      },
+      "TwinInputStep": {
+        "properties": {
+          "dt_hours": {
+            "type": "number",
+            "maximum": 24.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Dt Hours",
+            "description": "Integration step length [hours].",
+            "examples": [
+              1.0
+            ]
+          },
+          "feed_rate_kg_h": {
+            "type": "number",
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Feed Rate Kg H",
+            "description": "Substrate addition rate [kg DM / h].",
+            "default": 0.0
+          },
+          "ventilation_m3_h": {
+            "type": "number",
+            "maximum": 100000.0,
+            "minimum": 0.0,
+            "title": "Ventilation M3 H",
+            "description": "Air-flow [m³ / h].",
+            "default": 0.0
+          },
+          "heating_kw": {
+            "type": "number",
+            "maximum": 1000.0,
+            "minimum": 0.0,
+            "title": "Heating Kw",
+            "description": "Heating power [kW].",
+            "default": 0.0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "dt_hours"
+        ],
+        "title": "TwinInputStep",
+        "description": "Per-step control vector. Matches digital_twin_engine.predict_step\ninputs dict (feed_rate / ventilation / heating)."
+      },
+      "TwinObservation": {
+        "properties": {
+          "weight_kg": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1000000.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weight Kg",
+            "description": "Aggregate bed weight (biomass + substrate) [kg]."
+          },
+          "temperature_c": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 80.0,
+                "minimum": -10.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Temperature C",
+            "description": "Bed temperature sensor [°C]."
+          },
+          "moisture_pct": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Moisture Pct",
+            "description": "Bed moisture sensor [%]."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "TwinObservation",
+        "description": "Per-step sensor observation for the EKF update path."
+      },
+      "TwinPredictRequest": {
+        "properties": {
+          "inputs": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Inputs"
+          },
+          "dt": {
+            "type": "number",
+            "maximum": 24.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Dt",
+            "description": "Time step in hours",
+            "default": 1.0
+          }
+        },
+        "type": "object",
+        "title": "TwinPredictRequest",
+        "description": "Twin predict step request."
+      },
+      "TwinRunRequest": {
+        "properties": {
+          "initial_state": {
+            "$ref": "#/components/schemas/app__schemas__twin__TwinState"
+          },
+          "config": {
+            "$ref": "#/components/schemas/TwinConfig",
+            "description": "Kinetic parameters; defaults match the V9 baseline."
+          },
+          "inputs": {
+            "items": {
+              "$ref": "#/components/schemas/TwinInputStep"
+            },
+            "type": "array",
+            "maxItems": 10000,
+            "minItems": 1,
+            "title": "Inputs",
+            "description": "Per-step control vector."
+          },
+          "observations": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/TwinObservation"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Observations",
+            "description": "Optional per-step observations for EKF correction. When provided, MUST have the same length as ``inputs``."
+          },
+          "enable_ekf": {
+            "type": "boolean",
+            "title": "Enable Ekf",
+            "description": "If True and observations present, run EKF update after each predict step. Ignored when observations is None.",
+            "default": true
+          },
+          "species_code": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[A-Z0-9_\\-]+$",
+            "title": "Species Code",
+            "description": "Code from engine/core/species_db.",
+            "default": "BSF_LARVA"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "initial_state",
+          "inputs"
+        ],
+        "title": "TwinRunRequest",
+        "description": "Phase A stateless digital-twin run — V5 strict.\n\nNo DB persistence, no batch/twin record required. Initial state\nis supplied in the body and the engine produces a trajectory."
+      },
+      "TwinRunResponse": {
+        "properties": {
+          "trajectory": {
+            "items": {
+              "$ref": "#/components/schemas/app__schemas__twin__TwinSnapshot"
+            },
+            "type": "array",
+            "maxItems": 10000,
+            "minItems": 1,
+            "title": "Trajectory"
+          },
+          "estimated_states": {
+            "items": {
+              "$ref": "#/components/schemas/app__schemas__twin__TwinState"
+            },
+            "type": "array",
+            "maxItems": 10000,
+            "minItems": 1,
+            "title": "Estimated States",
+            "description": "Post-EKF estimates (= predicted states when EKF off)."
+          },
+          "final_state": {
+            "$ref": "#/components/schemas/app__schemas__twin__TwinState"
+          },
+          "innovation_stats": {
+            "$ref": "#/components/schemas/InnovationStats"
+          },
+          "evidence_level": {
+            "type": "string",
+            "enum": [
+              "validated",
+              "supported",
+              "planned"
+            ],
+            "title": "Evidence Level"
+          },
+          "engine_version": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$",
+            "title": "Engine Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "trajectory",
+          "estimated_states",
+          "final_state",
+          "innovation_stats",
+          "evidence_level",
+          "engine_version"
+        ],
+        "title": "TwinRunResponse",
+        "description": "Phase A stateless digital-twin response — V5 strict."
+      },
+      "TwinSimulateRequest": {
+        "properties": {
+          "inputs_schedule": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": {
+                    "type": "number"
+                  },
+                  "type": "object"
+                },
+                "type": "array",
+                "maxItems": 720,
+                "minItems": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inputs Schedule"
+          },
+          "initial_biomass": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Initial Biomass",
+            "default": 0.5
+          },
+          "initial_substrate": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Initial Substrate",
+            "default": 10.0
+          },
+          "initial_temperature": {
+            "type": "number",
+            "maximum": 60.0,
+            "minimum": 0.0,
+            "title": "Initial Temperature",
+            "default": 28.0
+          },
+          "initial_moisture": {
+            "type": "number",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Initial Moisture",
+            "default": 70.0
+          },
+          "initial_nitrogen": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Initial Nitrogen",
+            "default": 50.0
+          },
+          "n_steps": {
+            "type": "integer",
+            "maximum": 720.0,
+            "minimum": 1.0,
+            "title": "N Steps",
+            "default": 100
+          },
+          "dt": {
+            "type": "number",
+            "maximum": 24.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Dt",
+            "default": 1.0
+          }
+        },
+        "type": "object",
+        "title": "TwinSimulateRequest",
+        "description": "Twin trajectory simulation request."
+      },
+      "TwinUpdateObsRequest": {
+        "properties": {
+          "observations": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Observations",
+            "description": "Sensor observations: weight, temperature, moisture"
+          }
+        },
+        "type": "object",
+        "required": [
+          "observations"
+        ],
+        "title": "TwinUpdateObsRequest",
+        "description": "Twin observation update request."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "Warning": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Code"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "info",
+              "warn",
+              "error"
+            ],
+            "title": "Severity"
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 512,
+            "title": "Message"
+          },
+          "step_index": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Step Index"
+          },
+          "stage": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "M1",
+                  "M2",
+                  "M3"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stage"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "code",
+          "severity",
+          "message"
+        ],
+        "title": "Warning",
+        "description": "Operator-visible warning recorded during the simulation."
+      },
+      "app__schemas__relay__TwinSnapshot": {
+        "properties": {
+          "step_index": {
+            "type": "integer",
+            "maximum": 100000.0,
+            "minimum": 0.0,
+            "title": "Step Index"
+          },
+          "stage": {
+            "type": "string",
+            "enum": [
+              "M1",
+              "M2",
+              "M3"
+            ],
+            "title": "Stage"
+          },
+          "cumulative_time_h": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Cumulative Time H"
+          },
+          "state": {
+            "$ref": "#/components/schemas/app__schemas__relay__TwinState"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "step_index",
+          "stage",
+          "cumulative_time_h",
+          "state"
+        ],
+        "title": "TwinSnapshot",
+        "description": "Single time-step snapshot in the relay trajectory."
+      },
+      "app__schemas__relay__TwinState": {
+        "properties": {
+          "biomass_kg": {
+            "type": "number",
+            "maximum": 1000000.0,
+            "minimum": 0.0,
+            "title": "Biomass Kg",
+            "description": "Biomass dry matter [kg].",
+            "examples": [
+              0.5
+            ]
+          },
+          "substrate_kg": {
+            "type": "number",
+            "maximum": 1000000.0,
+            "minimum": 0.0,
+            "title": "Substrate Kg",
+            "description": "Substrate dry matter [kg].",
+            "examples": [
+              10.0
+            ]
+          },
+          "temperature_c": {
+            "type": "number",
+            "maximum": 100.0,
+            "minimum": -10.0,
+            "title": "Temperature C",
+            "description": "Bed temperature [°C].",
+            "examples": [
+              28.0
+            ]
+          },
+          "moisture_pct": {
+            "type": "number",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Moisture Pct",
+            "description": "Bed moisture [% w/w].",
+            "examples": [
+              70.0
+            ]
+          },
+          "nitrogen_g": {
+            "type": "number",
+            "maximum": 1000000.0,
+            "minimum": 0.0,
+            "title": "Nitrogen G",
+            "description": "Nitrogen pool [g].",
+            "examples": [
+              50.0
+            ]
+          },
+          "signal_activity_au": {
+            "type": "number",
+            "maximum": 1000000000.0,
+            "minimum": 0.0,
+            "title": "Signal Activity Au",
+            "description": "Signal-molecule activity [arbitrary units; paper BU/mL]. Tracked through M2 to evaluate Eq.6 decay.",
+            "default": 0.0,
+            "examples": [
+              100.0
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "biomass_kg",
+          "substrate_kg",
+          "temperature_c",
+          "moisture_pct",
+          "nitrogen_g"
+        ],
+        "title": "TwinState",
+        "description": "Initial / final state of the digital twin."
+      },
+      "app__schemas__twin__TwinSnapshot": {
+        "properties": {
+          "step_index": {
+            "type": "integer",
+            "maximum": 10000.0,
+            "minimum": 0.0,
+            "title": "Step Index"
+          },
+          "cumulative_time_h": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Cumulative Time H"
+          },
+          "state": {
+            "$ref": "#/components/schemas/app__schemas__twin__TwinState"
+          },
+          "growth_rate_kg_h": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Growth Rate Kg H",
+            "description": "Instantaneous growth rate dB/dt [kg/h]."
+          },
+          "ser_instantaneous": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ser Instantaneous",
+            "description": "Instantaneous SER (per-step view)."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "step_index",
+          "cumulative_time_h",
+          "state"
+        ],
+        "title": "TwinSnapshot",
+        "description": "Single-step predicted state + per-step diagnostics."
+      },
+      "app__schemas__twin__TwinState": {
+        "properties": {
+          "biomass_kg": {
+            "type": "number",
+            "maximum": 1000000.0,
+            "minimum": 0.0,
+            "title": "Biomass Kg",
+            "description": "Biomass dry matter [kg].",
+            "examples": [
+              0.5
+            ]
+          },
+          "substrate_kg": {
+            "type": "number",
+            "maximum": 1000000.0,
+            "minimum": 0.0,
+            "title": "Substrate Kg",
+            "description": "Substrate dry matter [kg].",
+            "examples": [
+              10.0
+            ]
+          },
+          "temperature_c": {
+            "type": "number",
+            "maximum": 80.0,
+            "minimum": -10.0,
+            "title": "Temperature C",
+            "description": "Bed temperature [°C].",
+            "examples": [
+              28.0
+            ]
+          },
+          "moisture_pct": {
+            "type": "number",
+            "maximum": 100.0,
+            "minimum": 0.0,
+            "title": "Moisture Pct",
+            "description": "Bed moisture [% w/w].",
+            "examples": [
+              70.0
+            ]
+          },
+          "nitrogen_kg": {
+            "type": "number",
+            "maximum": 100000.0,
+            "minimum": 0.0,
+            "title": "Nitrogen Kg",
+            "description": "Nitrogen pool [kg].",
+            "examples": [
+              0.05
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "biomass_kg",
+          "substrate_kg",
+          "temperature_c",
+          "moisture_pct",
+          "nitrogen_kg"
+        ],
+        "title": "TwinState",
+        "description": "Twin state at a single instant. Used as initial + final state."
+      }
+    }
+  }
+}
