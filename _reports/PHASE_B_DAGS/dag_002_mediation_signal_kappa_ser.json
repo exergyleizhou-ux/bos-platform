@@ -1,0 +1,170 @@
+{
+  "dag_id": "dag_002",
+  "name": "Mediation chain: Signal-API -> kappa -> SER (Pearl-Rubin counterfactual)",
+  "description": "Operationalises the paper's load-bearing mediation claim (paper line 11 + line 101 + line 153): the Signal-API potency input is hypothesised to drive SER proximally through Kernel compilation efficiency kappa (Eq. 4). Paper's in-silico mediation analysis claims ~70% proportion mediated through kappa. This DAG sets up the Pearl-Rubin counterfactual decomposition (ACME + ADE) that Phase B's /api/v1/causal/mediation endpoint will compute via EconML DML mediation (D14 = gamma).",
+  "paper_reference": "BOS_Paper1_JCP_FINAL.docx — paper line 11 (abstract claim of ~70% mediation through kappa); line 49-50 (kappa = CEA_post-M2 / Signal-API_BU_input, Eq. 4); line 101 (pre-registered in-silico mediation analysis, V14 wet-lab target); line 153 (Pearl / Rubin counterfactual mediation analysis on the Signal-API -> kappa -> SER pathway).",
+  "schema_version": "B.0",
+  "paper_sha256": "ba13a10fde39decb96fd98f92694791a0a6739868adde69c374a49c013b110d7",
+
+  "nodes": [
+    {
+      "id": "signal_activity_au",
+      "role": "treatment",
+      "description": "Signal-API potency [BU/mL or BU/kg]; the broth-level dose delivered to the Kernel at M2 onset. Operator-controllable.",
+      "source_schema": "backend/app/schemas/relay.py",
+      "source_class": "TwinState"
+    },
+    {
+      "id": "tau_m2_h",
+      "role": "covariate",
+      "description": "M2 residence time [h]. Operator-set per Eq. 6 constraint. Co-determines kappa via Eq. 4 + Eq. 5 (exposure-time x decay-adjusted potency).",
+      "source_schema": "backend/app/schemas/relay.py",
+      "source_class": "RelayConfig"
+    },
+    {
+      "id": "k_decay_point",
+      "role": "covariate",
+      "description": "Effective first-order decay rate constant [1/h] (Eq. 5). Literature-estimated per paper §SFI honesty rule; downgrades evidence_level when source='literature'.",
+      "source_schema": "backend/app/schemas/sfi.py",
+      "source_class": "KDecayBand"
+    },
+    {
+      "id": "cea_post_m2",
+      "role": "mediator",
+      "description": "Post-Kernel cellulolytic enzyme activity (CEA), [U / mg protein]. The numerator of kappa per Eq. 4. NOT currently in Phase A V5 schemas — the Phase B /causal/mediation endpoint will require data ingestion for this field.",
+      "source_schema": "(INLINE_COLUMN — provided via CausalData.inline at /api/v1/causal/mediation request time; not a Phase A V5 schema field)",
+      "source_class": "N/A",
+      "inline_column_name": "cea_post_m2",
+      "unit": "U / mg protein",
+      "expected_range": [0.0, 100.0]
+    },
+    {
+      "id": "kappa",
+      "role": "mediator",
+      "description": "Kernel compilation efficiency kappa = CEA_post-M2 / Signal-API_BU_input (Eq. 4). The proximal causal mediator the paper claims explains ~70% of the Signal-API effect on SER.",
+      "source_schema": "(COMPUTED — derived as cea_post_m2 / signal_activity_au at request time if not provided inline)",
+      "source_class": "N/A",
+      "computation": "cea_post_m2 / signal_activity_au",
+      "fallback": "inline_column 'kappa' if pre-computed"
+    },
+    {
+      "id": "d_prime",
+      "role": "mediator",
+      "description": "Normalized deconstruction rate. Downstream of kappa: higher Kernel priming -> better substrate access -> higher D'.",
+      "source_schema": "backend/app/schemas/ser.py",
+      "source_class": "SerComputeRequest"
+    },
+    {
+      "id": "g_prime",
+      "role": "mediator",
+      "description": "Normalized nitrogen recovery. Downstream of kappa via the larval growth response to better-primed substrate.",
+      "source_schema": "backend/app/schemas/ser.py",
+      "source_class": "SerComputeRequest"
+    },
+    {
+      "id": "ser_point",
+      "role": "outcome",
+      "description": "Final SER = sqrt(D' x G') (Eq. 3). The endpoint outcome for the mediation analysis.",
+      "source_schema": "backend/app/schemas/ser.py",
+      "source_class": "SerComputeResponse"
+    }
+  ],
+
+  "edges": [
+    {
+      "from": "signal_activity_au",
+      "to": "cea_post_m2",
+      "edge_kind": "direct",
+      "provenance": "paper",
+      "paper_quote": "the Kernel compiles Signal-API potency S(tau) over a controlled residence time tau_M2 subject to first-order decay characterised by an effective rate constant k_decay (Eq. 5)",
+      "section": "Methods / §2.5 + Eq. 5"
+    },
+    {
+      "from": "tau_m2_h",
+      "to": "cea_post_m2",
+      "edge_kind": "direct",
+      "provenance": "paper",
+      "paper_quote": "S(tau) = S_0 * exp(-k_decay * tau) (Eq. 5) ... tau_M2 <= ln(S_0/S_min)/k_decay (Eq. 6)",
+      "section": "Methods / Eq. 5-6"
+    },
+    {
+      "from": "k_decay_point",
+      "to": "cea_post_m2",
+      "edge_kind": "confounding",
+      "provenance": "paper",
+      "paper_quote": "S(tau) = S_0 * exp(-k_decay * tau) — k_decay enters the exposure-time integral that determines effective CEA priming.",
+      "section": "Methods / Eq. 5"
+    },
+    {
+      "from": "signal_activity_au",
+      "to": "kappa",
+      "edge_kind": "direct",
+      "provenance": "paper",
+      "paper_quote": "kappa = CEA_post-M2 / Signal-API_BU_input (Eq. 4)",
+      "section": "Methods / Eq. 4"
+    },
+    {
+      "from": "cea_post_m2",
+      "to": "kappa",
+      "edge_kind": "direct",
+      "provenance": "paper",
+      "paper_quote": "kappa = CEA_post-M2 / Signal-API_BU_input (Eq. 4)",
+      "section": "Methods / Eq. 4"
+    },
+    {
+      "from": "kappa",
+      "to": "d_prime",
+      "edge_kind": "direct",
+      "provenance": "paper",
+      "paper_quote": "(implicit per paper line 11: 'Signal-API -> SER effect proximally through Kernel compilation efficiency kappa (~70% proportion mediated)'. CEA priming raises larval cellulolytic capacity, hence raises D'.)",
+      "section": "Abstract line 11 + §3.3 Cellulase Activity"
+    },
+    {
+      "from": "kappa",
+      "to": "g_prime",
+      "edge_kind": "direct",
+      "provenance": "paper",
+      "paper_quote": "(implicit: same priming pathway raises larval assimilation efficiency, hence raises G'.)",
+      "section": "Abstract line 11"
+    },
+    {
+      "from": "signal_activity_au",
+      "to": "d_prime",
+      "edge_kind": "direct",
+      "provenance": "paper",
+      "paper_quote": "(direct effect path: Signal-API may affect SER not only through kappa; ADE captures this residual. ~30% of total effect per paper L11.)",
+      "section": "Abstract line 11"
+    },
+    {
+      "from": "d_prime",
+      "to": "ser_point",
+      "edge_kind": "direct",
+      "provenance": "paper",
+      "paper_quote": "SER = sqrt(D' x G') (Eq. 3)",
+      "section": "Methods / Eq. 3"
+    },
+    {
+      "from": "g_prime",
+      "to": "ser_point",
+      "edge_kind": "direct",
+      "provenance": "paper",
+      "paper_quote": "SER = sqrt(D' x G') (Eq. 3)",
+      "section": "Methods / Eq. 3"
+    }
+  ],
+
+  "assumptions": [
+    "sequential_ignorability",
+    "no_treatment_mediator_interaction",
+    "consistency",
+    "positivity"
+  ],
+
+  "intended_question": "What is the proportion of the Signal-API total effect on SER mediated through kappa? Specifically: ACME (Average Causal Mediation Effect via kappa) versus ADE (Average Direct Effect bypassing kappa). Paper's pre-registered claim: ~70% proportion mediated. Phase B will compute via /api/v1/causal/mediation with method_family='dml' (D14 = gamma DML mediation).",
+
+  "estimator_recommendation": "DML mediation (EconML / Farbmacher 2022 style); for the marginal ATE the same data supports LinearDML.",
+
+  "small_sample_warning": "Paper line 101 explicitly notes the mediation analysis is 'in-silico, pre-registered for V14'. The 1000-iteration nonparametric bootstrap is on n=4 / arm — Phase B's /api/v1/causal/mediation MUST clamp evidence_level to 'planned' until V14 wet-lab data lands (n >> 4).",
+
+  "notes_for_user_review": "DAG 002 is the highest-value of the three but also the riskiest. Two NODES (cea_post_m2, kappa) DO NOT EXIST in Phase A V5 schemas; B2b mediation endpoint will need data plumbing for these. Acknowledge before B1 starts so the requirements.txt / schema additions are scoped. The 'direct' edge from signal_activity_au -> d_prime is the paper's ADE channel; if user wants a pure full-mediation model (no direct effect, kappa is the only path), delete that edge."
+}

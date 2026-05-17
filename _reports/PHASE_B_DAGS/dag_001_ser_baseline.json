@@ -1,0 +1,187 @@
+{
+  "dag_id": "dag_001",
+  "name": "SER baseline causal chain (D' / G' geometric-mean aggregation)",
+  "description": "Operationalises the paper's headline efficiency definition (Eq. 1-3). The Synergistic Efficiency Ratio (SER) is a multiplicative aggregation of normalized dry-matter reduction (D') and nitrogen recovery (G'), each computed on the same matched mass-balance boundary. This DAG isolates the upstream operator-controllable inputs (substrate mass, nitrogen mass, species/feedstock choice) from the mediator pair (D', G') that the paper explicitly says are computed from measured replicate-level balances, not derived from SER itself.",
+  "paper_reference": "BOS_Paper1_JCP_FINAL.docx, paper line 36-43 (Eq. 1-3 definitions), line 20 (SER as multiplicative index), line 40 (D'/G' computed from measured balances, not from SER).",
+  "schema_version": "B.0",
+  "paper_sha256": "ba13a10fde39decb96fd98f92694791a0a6739868adde69c374a49c013b110d7",
+
+  "nodes": [
+    {
+      "id": "dm_in",
+      "role": "treatment",
+      "description": "Input dry matter [kg]. Operator-controllable substrate mass (Eq. 1 denominator).",
+      "source_schema": "backend/app/schemas/ser.py",
+      "source_class": "SerComputeRequest"
+    },
+    {
+      "id": "n_in",
+      "role": "treatment",
+      "description": "Input nitrogen [kg]. Operator-controllable via feedstock choice (Eq. 2 denominator).",
+      "source_schema": "backend/app/schemas/ser.py",
+      "source_class": "SerComputeRequest"
+    },
+    {
+      "id": "species_code",
+      "role": "covariate",
+      "description": "Discrete stratum: which insect species (e.g. BSF_LARVA, T_MOLITOR). Affects both d_prime and g_prime through biology.",
+      "source_schema": "backend/app/schemas/ser.py",
+      "source_class": "SerComputeRequest"
+    },
+    {
+      "id": "feedstock_code",
+      "role": "covariate",
+      "description": "Discrete stratum: substrate composition (e.g. FOOD_WASTE_MIXED, DISTILLERS_GRAIN). Confounds dm_in and n_in via composition correlation.",
+      "source_schema": "backend/app/schemas/ser.py",
+      "source_class": "SerComputeRequest"
+    },
+    {
+      "id": "dm_out",
+      "role": "covariate",
+      "description": "Recovered dry matter [kg]. Direct mass-balance variable on the Eq. 1 numerator path; not separately manipulable.",
+      "source_schema": "backend/app/schemas/ser.py",
+      "source_class": "SerComputeRequest"
+    },
+    {
+      "id": "n_rec",
+      "role": "covariate",
+      "description": "Recovered nitrogen [kg]. Direct mass-balance variable on the Eq. 2 numerator path.",
+      "source_schema": "backend/app/schemas/ser.py",
+      "source_class": "SerComputeRequest"
+    },
+    {
+      "id": "d_prime",
+      "role": "mediator",
+      "description": "Normalized deconstruction rate D' = 1 - DM_out/DM_in (Eq. 1). Bounded in [0, 1]. Computed from measured replicate-level balances.",
+      "source_schema": "backend/app/schemas/ser.py",
+      "source_class": "SerComputeRequest"
+    },
+    {
+      "id": "g_prime",
+      "role": "mediator",
+      "description": "Normalized nitrogen recovery G' = N_rec,total / N_in (Eq. 2). Bounded in [0, 1]. Computed from measured replicate-level balances.",
+      "source_schema": "backend/app/schemas/ser.py",
+      "source_class": "SerComputeRequest"
+    },
+    {
+      "id": "ser_point",
+      "role": "outcome",
+      "description": "System Efficiency Ratio SER = sqrt(D' x G') (Eq. 3). Bounded in [0, 1]. The headline outcome.",
+      "source_schema": "backend/app/schemas/ser.py",
+      "source_class": "SerComputeResponse"
+    }
+  ],
+
+  "edges": [
+    {
+      "from": "dm_in",
+      "to": "dm_out",
+      "edge_kind": "direct",
+      "provenance": "paper",
+      "paper_quote": "D' = 1 - DM_out / DM_in (Eq. 1)",
+      "section": "Methods / Eq. 1"
+    },
+    {
+      "from": "dm_in",
+      "to": "d_prime",
+      "edge_kind": "direct",
+      "provenance": "paper",
+      "paper_quote": "D' = 1 - DM_out / DM_in (Eq. 1)",
+      "section": "Methods / Eq. 1"
+    },
+    {
+      "from": "dm_out",
+      "to": "d_prime",
+      "edge_kind": "direct",
+      "provenance": "paper",
+      "paper_quote": "D' = 1 - DM_out / DM_in (Eq. 1). D' is computed from measured replicate-level mass and N balances on the same matched boundary; neither is derived from SER.",
+      "section": "Methods / Eq. 1, paper line 40"
+    },
+    {
+      "from": "n_in",
+      "to": "n_rec",
+      "edge_kind": "direct",
+      "provenance": "paper",
+      "paper_quote": "G' = N_rec,total / N_in (Eq. 2)",
+      "section": "Methods / Eq. 2"
+    },
+    {
+      "from": "n_in",
+      "to": "g_prime",
+      "edge_kind": "direct",
+      "provenance": "paper",
+      "paper_quote": "G' = N_rec,total / N_in (Eq. 2)",
+      "section": "Methods / Eq. 2"
+    },
+    {
+      "from": "n_rec",
+      "to": "g_prime",
+      "edge_kind": "direct",
+      "provenance": "paper",
+      "paper_quote": "G' = N_rec,total / N_in. G' is computed from measured replicate-level N balance on the matched boundary.",
+      "section": "Methods / Eq. 2, paper line 40"
+    },
+    {
+      "from": "d_prime",
+      "to": "ser_point",
+      "edge_kind": "direct",
+      "provenance": "paper",
+      "paper_quote": "SER = sqrt(D' x G') (Eq. 3). SER aggregates D' and G' into a single replicate-level endpoint.",
+      "section": "Methods / Eq. 3, paper line 42-43"
+    },
+    {
+      "from": "g_prime",
+      "to": "ser_point",
+      "edge_kind": "direct",
+      "provenance": "paper",
+      "paper_quote": "SER = sqrt(D' x G') (Eq. 3)",
+      "section": "Methods / Eq. 3"
+    },
+    {
+      "from": "species_code",
+      "to": "d_prime",
+      "edge_kind": "confounding",
+      "provenance": "domain",
+      "paper_quote": "(implicit: species biology drives deconstruction efficiency; see paper claim #10 in reconnaissance §3.1 — T. brevitarsis reached substantially higher CEA than PB-only larvae)",
+      "section": "Results / §3.3 CELLULASE ACTIVITY"
+    },
+    {
+      "from": "species_code",
+      "to": "g_prime",
+      "edge_kind": "confounding",
+      "provenance": "domain",
+      "paper_quote": "(implicit: species biology drives nitrogen assimilation)",
+      "section": "domain inference"
+    },
+    {
+      "from": "feedstock_code",
+      "to": "dm_in",
+      "edge_kind": "confounding",
+      "provenance": "domain",
+      "paper_quote": "(implicit: feedstock composition determines dry-matter ratio at fixed feed mass)",
+      "section": "domain inference"
+    },
+    {
+      "from": "feedstock_code",
+      "to": "n_in",
+      "edge_kind": "confounding",
+      "provenance": "domain",
+      "paper_quote": "(implicit: feedstock total-N fraction determines N_in at fixed feed mass; paper Eq. 2 nomenclature: 'N_in is feed dry mass multiplied by feed total-N concentration')",
+      "section": "Methods / Eq. 2 commentary"
+    }
+  ],
+
+  "assumptions": [
+    "no_unobserved_confounders",
+    "consistency",
+    "positivity"
+  ],
+
+  "intended_question": "What is the average causal effect of substrate-mass-and-nitrogen input policy on SER, with d_prime and g_prime as the natural mediators? When d_prime and g_prime each rise by 0.1, what is the implied SER lift along Eq.3? Identifies via back-door adjustment on {species_code, feedstock_code}.",
+
+  "estimator_recommendation": "LinearDML",
+
+  "small_sample_warning": "Paper experiment has n = 4 replicates per arm (paper line 48 reports 'observed SER SD ~0.03 ... 96% power to detect Delta-Delta-SER = 0.10 at alpha=0.05 with n=4 per group' — power calc is for SER difference, not for a causal ATE estimator). Phase B evidence_level will auto-clamp to 'planned' when n_used_per_stratum < n_min_per_stratum (default 30).",
+
+  "notes_for_user_review": "DAG 001 is the most directly paper-anchored of the three. Every edge except the two 'confounding' species/feedstock edges is a literal Eq. 1-3 mechanical relationship. The two confounding edges encode domain knowledge that the paper does not formalise but which is necessary for identification."
+}

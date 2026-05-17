@@ -1,0 +1,209 @@
+{
+  "dag_id": "dag_003",
+  "name": "Relay simulation causal chain (M1 -> M2 -> M3 with SFI physical constraint)",
+  "description": "Operationalises the paper's three-stage relay topology under the Signal Fidelity Inequality (Eq. 6). The operator-controllable M2 residence time tau_m2_h, combined with literature-estimated k_decay and the initial signal pool s0, determines whether the relay completes within its physical horizon. This DAG identifies tau_m2_h -> final_ser through the signal-activity decay path, with k_decay_point and s0 as critical confounders.",
+  "paper_reference": "BOS_Paper1_JCP_FINAL.docx — paper line 51-54 (Eq. 5: S(tau) = S_0 * exp(-k_decay*tau), Eq. 6: tau_M2 <= ln(S_0/S_min)/k_decay); §4.1 (mechanistic basis of the engineered relay, claim #16 in reconnaissance §3.1: 'The cue reduces the activation inertia of the successor stage'); §3.6.1 M1/M2/M3 progressive covariate adjustment.",
+  "schema_version": "B.0",
+  "paper_sha256": "ba13a10fde39decb96fd98f92694791a0a6739868adde69c374a49c013b110d7",
+
+  "node_id_convention": "Causal-semantic IDs; see bos_field_ref for schema field mapping. Time-indexed via @step_at_<phase>_<position> DSL (e.g. @step_at_m3_boundary).",
+
+  "nodes": [
+    {
+      "id": "tau_m2_h",
+      "role": "treatment",
+      "description": "M2 stage residence time [h]. Operator-controlled scheduling parameter (Eq. 5 exposure time).",
+      "source_schema": "backend/app/schemas/relay.py",
+      "source_class": "RelayConfig"
+    },
+    {
+      "id": "s0",
+      "role": "covariate",
+      "description": "Initial signal-activity pool [BU-equivalent units]. Operator-set at M2 onset. Combined with k_decay determines physical horizon tau_max (Eq. 6).",
+      "source_schema": "backend/app/schemas/relay.py",
+      "source_class": "RelayConfig"
+    },
+    {
+      "id": "k_decay_point",
+      "role": "confounder",
+      "description": "First-order signal decay rate [1/h] (Eq. 5-6). Literature-estimated per paper §SFI honesty rule — the schema makes this provenance-tagged.",
+      "source_schema": "backend/app/schemas/sfi.py",
+      "source_class": "KDecayBand",
+      "bos_field_ref": "sfi.KDecayBand.point"
+    },
+    {
+      "id": "tau_max_h",
+      "role": "mediator",
+      "description": "Eq. 6 physical horizon tau_max = ln(s0/s_min)/k_decay [h]. Mediates between (tau_m2_h, k_decay, s0) and final_ser via the SFI feasibility gate.",
+      "source_schema": "backend/app/schemas/relay.py",
+      "source_class": "RelayConfig"
+    },
+    {
+      "id": "signal_activity_au_terminal",
+      "role": "mediator",
+      "description": "Terminal signal activity at M2 boundary, S(tau_m2_h) = s0 * exp(-k_decay * tau_m2_h) (Eq. 5). Carries the dose-time-integrated potency into M3.",
+      "source_schema": "backend/app/schemas/relay.py",
+      "source_class": "TwinSnapshot",
+      "bos_field_ref": "relay.TwinSnapshot.state.signal_activity_au@step_at_m2_end"
+    },
+    {
+      "id": "biomass_kg_m3",
+      "role": "mediator",
+      "description": "Larval biomass at M3 start [kg]. Downstream of M2 priming. Drives subsequent N assimilation.",
+      "source_schema": "backend/app/schemas/relay.py",
+      "source_class": "TwinState",
+      "bos_field_ref": "relay.TwinState.biomass_kg@step_at_m3_boundary"
+    },
+    {
+      "id": "substrate_kg_m3",
+      "role": "mediator",
+      "description": "Residual substrate at M3 start [kg]. Inversely related to D' through Eq. 1.",
+      "source_schema": "backend/app/schemas/relay.py",
+      "source_class": "TwinState",
+      "bos_field_ref": "relay.TwinState.substrate_kg@step_at_m3_boundary"
+    },
+    {
+      "id": "species_code",
+      "role": "covariate",
+      "description": "Insect species. Stratum-level confounder; affects biomass growth response to primed substrate.",
+      "source_schema": "backend/app/schemas/relay.py",
+      "source_class": "RelaySimulateRequest"
+    },
+    {
+      "id": "final_ser",
+      "role": "outcome",
+      "description": "Relay-final SER [0, 1]. The endpoint that integrates M1-M2-M3 performance.",
+      "source_schema": "backend/app/schemas/relay.py",
+      "source_class": "RelaySimulateResponse"
+    },
+    {
+      "id": "relay_health_status",
+      "role": "outcome",
+      "description": "Aggregate relay health verdict (nominal / degraded / failed). Auxiliary outcome; failure path activates when tau_m2_h > tau_max_h.",
+      "source_schema": "backend/app/schemas/relay.py",
+      "source_class": "RelayHealth",
+      "bos_field_ref": "relay.RelayHealth.overall_status"
+    }
+  ],
+
+  "edges": [
+    {
+      "from": "s0",
+      "to": "tau_max_h",
+      "edge_kind": "direct",
+      "provenance": "paper",
+      "paper_quote": "tau_M2 <= ln(S_0 / S_min) / k_decay (Eq. 6)",
+      "section": "Methods / Eq. 6"
+    },
+    {
+      "from": "k_decay_point",
+      "to": "tau_max_h",
+      "edge_kind": "direct",
+      "provenance": "paper",
+      "paper_quote": "tau_M2 <= ln(S_0 / S_min) / k_decay (Eq. 6)",
+      "section": "Methods / Eq. 6"
+    },
+    {
+      "from": "s0",
+      "to": "signal_activity_au_terminal",
+      "edge_kind": "direct",
+      "provenance": "paper",
+      "paper_quote": "S(tau) = S_0 * exp(-k_decay * tau) (Eq. 5)",
+      "section": "Methods / Eq. 5"
+    },
+    {
+      "from": "tau_m2_h",
+      "to": "signal_activity_au_terminal",
+      "edge_kind": "direct",
+      "provenance": "paper",
+      "paper_quote": "S(tau) = S_0 * exp(-k_decay * tau) (Eq. 5) — exposure time enters the exponent.",
+      "section": "Methods / Eq. 5"
+    },
+    {
+      "from": "k_decay_point",
+      "to": "signal_activity_au_terminal",
+      "edge_kind": "direct",
+      "provenance": "paper",
+      "paper_quote": "S(tau) = S_0 * exp(-k_decay * tau) (Eq. 5)",
+      "section": "Methods / Eq. 5"
+    },
+    {
+      "from": "tau_m2_h",
+      "to": "relay_health_status",
+      "edge_kind": "direct",
+      "provenance": "paper",
+      "paper_quote": "tau_M2 <= ln(S_0/S_min)/k_decay — violation of this inequality triggers the relay_health failure path (paper §SFI honesty rule operationalised in schemas/relay.py RelayHealth.k_decay_violation_at_step).",
+      "section": "Methods / Eq. 6 + §SFI commentary"
+    },
+    {
+      "from": "tau_max_h",
+      "to": "relay_health_status",
+      "edge_kind": "direct",
+      "provenance": "paper",
+      "paper_quote": "(implicit: tau_max sets the feasibility ceiling that tau_m2_h must respect)",
+      "section": "Methods / Eq. 6"
+    },
+    {
+      "from": "signal_activity_au_terminal",
+      "to": "biomass_kg_m3",
+      "edge_kind": "direct",
+      "provenance": "paper",
+      "paper_quote": "The cue reduces the activation inertia of the successor stage, allowing more work to be extracted from the same primary substrate input under matched boundaries.",
+      "section": "Discussion / §4.1 Mechanistic basis of the engineered relay"
+    },
+    {
+      "from": "signal_activity_au_terminal",
+      "to": "substrate_kg_m3",
+      "edge_kind": "direct",
+      "provenance": "paper",
+      "paper_quote": "(implicit: better-primed substrate is more deconstructed by M3 start, lowering substrate_kg)",
+      "section": "Discussion / §4.1"
+    },
+    {
+      "from": "biomass_kg_m3",
+      "to": "final_ser",
+      "edge_kind": "direct",
+      "provenance": "domain",
+      "paper_quote": "(downstream of Eq. 2: larval N pool determines N_rec_larvae which feeds G' which feeds SER)",
+      "section": "Methods / Eq. 2-3 chain"
+    },
+    {
+      "from": "substrate_kg_m3",
+      "to": "final_ser",
+      "edge_kind": "direct",
+      "provenance": "domain",
+      "paper_quote": "(downstream of Eq. 1: lower substrate_kg_m3 -> higher DM_out reduction -> higher D' -> higher SER)",
+      "section": "Methods / Eq. 1-3 chain"
+    },
+    {
+      "from": "species_code",
+      "to": "biomass_kg_m3",
+      "edge_kind": "confounding",
+      "provenance": "domain",
+      "paper_quote": "(species biology determines growth response per stage; paper §3.3 reports T. brevitarsis vs PB-only CEA difference)",
+      "section": "Results / §3.3"
+    },
+    {
+      "from": "species_code",
+      "to": "substrate_kg_m3",
+      "edge_kind": "confounding",
+      "provenance": "domain",
+      "paper_quote": "(species-specific deconstruction rate at M2/M3)",
+      "section": "domain inference"
+    }
+  ],
+
+  "assumptions": [
+    "no_unobserved_confounders",
+    "consistency",
+    "positivity"
+  ],
+
+  "intended_question": "What is the average causal effect of M2 residence time tau_m2_h on final_ser, controlling for k_decay (literature-estimated, confounder) and species_code (stratum)? Also: when tau_m2_h approaches tau_max_h, how sharply does relay_health_status flip from 'nominal' to 'failed'? Identifies via back-door adjustment on {k_decay_point, s0, species_code}.",
+
+  "estimator_recommendation": "LinearDML for the main tau_m2_h -> final_ser effect. The discontinuity at tau_max_h is a Regression Discontinuity candidate (DoWhy's regression_discontinuity_estimator) but Phase B MVP keeps it simple — RDD is reserved for Phase-B-2.",
+
+  "small_sample_warning": "Paper line 99 reports M3 simulation interval crosses zero at n=4 ('under-determined covariate design at n=4'). DAG 003's identifiability is tighter than DAG 001's because tau_m2_h is operator-set (so we have within-arm variation if multiple tau_m2_h values are tested), but the n-floor still bites for the heterogeneity-stratified version. Phase B will auto-clamp evidence_level on this DAG identically to DAG 001 / 002.",
+
+  "notes_for_user_review": "DAG 003 is the most physics-grounded of the three (every paper-edge is an explicit equation). The two 'domain' edges (biomass_kg_m3 / substrate_kg_m3 -> final_ser) are mechanical bridges between the relay simulation outputs and the SER definition; they are formally derivable from Eq. 1-3 once you accept the chain dm_in -> dm_out via substrate_kg trajectory. The Regression Discontinuity opportunity at tau_max_h is flagged but deferred."
+}
