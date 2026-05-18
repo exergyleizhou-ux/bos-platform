@@ -15,9 +15,10 @@ Phase B (B2a) contract:
                                      (causal_forest_dml, x_learner)
                                      422-rejected.
 
-Phase B B2b will add /refute, /mediation, /sensitivity (+ async jobs).
+Phase B B2b.1 added /refute; B2b.2 adds /mediation; B2b.3 will add
+/sensitivity (+ async jobs).
 
-Reference: PHASE_B_PLAN.md §2.1, §2.2, §2.7.
+Reference: PHASE_B_PLAN.md §2.1, §2.2, §2.3, §2.4, §2.7.
 """
 
 from __future__ import annotations
@@ -38,6 +39,10 @@ from app.schemas.causal.refute import (
     CausalRefuteRequest,
     CausalRefuteResponse,
 )
+from app.schemas.causal.mediation import (
+    CausalMediationRequest,
+    CausalMediationResponse,
+)
 from app.engine.extended.causal_identify_engine import run_identify
 from app.engine.extended.causal_estimate_engine import (
     CausalEstimateError,
@@ -46,6 +51,10 @@ from app.engine.extended.causal_estimate_engine import (
 from app.engine.extended.causal_refute_engine import (
     CausalRefuteError,
     run_refute,
+)
+from app.engine.extended.causal_mediation_engine import (
+    CausalMediationError,
+    run_mediation,
 )
 
 
@@ -206,4 +215,72 @@ async def refute_endpoint(
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail={"code": "refute_failed", "message": str(exc)},
+        ) from exc
+
+
+# ════════════════════════════════════════════════════════════════════
+# /mediation (B2b.2)
+# ════════════════════════════════════════════════════════════════════
+
+
+@router.post(
+    "/mediation",
+    response_model=CausalMediationResponse,
+    summary=(
+        "Phase B — causal mediation (Pearl/Rubin "
+        "ACME/ADE decomposition with bootstrap CI, "
+        "Plan v2 §2.4)"
+    ),
+)
+async def mediation_endpoint(
+    body: CausalMediationRequest,
+    current_user: User = Depends(require_minimum_role("operator")),
+) -> CausalMediationResponse:
+    """
+    Decomposes the treatment → outcome ATE into direct (ADE/NDE) and
+    per-mediator indirect (ACME/NIE) effects via the Pearl/Rubin
+    counterfactual framework (D14 = γ, NOT Baron-Kenny).
+
+    Branches:
+
+    - ``len(mediators) == 1``: DoWhy nonparametric NDE/NIE
+      (``mediation.two_stage_regression``).
+    - ``len(mediators) >= 2``: Farbmacher 2022 leave-one-out
+      LinearDML fallback (DoWhy 0.14's ``get_mediator_variables()``
+      only returns one mediator under multi-mediator DAGs, verified
+      in ``scratch_mediation_api.py`` Gap 2 probe).
+
+    Bootstrap CI: ``n_bootstrap`` defaults to 200 (Plan v2 §2.4's
+    1000 overridden for MVP wall-clock budget; see
+    ``PHASE_B2b2_DESIGN.md`` §8 R1). Iterations that fail are
+    skipped with a ``method_fallback`` warning; <50% completion →
+    422 ``code='bootstrap_diverged'``. The actual completed count is
+    echoed in ``diagnostics.n_bootstrap_used``.
+
+    Reserved decomposition modes (``controlled`` /
+    ``interventional``) → 422 ``code='decomposition_reserved'``
+    (D9-style reserved-enum pattern).
+
+    Operator MUST acknowledge ≥1 Pearl assumption in
+    ``assumptions_acknowledged`` (echoed verbatim in
+    ``assumptions_echo`` for audit, Mod 8).
+
+    When the effective per-stratum sample size falls below 30, the
+    response is forced to ``evidence_level='planned'`` and a
+    ``small_sample`` warning is added (mirrors B2a /estimate's Mod 5).
+
+    Plan v2 §2.4 paper map: Signal-API → κ → SER pathway (V14 line
+    11 + line 153, paper headline ~70% proportion mediated).
+    """
+    try:
+        return run_mediation(body)
+    except CausalMediationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"code": exc.code, "message": exc.message},
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"code": "mediation_failed", "message": str(exc)},
         ) from exc
