@@ -480,3 +480,85 @@ Notes:
 ## License
 
 This project is licensed under the MIT License. See [LICENSE](LICENSE).
+
+## Paper 1 Reproduction (J Clean Prod, in preparation)
+
+The five `/api/v1/causal/*` endpoints back the methodology described
+in Paper 1, "BOS Platform for BSF Bioconversion: Pre-registered
+Pearl/Rubin Mediation Analysis" (in preparation, *J Clean Prod*).
+
+### Quick verification
+
+```bash
+# Check out the paper-pinned tag (created in B7 commit batch).
+git checkout v0.9.0-paper1
+
+# Verify paper SHA-256 pin (Plan v2 §1 R8 mitigation).
+cd backend
+.venv-backend/Scripts/python.exe -m pytest \
+  tests/contract/test_paper_version_pinned.py -v
+
+# Verify the five causal endpoints (43 unit tests).
+.venv-backend/Scripts/python.exe -m pytest \
+  tests/unit/test_causal_identify_engine.py \
+  tests/unit/test_causal_estimate_engine.py \
+  tests/unit/test_causal_refute_engine.py \
+  tests/unit/test_causal_mediation_engine.py \
+  tests/unit/test_causal_sensitivity_engine.py
+```
+
+### Paper method ↔ BOS endpoint map
+
+| Paper section | BOS endpoint | Implementation |
+|---|---|---|
+| Methods — Identification (Eq. 1) | `POST /api/v1/causal/identify` | B2a `causal_identify_engine.py` |
+| Methods — Estimation (Eq. 2) | `POST /api/v1/causal/estimate` | B2a `causal_estimate_engine.py` |
+| Methods — Robustness / Refutation | `POST /api/v1/causal/refute` | B2b.1 `causal_refute_engine.py` |
+| Methods — Mediation (Eq. 4, 70% finding) | `POST /api/v1/causal/mediation` | B2b.2 `causal_mediation_engine.py` |
+| Methods — Sensitivity (Γ-bound ≥ 1.5) | `POST /api/v1/causal/sensitivity` | B2b.3 `causal_sensitivity_engine.py` |
+
+### Audit chain
+
+Planning, design, and completion docs at `_reports/`:
+
+- `PHASE_B_PLAN.md` — Plan v2 (B7 paper-pin in §1)
+- `PHASE_B_PLAN_V2_PATCH_S2_3.md` — Plan v2 §2.3 patch
+  (`evalue_sensitivity_analyzer` moved to `/sensitivity`)
+- `PHASE_B2b1_DESIGN.md`, `PHASE_B2b2_DESIGN.md`,
+  `PHASE_B2b3_DESIGN.md` — per-batch design outlines
+- `PHASE_B_B2b1_COMPLETION.md`, `PHASE_B_B2b2_COMPLETION.md`,
+  `PHASE_B_B2b3_COMPLETION.md` — per-batch completion reports
+- `PAPER_PINNING.md` — SHA pin history, re-pin procedure, and
+  Plan v3 trigger conditions
+
+Software citation metadata: see `CITATION.cff`. Author / journal /
+ORCID / repository fields are placeholders until the paper is
+finalised for submission.
+
+### Phase G known limitations (do not affect Paper 1 finding)
+
+Documented in each completion doc §10 / §6, consolidated in
+`PHASE_B_B2b3_COMPLETION.md` §10:
+
+- B2b.1: DoWhy refute `data_subset` / `bootstrap` significance is
+  path-dependent across DoWhy 0.14 calls; engine uses a delta-based
+  decision rule as a stable fallback.
+- B2b.2: DoWhy `mediation.two_stage_regression` systematically
+  underestimates NDE under strong mediator coefficients; engine
+  surfaces the Pearl-identity-consistent decomposition via a snap
+  and tests use widened tolerances.
+- B2b.2: `precomputed_estimand` schema field is forward-compatible
+  but the DoWhy NDE/NIE branch always re-identifies internally;
+  diagnostics report `used_precomputed_estimand=False`.
+- B2b.3: DoWhy `EValueSensitivityAnalyzer.check_sensitivity`
+  signature drift across versions is absorbed by an automatic
+  self-implemented Chinn-VWD fallback.
+- B2b.3: DoWhy `NonParametricSensitivityAnalyzer` requires a
+  `theta_s` parameter Plan v2 §2.5 does not expose; the
+  `partial_linear` method is reserved (HTTP 422
+  `code='method_reserved'`).
+
+None of these affect the headline Pearl/Rubin mediation result
+(70% proportion mediated on the synthetic fixture targeting the
+paper's BSF bench) or the Γ-bound robustness gate (1.5 threshold
+operationalised via `e_value_lower_ci`).

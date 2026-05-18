@@ -1,0 +1,46 @@
+cff-version: 1.2.0
+message: "If you use BOS Platform in your research, please cite it as below."
+title: "BOS Platform: Biological Operating System for Solid-Waste Bioconversion"
+authors:
+  - family-names: "<TODO: author family name>"
+    given-names: "<TODO: author given name>"
+    # email: "<TODO: author email>"
+    # orcid: "<TODO: ORCID id, format https://orcid.org/0000-0000-0000-0000>"
+type: software
+version: "0.9.0-paper1"
+date-released: "2026-05-18"
+# repository-code: "<TODO: GitHub URL if/when the repo goes public>"
+license: "<TODO: SPDX identifier, e.g. MIT, Apache-2.0, or proprietary>"
+keywords:
+  - causal-inference
+  - mediation-analysis
+  - sensitivity-analysis
+  - bsf-bioconversion
+  - black-soldier-fly
+  - circular-economy
+  - bos-platform
+  - pearl-rubin
+  - bioconversion
+  - phase-b
+abstract: >
+  BOS Platform implements the Black Soldier Fly (BSF) bioconversion
+  case study via a five-endpoint causal inference layer
+  (/api/v1/causal/identify, /estimate, /refute, /mediation,
+  /sensitivity) backing Paper 1 (J Clean Prod, in preparation). The
+  mediation endpoint operationalises Pearl/Rubin counterfactual
+  mediation analysis (NDE/NIE decomposition) over the
+  Signal-API -> kappa -> SER pathway. The sensitivity endpoint
+  operationalises the paper's Gamma-bound >= 1.5 falsification gate
+  via VanderWeele-Ding E-value (primary, DoWhy 0.14
+  EValueSensitivityAnalyzer) with a self-implemented Chinn-VWD
+  fallback and an additional Cinelli-Hazlett robustness value branch
+  for linear-bound analysis.
+preferred-citation:
+  type: article
+  title: "<TODO: paper title>"
+  authors:
+    - family-names: "<TODO: paper first-author family name>"
+      given-names: "<TODO: paper first-author given name>"
+  journal: "Journal of Cleaner Production"
+  year: 2026
+  status: "in-preparation"
