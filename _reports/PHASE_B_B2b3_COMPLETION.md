@@ -75,16 +75,16 @@ otherwise. `planned` is unused on this endpoint.
 | Path | Lines | Purpose |
 |---|---|---|
 | `backend/app/schemas/causal/sensitivity.py` | 470 | `SCHEMA_VERSION = "B.5"`; CausalSensitivityRequest + SensitivityEvalueDetail + SensitivityLinearDetail + SensitivityDiagnostics + CausalSensitivityResponse + 2 Request validators + 2 Response-level validators |
-| `backend/app/engine/extended/causal_sensitivity_engine.py` | 703 | CausalSensitivityError + `_check_method` reserved gate + `_run_evalue` (primary DoWhy + Chinn-VWD fallback) + `_run_cinelli_hazlett` (closed-form RV + partial R^2) + `_robustness_value`/`_robustness_value_alpha`/`_partial_r2_from_t` + benchmark-covariate t-stat extraction + `run_sensitivity` top-level orchestrator |
-| `backend/tests/unit/test_causal_sensitivity_engine.py` | 358 | 10 unit tests: evalue primary, evalue fallback (monkeypatched), evalue ≈ cheap_evalue, linear RV recovery, partial_r2_yd field, benchmark_covariate, partial_linear 422, benchmark_covariate-not-in-DAG schema 422, overall_robust strong vs weak, Response cross-field validator |
-| `_reports/PHASE_B2b3_API_VERIFICATION.md` | 100 | Step 1 scratch evidence archive: 5-candidate table + late-arrival DoWhy E-value plumbing (`.stats` dict keys verified) + Cinelli-Hazlett closed-form sanity numbers |
-| **Subtotal (new)** | **~1 631** | |
+| `backend/app/engine/extended/causal_sensitivity_engine.py` | 705 | CausalSensitivityError + `_check_method` reserved gate + `_run_evalue` (primary DoWhy + Chinn-VWD fallback) + `_run_cinelli_hazlett` (closed-form RV + partial R^2) + `_robustness_value`/`_robustness_value_alpha`/`_partial_r2_from_t` + benchmark-covariate t-stat extraction + `run_sensitivity` top-level orchestrator |
+| `backend/tests/unit/test_causal_sensitivity_engine.py` | 427 | 10 unit tests: evalue primary, evalue fallback (monkeypatched), evalue ≈ cheap_evalue, linear RV recovery, partial_r2_yd field, benchmark_covariate, partial_linear 422, benchmark_covariate-not-in-DAG schema 422, overall_robust strong vs weak, Response cross-field validator |
+| `_reports/PHASE_B2b3_API_VERIFICATION.md` | 131 | Step 1 scratch evidence archive: 5-candidate table + late-arrival DoWhy E-value plumbing (`.stats` dict keys verified) + Cinelli-Hazlett closed-form sanity numbers |
+| **Subtotal (new)** | **~1 733** | |
 
 ### Pre-existing artefact (Step 1, untracked predecessor)
 
 | Path | Lines | Status |
 |---|---|---|
-| `_reports/PHASE_B2b3_DESIGN.md` | 460 | Untouched after Step 1 (one §4 update folded in during Step 1 wrap-up to lock in DoWhy E-value API plumbing) |
+| `_reports/PHASE_B2b3_DESIGN.md` | 462 | Step 1 design outline. The §4 ``_run_evalue`` primary path docstring was extended during Step 1 wrap-up to lock in the DoWhy ``check_sensitivity(data, plot)`` + ``.stats`` dict plumbing after the in-band late-arrival probe completed (see PHASE_B2b3_API_VERIFICATION.md §3). |
 | `backend/scratch_sensitivity_api.py` | 336 | Removed at this step (Step 7); content archived into `PHASE_B2b3_API_VERIFICATION.md` |
 
 ### Modified files (1)
@@ -101,8 +101,15 @@ otherwise. `planned` is unused on this endpoint.
 
 ### Total diff (excluding archive)
 
-`~2 167` lines added; `1` line removed (Step 4's docstring update);
-`0` Phase A or V9 baseline files modified.
+`~2 271` lines added; `1` line removed (Step 4's docstring update);
+`0` Phase A or V9 baseline files modified. (Numbers reflect the
+B7 follow-up audit pass that re-counted three artefacts from their
+final committed state: test file 358→427 (post comment/docstring
+additions), design doc 460→462 (late-arrival §4 update), and
+API verification 100→131 (post Phase G triggers section).
+Subtotal `1 733` = 470 + 705 + 427 + 131; total `2 271` adds
+the +76 router modify and +462 Step 1 design doc landed under
+B2b.3 commit `83c3c83`.)
 
 ## §3 Test results
 

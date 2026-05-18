@@ -340,6 +340,13 @@ class CausalWarning(BaseModel):
 # ════════════════════════════════════════════════════════════════════
 
 
-CAUSAL_ENGINE_VERSION = "0.1.0"
+CAUSAL_ENGINE_VERSION = "0.9.0"
 """Bump on any backwards-incompatible change to the causal engines.
-Reported on every causal endpoint response."""
+Reported on every causal endpoint response.
+
+History:
+- 0.1.0: B2a initial ship (identify + estimate).
+- 0.9.0: B7 paper-pin commit (5 endpoints SHIPPED — identify /
+  estimate / refute / mediation / sensitivity — aligned with
+  the ``v0.9.0-paper1`` git tag for the Paper 1 audit chain).
+"""

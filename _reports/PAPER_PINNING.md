@@ -195,15 +195,28 @@ ever rewritten.
 
 ## §8 Archive — Step 1.5 scratch evidence
 
-The text-diff scratch script lives at
-`backend/scratch_paper_diff.py`. It is **kept** in the B7 commit
-rather than deleted because:
+The text-diff scratch script (`backend/scratch_paper_diff.py`)
+was used during Step 1.5 of the B7 batch to verify that the
+2026-05-18 paper SHA mismatch was metadata-only (§3 evidence
+block). It was **deleted** at Step 3d rather than committed,
+matching the scratch-archive convention used by B2b.1 / B2b.2 /
+B2b.3 (scratch produces evidence into a `_reports/` archive doc,
+the script itself is not tracked).
 
-- It is the canonical implementation of §5 step 3.
-- Future re-pins re-run it.
-- It is a small, dependency-bounded script (python-docx already
-  in the backend venv; no extra deps).
+The script is regenerable in ~80 lines via `python-docx` (already
+in the backend venv from B7 Step 1.5; no extra deps). When a
+future re-pin needs to run §5 step 3, recreate the script with
+the contract:
 
-If a Phase G clean-up wants to promote it, the natural home is
-`backend/scripts/paper_pin_diff.py` with a CLI surface
+- inputs: two `Path` objects to `.docx` files
+- output: paragraph-level text diff to stdout, plus a critical-
+  keyword scan against the current pin's anchors
+
+The verbatim diff output from the 2026-05-18 run is preserved in
+§3 above (0 differing paragraphs + critical-keyword inventory),
+so the §3 audit trail does not depend on the script being in
+the repo.
+
+If a Phase G clean-up wants a permanent script, the natural home
+is `backend/scripts/paper_pin_diff.py` with a CLI surface
 (`--current PATH --reference PATH --format json`).
