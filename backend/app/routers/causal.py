@@ -15,10 +15,11 @@ Phase B (B2a) contract:
                                      (causal_forest_dml, x_learner)
                                      422-rejected.
 
-Phase B B2b.1 added /refute; B2b.2 adds /mediation; B2b.3 will add
-/sensitivity (+ async jobs).
+Phase B B2b.1 added /refute; B2b.2 added /mediation; B2b.3 adds
+/sensitivity. Async-job mode reserved across all endpoints until a
+later batch.
 
-Reference: PHASE_B_PLAN.md §2.1, §2.2, §2.3, §2.4, §2.7.
+Reference: PHASE_B_PLAN.md §2.1, §2.2, §2.3, §2.4, §2.5, §2.7.
 """
 
 from __future__ import annotations
@@ -43,6 +44,10 @@ from app.schemas.causal.mediation import (
     CausalMediationRequest,
     CausalMediationResponse,
 )
+from app.schemas.causal.sensitivity import (
+    CausalSensitivityRequest,
+    CausalSensitivityResponse,
+)
 from app.engine.extended.causal_identify_engine import run_identify
 from app.engine.extended.causal_estimate_engine import (
     CausalEstimateError,
@@ -55,6 +60,10 @@ from app.engine.extended.causal_refute_engine import (
 from app.engine.extended.causal_mediation_engine import (
     CausalMediationError,
     run_mediation,
+)
+from app.engine.extended.causal_sensitivity_engine import (
+    CausalSensitivityError,
+    run_sensitivity,
 )
 
 
@@ -283,4 +292,71 @@ async def mediation_endpoint(
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail={"code": "mediation_failed", "message": str(exc)},
+        ) from exc
+
+
+# ════════════════════════════════════════════════════════════════════
+# /sensitivity (B2b.3)
+# ════════════════════════════════════════════════════════════════════
+
+
+@router.post(
+    "/sensitivity",
+    response_model=CausalSensitivityResponse,
+    summary=(
+        "Phase B — causal sensitivity (E-value + Cinelli-Hazlett "
+        "robustness value, Plan v2 §2.5)"
+    ),
+)
+async def sensitivity_endpoint(
+    body: CausalSensitivityRequest,
+    current_user: User = Depends(require_minimum_role("operator")),
+) -> CausalSensitivityResponse:
+    """
+    Bounds the unmeasured-confounder bias on the upstream
+    /estimate result without re-running the estimation.
+
+    Methods (B2b.3 MVP):
+
+    - ``evalue`` (default) — VanderWeele-Ding E-value. Primary path
+      uses DoWhy's ``EValueSensitivityAnalyzer`` standalone class;
+      automatic fallback to a self-implemented Chinn-VWD E-value
+      when the DoWhy path raises (delta-style pattern mirroring
+      B2b.1 refute's reliability fallbacks). Source is recorded in
+      ``evalue_detail.source``.
+    - ``linear`` — Cinelli-Hazlett 2020 robustness value + partial
+      R² from a single ``statsmodels`` OLS fit. Closed form; no
+      DoWhy / EconML dependency on this branch. When
+      ``benchmark_covariate`` is supplied, the benchmark's partial
+      R² on Y given T + the rest of the adjustment set is computed
+      from its t-statistic in the same OLS.
+    - ``partial_linear`` — Reserved; 422-rejected with
+      ``code='method_reserved'`` (DoWhy's
+      ``NonParametricSensitivityAnalyzer`` requires a ``theta_s``
+      parameter that Plan v2 §2.5 does not expose).
+
+    The ``overall_robust`` Response field operationalises Plan v2
+    §2.5's "Γ-bound ≥ 1.5" gate (paper line 101): for ``evalue``,
+    ``e_value_lower_ci > 1.5``; for ``linear``,
+    ``robustness_value_alpha > 0.10`` (Cinelli-Hazlett 2020
+    conventional threshold; the two numbers live on incompatible
+    scales). ``evidence_level`` is ``validated`` when robust and
+    ``supported`` otherwise.
+
+    Plan v2 §2.5 paper map: the cheap E-value is already returned
+    in-line by ``/estimate`` (Mod 9). This endpoint exists for the
+    expensive class-based / partial-R² analysis the operator might
+    want for a high-stakes claim.
+    """
+    try:
+        return run_sensitivity(body)
+    except CausalSensitivityError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"code": exc.code, "message": exc.message},
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"code": "sensitivity_failed", "message": str(exc)},
         ) from exc
