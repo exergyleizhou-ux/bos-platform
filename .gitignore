@@ -92,6 +92,7 @@ frontend/remotion-runtime/
 # Backend dev artifacts (per-developer; never enter history)
 backend/.bos-code-worktrees/
 backend/.venv-backend-tests/
+backend/.venv-backend/
 backend/generated/
 
 # ML model weights — download separately, do not enter git
@@ -99,3 +100,43 @@ backend/generated/
 *.pth
 *.ckpt
 *.safetensors
+
+# ──────────────────────────────────────────────────────────────
+# Pre-Phase-B historic untracked noise (B7 audit follow-up).
+# These directories accumulated during V1 / V3.5 / Phase 0 / Phase A
+# work; they are not part of the BOS v9 mainline and never enter
+# the Phase B audit chain. Ignoring keeps `git status` focused on
+# the actual working set. Remove an entry below if you actively
+# resume work in that area.
+# ──────────────────────────────────────────────────────────────
+
+# Agent / skills runtime workspaces (pre-Phase-B brainstorming).
+.agents/
+
+# Phase 0 / Phase 0.5 inventories and gap analyses (historical).
+_reports/PHASE_0_5_*.md
+_reports/BOS_Phase0_*.md
+_reports/_phase_b_paper_extract.txt
+
+# V3.5 / V1 stabilisation smoke logs + screenshots (historical).
+reports/stabilize-v9/
+reports/benchmark-runs/
+reports/codex-login-check/
+reports/github-radar/
+reports/playwright-check/
+reports/runtime-staging/
+reports/runtime-write-probe.tmp
+reports/release-readiness-summary.json
+reports/release-readiness-summary.md
+reports/bos-code-claw-*.md
+
+# Benchmark / docs scaffolding from earlier batches (not Phase B output).
+benchmark_tasks/
+docs/
+scripts/
+
+# Top-level historic notes (kept locally; not part of the Phase B
+# audit chain — `BOS_Paper1_*` paper artefacts and `BOS_*BASELINE`
+# / `BOS_*MATRIX` docs live next to the repo, not in it).
+BOS_EXTERNAL_KNOWLEDGE_AND_DATA_MATRIX.md
+BOS_V3_5_BASELINE_LOCK.md

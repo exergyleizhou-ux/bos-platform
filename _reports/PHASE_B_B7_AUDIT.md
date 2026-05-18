@@ -108,6 +108,47 @@ No causal engine, schema, router, or unit test was changed. No
 git tag was moved. No previous commit was amended (`v0.9.0-paper1`
 remains anchored on `92a7a0f`).
 
+## §4b Audit v2 follow-up (separate chore commit)
+
+After this doc shipped, a deeper pass surfaced four more drift /
+coherence issues that the audit v1 commit (`9e509fb`) had recorded
+as "informational, not fixed". Audit v2 actually fixes them:
+
+1. **Plan v2 §7 #8 character drift** — table cell said "217
+   phase_a tests", changed to "216" with footnote
+   `[^acceptance-8]` linking to this doc's §3 explanation.
+2. **Plan v2 §7 #12 stale SHA** — PASS condition cited the
+   old pinned SHA `ba13a10f...10d7`; updated to the current
+   `2FD43870...118D` with footnote `[^acceptance-12]` linking
+   to `PAPER_PINNING.md` §3.
+3. **Plan v2 §7 honest status paragraph** — added "Honest
+   status at the `v0.9.0-paper1` ship" paragraph after the
+   acceptance table, with the same PASS/Partial/Not-shipped
+   breakdown this doc's §3 gives, plus a direct link here.
+4. **DAG library paper SHA pin** —
+   `_reports/PHASE_B_DAGS/dag_{001,002,003}*.json` carried
+   the old `paper_sha256` value in a `paper_sha256` field
+   embedded in the JSON. All three updated to the current
+   SHA, and a new `paper_sha256_pin_history` field records
+   both pins (B0.7 initial + B7 re-pin) so the per-DAG audit
+   trail mirrors `PAPER_PINNING.md` §3.
+5. **`.gitignore` hygiene** — historic untracked directories
+   (`.agents/`, `reports/stabilize-v9/`, `_reports/PHASE_0_5_*.md`,
+   `benchmark_tasks/`, `docs/`, `scripts/`, `backend/.venv-backend/`,
+   etc.) appended to `.gitignore`. `git status` is now scoped
+   to the actual working set; from ~150 noise lines to 0 after
+   this commit.
+6. **Two minor line-count drifts in older completion docs**:
+   B2b.1 test file 297 → 302, B2b.2 API verification 117 →
+   124. Both rows annotated inline with "count corrected B7
+   audit" so the audit chain is visible.
+
+The four fixes leave the 5 causal engines / schemas / routers
+untouched. The audit v2 commit follows the same rule as v1:
+no engine, no test, no schema, no router code edited, and no
+existing commit is amended. `v0.9.0-paper1` stays anchored on
+`92a7a0f`.
+
 ## §5 Recommended follow-ups (NOT in this audit commit)
 
 In rough priority order:
@@ -122,17 +163,19 @@ In rough priority order:
 3. **B4 — Agent causal subgraph (5 nodes).** Items #2 + #3 land
    together. Larger surface (LangGraph routing, agent
    integration). Deferred to a separate planning round.
-4. **`.gitignore` hygiene.** ~50+ historic untracked entries
-   (`.agents/`, `reports/stabilize-v9/`, `_reports/PHASE_0_5_*`,
-   etc.) pollute `git status`. Single commit to add
-   `.gitignore` entries for the noise paths. Phase G hygiene.
+4. ~~**`.gitignore` hygiene.**~~ **DONE in audit v2** (see §4b
+   item 5). Historic untracked noise now ignored; `git status`
+   shows clean working tree.
 5. **Plan v2 §7 #6 / #7 frontend verification.** Re-run `vitest`
    inside `frontend/` once to discharge item #6's "trust-only"
    status. Item #7 (B6 Mermaid panel) is optional per Plan v2.
-6. **Plan v2 #8 217↔216 reconciliation.** Either update the Plan
-   doc to read "216" or hunt down the dropped test. Likely a
-   non-issue (test removed during B0.3 baseline cleanup), but
-   the audit chain should note it.
+6. ~~**Plan v2 #8 217↔216 reconciliation.**~~ **DONE in audit v2**
+   (see §4b item 1). Plan v2 §7 #8 now reads "216" with a
+   footnote pointing at this doc's §3 explanation.
+7. **DAG library paper SHA re-pin.** ~~Leftover from B0.7~~
+   **DONE in audit v2** (see §4b item 4). All three
+   `_reports/PHASE_B_DAGS/dag_*.json` files carry the new SHA
+   and a 2-entry pin history.
 
 ## §6 Audit metadata
 

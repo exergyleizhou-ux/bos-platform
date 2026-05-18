@@ -42,7 +42,7 @@ refuter count 5 → 4.
 |---|---|---|
 | `backend/app/schemas/causal/refute.py` | 280 | `SCHEMA_VERSION = "B.3"`; CausalRefuteRequest + RefuterResult + CausalRefuteResponse + RefuterName Literal + 2 model validators |
 | `backend/app/engine/extended/causal_refute_engine.py` | ~475 | DoWhy refute dispatch + delta-based fallback for 3 unreliable refuters + e_value Option (a) hybrid + 3-tier evidence-level aggregator |
-| `backend/tests/unit/test_causal_refute_engine.py` | 297 | 8 unit tests covering 5 refuter happy paths + reserved-enum 422 + 2 evidence-level rule cases |
+| `backend/tests/unit/test_causal_refute_engine.py` | 302 | 8 unit tests covering 5 refuter happy paths + reserved-enum 422 + 2 evidence-level rule cases (count corrected B7 audit; initial draft reported 297 pre-final-comments) |
 | `_reports/PHASE_B2b1_DESIGN.md` | 310 | Step 1 design outline (refuter taxonomy, schema field tables, engine signatures, test design, e_value Option (a) decision) |
 | `_reports/PHASE_B_PLAN_V2_PATCH_S2_3.md` | 109 | Plan v2 §2.3 patch record (evalue moved to /sensitivity; 5→4 mandatory; bootstrap upgraded to optional implemented; non_parametric stays reserved) |
 | **Subtotal (new)** | **~1 471** | |

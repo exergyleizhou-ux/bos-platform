@@ -61,7 +61,7 @@ the placement holds.
 | `backend/app/schemas/causal/mediation.py` | 504 | `SCHEMA_VERSION = "B.4"`; CausalMediationRequest + MediationDecomposition + MediationDiagnostics + CausalMediationResponse + 4 Request validators + 2 Response-level validators |
 | `backend/app/engine/extended/causal_mediation_engine.py` | 877 | CausalMediationError + `_check_decomposition` reserved gate + `_run_dowhy_mediation` (single-mediator NDE/NIE/ATE triple) + `_fit_linear_dml_ate` helper + `_run_farbmacher_mediation` (multi-mediator leave-one-out) + `_bootstrap_ci` (補 1 floor / 補 2 logging) + `_branch_decomposition_only` adapter + `run_mediation` top-level orchestrator |
 | `backend/tests/unit/test_causal_mediation_engine.py` | 567 | 12 unit tests covering single + multi branch happy paths + reserved-decomposition 422 + 3 schema-validator 422 paths + share-sum response validator + small-n clamp + bootstrap-CI bracket + precomputed_estimand acceptance + proportion_mediated field consistency |
-| `_reports/PHASE_B2b2_API_VERIFICATION.md` | 117 | Step 1 scratch evidence archive (5 candidates + Gap 1 / Gap 2 mini-verify + Phase G triggers + Step 5 known-limitation note) |
+| `_reports/PHASE_B2b2_API_VERIFICATION.md` | 124 | Step 1 scratch evidence archive (5 candidates + Gap 1 / Gap 2 mini-verify + Phase G triggers + Step 5 known-limitation note) (count corrected B7 audit; initial draft reported 117 pre-final-section) |
 | **Subtotal (new)** | **~2 065** | |
 
 ### Pre-existing artefacts (Step 1, untracked predecessors)

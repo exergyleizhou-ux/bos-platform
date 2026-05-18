@@ -4,7 +4,11 @@
   "description": "Operationalises the paper's load-bearing mediation claim (paper line 11 + line 101 + line 153): the Signal-API potency input is hypothesised to drive SER proximally through Kernel compilation efficiency kappa (Eq. 4). Paper's in-silico mediation analysis claims ~70% proportion mediated through kappa. This DAG sets up the Pearl-Rubin counterfactual decomposition (ACME + ADE) that Phase B's /api/v1/causal/mediation endpoint will compute via EconML DML mediation (D14 = gamma).",
   "paper_reference": "BOS_Paper1_JCP_FINAL.docx — paper line 11 (abstract claim of ~70% mediation through kappa); line 49-50 (kappa = CEA_post-M2 / Signal-API_BU_input, Eq. 4); line 101 (pre-registered in-silico mediation analysis, V14 wet-lab target); line 153 (Pearl / Rubin counterfactual mediation analysis on the Signal-API -> kappa -> SER pathway).",
   "schema_version": "B.0",
-  "paper_sha256": "ba13a10fde39decb96fd98f92694791a0a6739868adde69c374a49c013b110d7",
+  "paper_sha256": "2fd4387028b2b160388c65ccb0f269967e05b55fdeaf6ba62b1570bcb533118d",
+  "paper_sha256_pin_history": [
+    {"sha256": "ba13a10fde39decb96fd98f92694791a0a6739868adde69c374a49c013b110d7", "pinned": "2026-05-16", "batch": "B0.7 (initial)", "size_bytes": 74671},
+    {"sha256": "2fd4387028b2b160388c65ccb0f269967e05b55fdeaf6ba62b1570bcb533118d", "pinned": "2026-05-18", "batch": "B7 (Option A re-pin; Word metadata delta only, text diff=0)", "size_bytes": 74662}
+  ],
 
   "nodes": [
     {

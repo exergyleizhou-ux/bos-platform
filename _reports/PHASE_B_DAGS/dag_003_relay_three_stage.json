@@ -4,7 +4,11 @@
   "description": "Operationalises the paper's three-stage relay topology under the Signal Fidelity Inequality (Eq. 6). The operator-controllable M2 residence time tau_m2_h, combined with literature-estimated k_decay and the initial signal pool s0, determines whether the relay completes within its physical horizon. This DAG identifies tau_m2_h -> final_ser through the signal-activity decay path, with k_decay_point and s0 as critical confounders.",
   "paper_reference": "BOS_Paper1_JCP_FINAL.docx — paper line 51-54 (Eq. 5: S(tau) = S_0 * exp(-k_decay*tau), Eq. 6: tau_M2 <= ln(S_0/S_min)/k_decay); §4.1 (mechanistic basis of the engineered relay, claim #16 in reconnaissance §3.1: 'The cue reduces the activation inertia of the successor stage'); §3.6.1 M1/M2/M3 progressive covariate adjustment.",
   "schema_version": "B.0",
-  "paper_sha256": "ba13a10fde39decb96fd98f92694791a0a6739868adde69c374a49c013b110d7",
+  "paper_sha256": "2fd4387028b2b160388c65ccb0f269967e05b55fdeaf6ba62b1570bcb533118d",
+  "paper_sha256_pin_history": [
+    {"sha256": "ba13a10fde39decb96fd98f92694791a0a6739868adde69c374a49c013b110d7", "pinned": "2026-05-16", "batch": "B0.7 (initial)", "size_bytes": 74671},
+    {"sha256": "2fd4387028b2b160388c65ccb0f269967e05b55fdeaf6ba62b1570bcb533118d", "pinned": "2026-05-18", "batch": "B7 (Option A re-pin; Word metadata delta only, text diff=0)", "size_bytes": 74662}
+  ],
 
   "node_id_convention": "Causal-semantic IDs; see bos_field_ref for schema field mapping. Time-indexed via @step_at_<phase>_<position> DSL (e.g. @step_at_m3_boundary).",
 
