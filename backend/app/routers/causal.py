@@ -34,10 +34,18 @@ from app.schemas.causal.identify import (
     CausalIdentifyRequest,
     CausalIdentifyResponse,
 )
+from app.schemas.causal.refute import (
+    CausalRefuteRequest,
+    CausalRefuteResponse,
+)
 from app.engine.extended.causal_identify_engine import run_identify
 from app.engine.extended.causal_estimate_engine import (
     CausalEstimateError,
     run_estimate,
+)
+from app.engine.extended.causal_refute_engine import (
+    CausalRefuteError,
+    run_refute,
 )
 
 
@@ -131,4 +139,71 @@ async def estimate_endpoint(
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail={"code": "estimate_failed", "message": str(exc)},
+        ) from exc
+
+
+# ════════════════════════════════════════════════════════════════════
+# /refute (B2b.1)
+# ════════════════════════════════════════════════════════════════════
+
+
+@router.post(
+    "/refute",
+    response_model=CausalRefuteResponse,
+    summary=(
+        "Phase B — causal refutation (DoWhy refuters + evidence-level "
+        "aggregation, Plan v2 §2.3 patched)"
+    ),
+)
+async def refute_endpoint(
+    body: CausalRefuteRequest,
+    current_user: User = Depends(require_minimum_role("operator")),
+) -> CausalRefuteResponse:
+    """
+    Runs DoWhy refuters against the estimate referenced by
+    ``estimate_handle`` (echoed from a previous /estimate response).
+
+    Refuters (B2b.1):
+
+    - Mandatory (4): ``random_common_cause``,
+      ``placebo_treatment_refuter``, ``data_subset_refuter``,
+      ``add_unobserved_common_cause``.
+    - Optional implemented: ``bootstrap_refuter``.
+    - Optional reserved: ``non_parametric_sensitivity_analyzer``
+      (422-rejected with ``code='refuter_reserved'``; mirrors B2a's
+      reserved-method pattern).
+
+    ``evidence_level`` is one of ``validated`` / ``supported`` /
+    ``planned`` per Plan v2 §2.3 (patched — see
+    ``_reports/PHASE_B_PLAN_V2_PATCH_S2_3.md``):
+
+    - **validated**: all 4 mandatory refuters pass with p > 0.10
+      AND identify.strategy == 'backdoor' AND e_value > 1.5.
+    - **supported**: >= 2/4 mandatory pass with p > 0.05 AND
+      identify.strategy in {'backdoor', 'frontdoor', 'mediation'}.
+    - **planned**: otherwise.
+
+    ``original_e_value`` is optional in the request. When provided,
+    the engine uses it verbatim in the evidence-level rule (best for
+    audit trail — pass through /estimate.response.e_value_cheap).
+    When absent, the engine recomputes via a lightweight OLS pass on
+    the same data + adjustment set (~20% engine cost) and adds a
+    ``method_fallback`` warning to the response.
+
+    Note: ``e_value_sensitivity_analyzer`` was moved out of /refute
+    in the Plan v2 §2.3 patch — it is a sensitivity analysis, not a
+    Monte-Carlo refuter, and will land in /api/v1/causal/sensitivity
+    (B2b.3) instead.
+    """
+    try:
+        return run_refute(body)
+    except CausalRefuteError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"code": exc.code, "message": exc.message},
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"code": "refute_failed", "message": str(exc)},
         ) from exc
