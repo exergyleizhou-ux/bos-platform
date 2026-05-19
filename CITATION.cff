@@ -5,7 +5,7 @@ authors:
   - family-names: "Zhou"
     given-names: "Lei"
     email: "exergyleizhou@gmail.com"
-    # orcid: "<TODO: ORCID id, format https://orcid.org/0000-0000-0000-0000>"
+    orcid: "https://orcid.org/0009-0000-9073-1349"
 type: software
 version: "0.9.0-paper1"
 date-released: "2026-05-18"
@@ -37,10 +37,10 @@ abstract: >
   for linear-bound analysis.
 preferred-citation:
   type: article
-  title: "<TODO: paper title>"
+  title: "Staged bioconversion via a protocol-first Biological Operating System: Decoupling waste deconstruction from nutrient recovery"
   authors:
-    - family-names: "<TODO: paper first-author family name>"
-      given-names: "<TODO: paper first-author given name>"
+    - family-names: "Zhou"
+      given-names: "Lei"
   journal: "Journal of Cleaner Production"
   year: 2026
   status: "in-preparation"
