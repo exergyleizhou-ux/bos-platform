@@ -11,6 +11,10 @@ version: "0.9.0-paper1"
 date-released: "2026-05-18"
 repository-code: "https://github.com/exergyleizhou-ux/bos-platform"
 license: "MIT"
+identifiers:
+  - type: doi
+    value: "10.5281/zenodo.XXXXXXX"
+    description: "Zenodo archive of v0.9.0-paper1 release (pending mint via GitHub-Zenodo integration; operator action — see Paper1_BT/_drafts/INSTRUCTIONS_FOR_OPERATOR.md Step 2)"
 keywords:
   - causal-inference
   - mediation-analysis

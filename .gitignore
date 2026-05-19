@@ -140,3 +140,29 @@ scripts/
 # / `BOS_*MATRIX` docs live next to the repo, not in it).
 BOS_EXTERNAL_KNOWLEDGE_AND_DATA_MATRIX.md
 BOS_V3_5_BASELINE_LOCK.md
+
+# ──────────────────────────────────────────────────────────────
+# Paper 1 submission readiness audit (Phase B handoff additions)
+# ──────────────────────────────────────────────────────────────
+
+# Env-var variants beyond .env / .env.local / .env.production
+.env.*
+.envrc
+*.env.secret
+
+# Secret-bearing JSON / YAML that occasionally lands in scratch dirs
+*secrets*.json
+*secrets*.yaml
+*secrets*.yml
+credentials.json
+credentials.yaml
+
+# Operator-side patch scratch (created during paper-pin re-pin work)
+*_pre-patch-*.docx
+*_post-patch-*.docx
+*.docx.tmp
+
+# Local scratch / handoff draft directories at repo root (paper-side
+# drafts live in Paper1_BT/_drafts/ which is outside the repo)
+_drafts/
+_scratch/
