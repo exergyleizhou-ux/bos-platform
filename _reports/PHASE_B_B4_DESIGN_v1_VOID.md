@@ -1,3 +1,52 @@
+# ⚠️ VOID — B4 v1 Design Document (Quarantined)
+
+**Status**: VOID
+**Reason**: Phase A precedent missed. This design assumed `agent/`
+is a net-new service in the repo root. After Steps 1-2 ship
+(commit `ddcbc24`) and Step 3 scratch work, B4 v2 reconnaissance
+discovered Phase A A.3 already shipped a complete LangGraph agent
+at `backend/agent/` (2089 LoC, FastAPI on :8001, 6 nodes wired —
+`router`, `ser`, `sfi`, `relay`, `cyber_lab`, `render`). B4 v1 was
+building a duplicate.
+
+**Action taken**:
+
+- `ddcbc24` commit (Steps 1-2 of v1) is **kept** as audit history
+  (not reverted; revert would add a destructive commit to the
+  chain).
+- Root `agent/` directory is **quarantined** — see
+  `agent/README.md` for the do-not-extend warning.
+- B4 v2 design lives at `_reports/PHASE_B_B4_v2_DESIGN.md` and
+  reflects actual scope: extending `backend/agent/` in-place
+  (~3-5h adjusted vs the 6-10h v1 estimate).
+
+**Lessons**:
+
+1. Plan v2 §3 said "agent service" but did not specify path; this
+   v1 design doc author inferred net-new without running `find`
+   over the existing `backend/` tree. Phase A A.3
+   (`backend/agent/`, mtime May 16-17) was right there.
+2. Step 0 reconnaissance for any new agent/subsystem work should
+   grep the existing tree first — the 8-item recon that found the
+   precedent took ~30 minutes and would have prevented this.
+3. B4 v2 will work in `backend/agent/` and treat this document as
+   historical reference only.
+
+**Reuse from this v1 doc that B4 v2 still wants**:
+
+- §3 step rhythm (the 8-step cadence)
+- §5 test design (4 buckets: isolation / parity / node unit /
+  full-chain + partial-failure)
+- §6 risks (R1 - R6 mostly still apply, modulo R1's "LangGraph
+  install" which is already satisfied)
+- §8's reasoning for why B6 shipped before B4 (still correct)
+
+**DO NOT** treat any of v1's "12 source + 8 test files" inventory
+(§4) as authoritative — that list duplicates `backend/agent/`.
+B4 v2 §4 supersedes it.
+
+---
+
 # Phase B B4 — LangGraph causal agent design (for next thread)
 
 > **Status.** Design only. NO code shipped in this commit. This
