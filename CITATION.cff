@@ -2,15 +2,15 @@ cff-version: 1.2.0
 message: "If you use BOS Platform in your research, please cite it as below."
 title: "BOS Platform: Biological Operating System for Solid-Waste Bioconversion"
 authors:
-  - family-names: "<TODO: author family name>"
-    given-names: "<TODO: author given name>"
-    # email: "<TODO: author email>"
+  - family-names: "Zhou"
+    given-names: "Lei"
+    email: "exergyleizhou@gmail.com"
     # orcid: "<TODO: ORCID id, format https://orcid.org/0000-0000-0000-0000>"
 type: software
 version: "0.9.0-paper1"
 date-released: "2026-05-18"
-# repository-code: "<TODO: GitHub URL if/when the repo goes public>"
-license: "<TODO: SPDX identifier, e.g. MIT, Apache-2.0, or proprietary>"
+repository-code: "https://github.com/exergyleizhou-ux/bos-platform"
+license: "MIT"
 keywords:
   - causal-inference
   - mediation-analysis
