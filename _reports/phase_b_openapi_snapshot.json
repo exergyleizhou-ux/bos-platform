@@ -1,0 +1,1935 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "BOS Pipeline",
+    "version": "9.0.0"
+  },
+  "_phase_b_snapshot_scope": "paths matching /api/v1/causal/* + transitively referenced components.schemas (B3 drift gate, Plan v2 §7 #10)",
+  "paths": {
+    "/api/v1/causal/identify": {
+      "post": {
+        "tags": [
+          "Causal (Phase B)"
+        ],
+        "summary": "Phase B — causal identification (DoWhy CausalModel.identify_effect)",
+        "description": "Resolve the identifiable estimand for a (treatment, outcome) pair\nunder the supplied DAG.\n\nPaper map: paper §3.6.1 (*\"Pearl / Rubin counterfactual mediation\nanalysis on the Signal-API → κ → SER pathway\"*).\n\nThe endpoint never 500s on unidentifiable graphs — instead it\nreturns ``identified=False, strategy=\"unidentifiable\",\nevidence_level=\"planned\"``. Schema-layer validators catch the\nstructural errors (cycle, missing nodes, treatment with no\noutgoing edges) and 422 them.",
+        "operationId": "identify_endpoint_api_v1_causal_identify_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CausalIdentifyRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CausalIdentifyResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/causal/estimate": {
+      "post": {
+        "tags": [
+          "Causal (Phase B)"
+        ],
+        "summary": "Phase B — causal effect estimation (LinearDML MVP)",
+        "description": "Compute an ATE / ATT / ATC for the (treatment, outcome) pair on\nthe supplied data.\n\nMethod families (B2a MVP):\n\n- ``linear_regression`` — statsmodels OLS.\n- ``propensity_score`` — DoWhy backdoor.propensity_score_weighting.\n- ``dml`` — EconML LinearDML (D9=α; requires ≥1 continuous covariate).\n\nReserved values ``causal_forest_dml`` and ``x_learner`` are\n422-rejected with ``code='method_family_reserved'`` (D9=α MVP\nkeeps the public OpenAPI surface forward-compatible).\n\nSync-mode requests with inline row count > 10_000 are\n422-rejected at validator time; use ``mode='async_job'`` (B2b)\nfor larger datasets.\n\nWhen the effective per-stratum sample size falls below\n``n_min_per_stratum`` (default 30), the response is forced to\n``evidence_level='planned'`` and a ``'small_sample'`` warning is\nadded — but **no error is raised**. The paper's n=4/arm\nexperiment is itself a valid demonstrator.",
+        "operationId": "estimate_endpoint_api_v1_causal_estimate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CausalEstimateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CausalEstimateResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/causal/refute": {
+      "post": {
+        "tags": [
+          "Causal (Phase B)"
+        ],
+        "summary": "Phase B — causal refutation (DoWhy refuters + evidence-level aggregation, Plan v2 §2.3 patched)",
+        "description": "Runs DoWhy refuters against the estimate referenced by\n``estimate_handle`` (echoed from a previous /estimate response).\n\nRefuters (B2b.1):\n\n- Mandatory (4): ``random_common_cause``,\n  ``placebo_treatment_refuter``, ``data_subset_refuter``,\n  ``add_unobserved_common_cause``.\n- Optional implemented: ``bootstrap_refuter``.\n- Optional reserved: ``non_parametric_sensitivity_analyzer``\n  (422-rejected with ``code='refuter_reserved'``; mirrors B2a's\n  reserved-method pattern).\n\n``evidence_level`` is one of ``validated`` / ``supported`` /\n``planned`` per Plan v2 §2.3 (patched — see\n``_reports/PHASE_B_PLAN_V2_PATCH_S2_3.md``):\n\n- **validated**: all 4 mandatory refuters pass with p > 0.10\n  AND identify.strategy == 'backdoor' AND e_value > 1.5.\n- **supported**: >= 2/4 mandatory pass with p > 0.05 AND\n  identify.strategy in {'backdoor', 'frontdoor', 'mediation'}.\n- **planned**: otherwise.\n\n``original_e_value`` is optional in the request. When provided,\nthe engine uses it verbatim in the evidence-level rule (best for\naudit trail — pass through /estimate.response.e_value_cheap).\nWhen absent, the engine recomputes via a lightweight OLS pass on\nthe same data + adjustment set (~20% engine cost) and adds a\n``method_fallback`` warning to the response.\n\nNote: ``e_value_sensitivity_analyzer`` was moved out of /refute\nin the Plan v2 §2.3 patch — it is a sensitivity analysis, not a\nMonte-Carlo refuter, and will land in /api/v1/causal/sensitivity\n(B2b.3) instead.",
+        "operationId": "refute_endpoint_api_v1_causal_refute_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CausalRefuteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CausalRefuteResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/causal/mediation": {
+      "post": {
+        "tags": [
+          "Causal (Phase B)"
+        ],
+        "summary": "Phase B — causal mediation (Pearl/Rubin ACME/ADE decomposition with bootstrap CI, Plan v2 §2.4)",
+        "description": "Decomposes the treatment → outcome ATE into direct (ADE/NDE) and\nper-mediator indirect (ACME/NIE) effects via the Pearl/Rubin\ncounterfactual framework (D14 = γ, NOT Baron-Kenny).\n\nBranches:\n\n- ``len(mediators) == 1``: DoWhy nonparametric NDE/NIE\n  (``mediation.two_stage_regression``).\n- ``len(mediators) >= 2``: Farbmacher 2022 leave-one-out\n  LinearDML fallback (DoWhy 0.14's ``get_mediator_variables()``\n  only returns one mediator under multi-mediator DAGs, verified\n  in ``scratch_mediation_api.py`` Gap 2 probe).\n\nBootstrap CI: ``n_bootstrap`` defaults to 200 (Plan v2 §2.4's\n1000 overridden for MVP wall-clock budget; see\n``PHASE_B2b2_DESIGN.md`` §8 R1). Iterations that fail are\nskipped with a ``method_fallback`` warning; <50% completion →\n422 ``code='bootstrap_diverged'``. The actual completed count is\nechoed in ``diagnostics.n_bootstrap_used``.\n\nReserved decomposition modes (``controlled`` /\n``interventional``) → 422 ``code='decomposition_reserved'``\n(D9-style reserved-enum pattern).\n\nOperator MUST acknowledge ≥1 Pearl assumption in\n``assumptions_acknowledged`` (echoed verbatim in\n``assumptions_echo`` for audit, Mod 8).\n\nWhen the effective per-stratum sample size falls below 30, the\nresponse is forced to ``evidence_level='planned'`` and a\n``small_sample`` warning is added (mirrors B2a /estimate's Mod 5).\n\nPlan v2 §2.4 paper map: Signal-API → κ → SER pathway (V14 line\n11 + line 153, paper headline ~70% proportion mediated).",
+        "operationId": "mediation_endpoint_api_v1_causal_mediation_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CausalMediationRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CausalMediationResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/causal/sensitivity": {
+      "post": {
+        "tags": [
+          "Causal (Phase B)"
+        ],
+        "summary": "Phase B — causal sensitivity (E-value + Cinelli-Hazlett robustness value, Plan v2 §2.5)",
+        "description": "Bounds the unmeasured-confounder bias on the upstream\n/estimate result without re-running the estimation.\n\nMethods (B2b.3 MVP):\n\n- ``evalue`` (default) — VanderWeele-Ding E-value. Primary path\n  uses DoWhy's ``EValueSensitivityAnalyzer`` standalone class;\n  automatic fallback to a self-implemented Chinn-VWD E-value\n  when the DoWhy path raises (delta-style pattern mirroring\n  B2b.1 refute's reliability fallbacks). Source is recorded in\n  ``evalue_detail.source``.\n- ``linear`` — Cinelli-Hazlett 2020 robustness value + partial\n  R² from a single ``statsmodels`` OLS fit. Closed form; no\n  DoWhy / EconML dependency on this branch. When\n  ``benchmark_covariate`` is supplied, the benchmark's partial\n  R² on Y given T + the rest of the adjustment set is computed\n  from its t-statistic in the same OLS.\n- ``partial_linear`` — Reserved; 422-rejected with\n  ``code='method_reserved'`` (DoWhy's\n  ``NonParametricSensitivityAnalyzer`` requires a ``theta_s``\n  parameter that Plan v2 §2.5 does not expose).\n\nThe ``overall_robust`` Response field operationalises Plan v2\n§2.5's \"Γ-bound ≥ 1.5\" gate (paper line 101): for ``evalue``,\n``e_value_lower_ci > 1.5``; for ``linear``,\n``robustness_value_alpha > 0.10`` (Cinelli-Hazlett 2020\nconventional threshold; the two numbers live on incompatible\nscales). ``evidence_level`` is ``validated`` when robust and\n``supported`` otherwise.\n\nPlan v2 §2.5 paper map: the cheap E-value is already returned\nin-line by ``/estimate`` (Mod 9). This endpoint exists for the\nexpensive class-based / partial-R² analysis the operator might\nwant for a high-stakes claim.",
+        "operationId": "sensitivity_endpoint_api_v1_causal_sensitivity_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CausalSensitivityRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CausalSensitivityResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "CausalData": {
+        "properties": {
+          "inline": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": {
+                    "type": "number"
+                  },
+                  "type": "object"
+                },
+                "type": "array",
+                "maxItems": 200000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Inline",
+            "description": "Inline row list; each dict is one record with numeric values. Up to 200k rows. For larger datasets use batch_query_key."
+          },
+          "batch_query_key": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Batch Query Key",
+            "description": "Server-side handle to a previously-registered dataset (e.g. SHA-256 prefix of a batch DB cursor). Phase B MVP does not implement the backing store; reserved for Phase G."
+          },
+          "fingerprint": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 8,
+            "title": "Fingerprint",
+            "description": "SHA-256 of (sorted columns) + row count."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "fingerprint"
+        ],
+        "title": "CausalData",
+        "description": "Tabular data carrier.\n\nExactly one of ``inline`` or ``batch_query_key`` must be provided.\n``fingerprint`` is mandatory and lets identify-verdicts be audited\nagainst the dataset they were issued for."
+      },
+      "CausalEstimateRequest": {
+        "properties": {
+          "dag": {
+            "$ref": "#/components/schemas/DagSpec"
+          },
+          "treatment": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+            "title": "Treatment"
+          },
+          "outcome": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+            "title": "Outcome"
+          },
+          "data": {
+            "$ref": "#/components/schemas/CausalData"
+          },
+          "method_family": {
+            "type": "string",
+            "enum": [
+              "linear_regression",
+              "propensity_score",
+              "dml",
+              "causal_forest_dml",
+              "x_learner"
+            ],
+            "title": "Method Family"
+          },
+          "method_params": {
+            "$ref": "#/components/schemas/MethodParams"
+          },
+          "precomputed_estimand": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdentifiedEstimandHandle"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Echo of /identify response's estimand_handle. When provided, /estimate skips re-running identification and uses the recorded adjustment set verbatim. Removes the divergence risk where /identify says backdoor on {X,Z} and /estimate re-picks {X} only."
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 4294967295.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed"
+          },
+          "target_units": {
+            "type": "string",
+            "enum": [
+              "ate",
+              "att",
+              "atc"
+            ],
+            "title": "Target Units",
+            "default": "ate"
+          },
+          "confidence_level": {
+            "type": "number",
+            "maximum": 0.999,
+            "minimum": 0.5,
+            "title": "Confidence Level",
+            "description": "Two-sided CI level (e.g. 0.95 → 95% CI).",
+            "default": 0.95
+          },
+          "n_min_per_stratum": {
+            "type": "integer",
+            "maximum": 10000.0,
+            "minimum": 1.0,
+            "title": "N Min Per Stratum",
+            "description": "Honest power floor. If the effective per-stratum sample size falls below this number, the response is forced to evidence_level='planned' and a 'small_sample' warning is added — but no error is raised, because the paper's n=4 / arm experiment is itself a valid demonstrator.",
+            "default": 30
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "sync",
+              "async_job"
+            ],
+            "title": "Mode",
+            "default": "sync"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "dag",
+          "treatment",
+          "outcome",
+          "data",
+          "method_family"
+        ],
+        "title": "CausalEstimateRequest",
+        "description": "Estimation phase input.\n\nComputes an ATE (or ATT / ATC) for the (treatment, outcome) pair\nunder the supplied DAG. When ``precomputed_estimand`` is provided,\nthe engine skips re-running identification and uses the\npre-recorded adjustment set verbatim."
+      },
+      "CausalEstimateResponse": {
+        "properties": {
+          "point_estimate": {
+            "type": "number",
+            "title": "Point Estimate",
+            "description": "The ATE / ATT / ATC value, depending on target_units."
+          },
+          "ci_lower": {
+            "type": "number",
+            "title": "Ci Lower"
+          },
+          "ci_upper": {
+            "type": "number",
+            "title": "Ci Upper"
+          },
+          "std_error": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Std Error"
+          },
+          "method_used": {
+            "type": "string",
+            "maxLength": 64,
+            "title": "Method Used"
+          },
+          "n_used_per_stratum": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "type": "object",
+            "title": "N Used Per Stratum",
+            "description": "Effective per-stratum sample sizes. Keys are stratum labels (e.g. feedstock codes); a single 'overall' key when no stratification was applied."
+          },
+          "n_effective": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "N Effective"
+          },
+          "heterogeneity_summary": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Heterogeneity Summary",
+            "description": "Optional CATE-style summary (mean, std, min, max of the estimated treatment effect across rows). Populated only for heterogeneous-effect estimators."
+          },
+          "e_value_cheap": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "E Value Cheap",
+            "description": "Cheap E-value computed in-line during estimation (VanderWeele-Ding worst-case bias). For partial-linear sensitivity call /api/v1/causal/sensitivity."
+          },
+          "estimate_handle": {
+            "$ref": "#/components/schemas/EstimateHandle",
+            "description": "Pass this verbatim to /api/v1/causal/refute or /api/v1/causal/sensitivity to re-fit on the same data + DAG + method choice. Stateless."
+          },
+          "diagnostics": {
+            "$ref": "#/components/schemas/EstimateDiagnostics"
+          },
+          "evidence_level": {
+            "type": "string",
+            "enum": [
+              "validated",
+              "supported",
+              "planned"
+            ],
+            "title": "Evidence Level"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/CausalWarning"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Warnings"
+          },
+          "engine_version": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$",
+            "title": "Engine Version"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "point_estimate",
+          "ci_lower",
+          "ci_upper",
+          "method_used",
+          "n_used_per_stratum",
+          "n_effective",
+          "estimate_handle",
+          "diagnostics",
+          "evidence_level",
+          "engine_version"
+        ],
+        "title": "CausalEstimateResponse",
+        "description": "Estimation phase output."
+      },
+      "CausalIdentifyRequest": {
+        "properties": {
+          "dag": {
+            "$ref": "#/components/schemas/DagSpec"
+          },
+          "treatment": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+            "title": "Treatment",
+            "description": "Node name; must appear in dag.nodes."
+          },
+          "outcome": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+            "title": "Outcome",
+            "description": "Node name; must appear in dag.nodes."
+          },
+          "dataset_fingerprint": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 8,
+            "title": "Dataset Fingerprint",
+            "description": "SHA-256 prefix or stable hash of the dataset's column set + row count. Lets identify-verdicts be audited against the data they were issued for."
+          },
+          "proceed_when_unidentifiable": {
+            "type": "boolean",
+            "title": "Proceed When Unidentifiable",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "dag",
+          "treatment",
+          "outcome",
+          "dataset_fingerprint"
+        ],
+        "title": "CausalIdentifyRequest",
+        "description": "Identification phase input.\n\nOperationalises the DAG formalisation step of DoWhy: given a DAG,\na treatment, and an outcome, return the identifiable estimand\n(back-door / front-door / IV) or an honest ``unidentifiable``\nverdict."
+      },
+      "CausalIdentifyResponse": {
+        "properties": {
+          "identified": {
+            "type": "boolean",
+            "title": "Identified",
+            "description": "True when the do-calculus produced an identifiable estimand. False when the DAG is non-identifiable under the standard assumptions."
+          },
+          "strategy": {
+            "type": "string",
+            "enum": [
+              "backdoor",
+              "frontdoor",
+              "iv",
+              "mediation",
+              "trivial",
+              "unidentifiable"
+            ],
+            "title": "Strategy",
+            "description": "Which identification strategy resolved. 'trivial' means the DAG had no edges other than T->O (E[Y|T] applies). 'unidentifiable' means none of backdoor/frontdoor/iv/mediation closed."
+          },
+          "adjustment_set": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 64,
+            "title": "Adjustment Set",
+            "description": "Variables to condition on for the chosen strategy. Empty for 'trivial' or 'unidentifiable'."
+          },
+          "estimand_expression": {
+            "type": "string",
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Estimand Expression",
+            "description": "Human-readable estimand, e.g. 'E[Y|do(T)] = sum_Z E[Y|T,Z] P(Z)'."
+          },
+          "assumptions": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "no_unobserved_confounders",
+                "positivity",
+                "consistency",
+                "sutva",
+                "sequential_ignorability",
+                "no_treatment_mediator_interaction"
+              ]
+            },
+            "type": "array",
+            "title": "Assumptions",
+            "description": "Identification assumptions that the chosen strategy makes."
+          },
+          "estimand_handle": {
+            "$ref": "#/components/schemas/IdentifiedEstimandHandle",
+            "description": "Pass this verbatim as precomputed_estimand in the next /api/v1/causal/estimate request to skip a re-identification pass and avoid divergence between identify and estimate adjustment-set choices."
+          },
+          "evidence_level": {
+            "type": "string",
+            "enum": [
+              "validated",
+              "supported",
+              "planned"
+            ],
+            "title": "Evidence Level",
+            "description": "For identify alone the level is 'validated' when strategy is backdoor/frontdoor/iv with a non-empty adjustment_set, 'supported' for trivial/mediation, and 'planned' for unidentifiable. The refute endpoint (B2b) tightens this further."
+          },
+          "engine_version": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$",
+            "title": "Engine Version",
+            "description": "Causal-engine version; bumped on breaking changes."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "identified",
+          "strategy",
+          "adjustment_set",
+          "estimand_expression",
+          "estimand_handle",
+          "evidence_level",
+          "engine_version"
+        ],
+        "title": "CausalIdentifyResponse",
+        "description": "Identification phase output."
+      },
+      "CausalMediationRequest": {
+        "properties": {
+          "dag": {
+            "$ref": "#/components/schemas/DagSpec",
+            "description": "DAG that includes the treatment, the outcome, and every mediator. Each mediator name in ``mediators`` must appear in ``dag.nodes`` with ``node_kind='mediator'`` (``_check_mediators_in_dag``)."
+          },
+          "treatment": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+            "title": "Treatment",
+            "description": "Treatment node name; must be in ``dag.nodes``."
+          },
+          "outcome": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+            "title": "Outcome",
+            "description": "Outcome node name; must be in ``dag.nodes`` and differ from ``treatment``."
+          },
+          "mediators": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 8,
+            "minItems": 1,
+            "title": "Mediators",
+            "description": "One or more mediator node names. Single-mediator requests route to the DoWhy two-stage branch; multi-mediator requests route to the Farbmacher leave-one-out DML branch (PHASE_B2b2_DESIGN.md §1)."
+          },
+          "data": {
+            "$ref": "#/components/schemas/CausalData"
+          },
+          "decomposition": {
+            "type": "string",
+            "enum": [
+              "natural",
+              "controlled",
+              "interventional"
+            ],
+            "title": "Decomposition",
+            "description": "Mediation decomposition flavour. B2b.2 MVP implements ``natural`` only (Pearl NDE/NIE); ``controlled`` and ``interventional`` are reserved values rejected by the engine with HTTP 422 (D9-style).",
+            "default": "natural"
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 4294967295.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed",
+            "description": "Optional RNG seed for reproducible bootstrap."
+          },
+          "n_bootstrap": {
+            "type": "integer",
+            "maximum": 10000.0,
+            "minimum": 100.0,
+            "title": "N Bootstrap",
+            "description": "Bootstrap iterations for the decomposition CI. Default 200 (vs Plan v2 §2.4's 1000) per PHASE_B2b2_DESIGN.md §8 R1: with K=5 mediators on the Farbmacher branch, 1000 iterations imply ~5000 LinearDML fits per request, exceeding the 30 s wall-clock budget. Phase G can raise this once a normal-approximation CI fallback exists.",
+            "default": 200
+          },
+          "assumptions_acknowledged": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "sequential_ignorability",
+                "no_treatment_mediator_interaction",
+                "consistency",
+                "positivity"
+              ]
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Assumptions Acknowledged",
+            "description": "Operator MUST acknowledge at least one Pearl-style identification assumption. Empty list -> HTTP 422. The response echoes this list verbatim in ``assumptions_echo`` so the mediation result is audit-traceable (Mod 8)."
+          },
+          "precomputed_estimand": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IdentifiedEstimandHandle"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional echo of an /identify response's ``estimand_handle`` for the parent ATE; saves one identification re-run on the DoWhy single-mediator branch. Same audit-trail rationale as B2a estimate's Mod 4."
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "sync",
+              "async_job"
+            ],
+            "title": "Mode",
+            "description": "Execution mode. B2b.2 implements ``sync`` only; ``async_job`` is reserved for B2b.3 and currently rejected with HTTP 422 (``_check_async_not_implemented``).",
+            "default": "sync"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "dag",
+          "treatment",
+          "outcome",
+          "mediators",
+          "data",
+          "assumptions_acknowledged"
+        ],
+        "title": "CausalMediationRequest",
+        "description": "Mediation phase input.\n\nDecomposes the treatment -> outcome ATE into a direct (ADE/NDE)\neffect plus a per-mediator indirect (ACME/NIE) effect via the\nPearl/Rubin counterfactual framework. Returns point estimates,\nbootstrap quantile CIs, and a proportion_mediated summary\n(Plan v2 §2.4)."
+      },
+      "CausalMediationResponse": {
+        "properties": {
+          "decomposition": {
+            "$ref": "#/components/schemas/MediationDecomposition",
+            "description": "Point-estimate Pearl decomposition."
+          },
+          "ci_lower": {
+            "$ref": "#/components/schemas/MediationDecomposition",
+            "description": "Lower bootstrap-quantile band of the decomposition. Not subject to the Pearl identity or share-sum slack."
+          },
+          "ci_upper": {
+            "$ref": "#/components/schemas/MediationDecomposition",
+            "description": "Upper bootstrap-quantile band of the decomposition. Not subject to the Pearl identity or share-sum slack."
+          },
+          "assumptions_echo": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "sequential_ignorability",
+                "no_treatment_mediator_interaction",
+                "consistency",
+                "positivity"
+              ]
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Assumptions Echo",
+            "description": "Verbatim echo of the request's ``assumptions_acknowledged`` (audit trail, Mod 8)."
+          },
+          "proportion_mediated": {
+            "type": "number",
+            "maximum": 2.0,
+            "minimum": -1.0,
+            "title": "Proportion Mediated",
+            "description": "indirect_effect / total_effect on the point estimate. Bounded [-1.0, 2.0] because nonparametric mediation can produce direction-reversed (negative) or super-additive (>1) shares under treatment-mediator interaction."
+          },
+          "proportion_mediated_ci": {
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Proportion Mediated Ci",
+            "description": "Bootstrap quantile CI on proportion_mediated, paired with ``ci_lower`` / ``ci_upper`` quantile level."
+          },
+          "evidence_level": {
+            "type": "string",
+            "enum": [
+              "validated",
+              "supported",
+              "planned"
+            ],
+            "title": "Evidence Level",
+            "description": "Aggregated evidence per Plan v2 §2.4. ``planned`` when the small-sample clamp fires; ``supported`` for a normal run; ``validated`` reserved for Phase G."
+          },
+          "diagnostics": {
+            "$ref": "#/components/schemas/MediationDiagnostics"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/CausalWarning"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Warnings",
+            "description": "Engine warnings (small_sample, reserved enum, etc.)."
+          },
+          "engine_version": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$",
+            "title": "Engine Version",
+            "description": "``CAUSAL_ENGINE_VERSION`` at the time of fit."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "decomposition",
+          "ci_lower",
+          "ci_upper",
+          "assumptions_echo",
+          "proportion_mediated",
+          "proportion_mediated_ci",
+          "evidence_level",
+          "diagnostics",
+          "engine_version"
+        ],
+        "title": "CausalMediationResponse",
+        "description": "Mediation phase output.\n\nCarries the point-estimate decomposition plus bootstrap quantile\nbands, a proportion_mediated summary, the echoed assumption set\n(audit trail), an aggregated ``evidence_level`` per Plan v2 §2.4,\nand engine diagnostics.\n\nTwo Response-level validators enforce the Pearl identity and the\nmediator_share-sum slack on ``self.decomposition`` only (see module\ndocstring on validator placement)."
+      },
+      "CausalRefuteRequest": {
+        "properties": {
+          "estimate_handle": {
+            "$ref": "#/components/schemas/EstimateHandle",
+            "description": "Echo of the EstimateHandle returned by /api/v1/causal/estimate. Carries the DAG, treatment, outcome, method, data, and seed so the engine can re-fit identically without a server-side cache."
+          },
+          "refuters": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "random_common_cause",
+                "placebo_treatment_refuter",
+                "data_subset_refuter",
+                "add_unobserved_common_cause",
+                "bootstrap_refuter",
+                "non_parametric_sensitivity_analyzer"
+              ]
+            },
+            "type": "array",
+            "maxItems": 6,
+            "minItems": 1,
+            "title": "Refuters",
+            "description": "One or more refuter names to run. Duplicates rejected by validator. At least one refuter required so the response is always non-empty."
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 4294967295.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed",
+            "description": "Optional RNG seed for refuters that sample (random_common_cause, placebo_treatment_refuter, data_subset_refuter, bootstrap_refuter). When None, DoWhy's per-refuter default is used."
+          },
+          "significance_alpha": {
+            "type": "number",
+            "maximum": 0.5,
+            "minimum": 0.001,
+            "title": "Significance Alpha",
+            "description": "Two-sided alpha used by significance-test refuters. The engine derives ``passed`` as ``p_value > max(significance_alpha, 0.10)`` for the ``validated`` evidence-level rule, and ``p_value > significance_alpha`` for the ``supported`` rule (Plan v2 §2.3 patched).",
+            "default": 0.05
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "sync",
+              "async_job"
+            ],
+            "title": "Mode",
+            "description": "Sync only in B2b.1. ``async_job`` reserved for a later batch.",
+            "default": "sync"
+          },
+          "original_e_value": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Original E Value",
+            "description": "Echo of e_value_cheap from the preceding /estimate response. When present, used in the evidence_level rule verbatim. When absent, the engine recomputes via a lightweight LR estimate (one extra pass; ~20% engine cost) and adds an 'e_value_recomputed' warning. Strongly recommended to pass it through to preserve the audit trail (matches the precedent of ``precomputed_estimand`` in /estimate's request schema)."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "estimate_handle",
+          "refuters"
+        ],
+        "title": "CausalRefuteRequest",
+        "description": "Refutation phase input.\n\nRuns one or more DoWhy refuters against the estimate referenced by\n``estimate_handle`` (echoed from a previous /estimate response).\nReturns per-refuter pass/fail verdicts plus an aggregated\n``evidence_level`` per Plan v2 §2.3 (patched)."
+      },
+      "CausalRefuteResponse": {
+        "properties": {
+          "refute_results": {
+            "items": {
+              "$ref": "#/components/schemas/RefuterResult"
+            },
+            "type": "array",
+            "minItems": 1,
+            "title": "Refute Results",
+            "description": "Per-refuter verdicts in the order the engine ran them (generally the same order as request.refuters but the engine may re-order to put cheap refuters first)."
+          },
+          "overall_robust": {
+            "type": "boolean",
+            "title": "Overall Robust",
+            "description": "True when **all mandatory refuters** (random_common_cause, placebo_treatment_refuter, data_subset_refuter, add_unobserved_common_cause) passed. Optional refuters (bootstrap) do not count toward this; they appear in refute_results for transparency."
+          },
+          "evidence_level": {
+            "type": "string",
+            "enum": [
+              "validated",
+              "supported",
+              "planned"
+            ],
+            "title": "Evidence Level",
+            "description": "Aggregated evidence level. See class docstring for the three-tier rule (Plan v2 §2.3 patched)."
+          },
+          "e_value_used": {
+            "type": "number",
+            "minimum": 1.0,
+            "title": "E Value Used",
+            "description": "Echo of the e_value the rule consumed. Equal to request.original_e_value when provided; equal to the engine's recomputed e_value_cheap otherwise. In the second case the response carries an 'e_value_recomputed' warning."
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/CausalWarning"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Warnings",
+            "description": "Operator-visible warnings collected during the run (e_value fallback, threshold heuristics, etc.)."
+          },
+          "engine_version": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$",
+            "title": "Engine Version",
+            "description": "Causal-engine version; bumped on breaking changes."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "refute_results",
+          "overall_robust",
+          "evidence_level",
+          "e_value_used",
+          "engine_version"
+        ],
+        "title": "CausalRefuteResponse",
+        "description": "Refutation phase output.\n\nAggregates per-refuter results into ``overall_robust`` (boolean,\nTrue only when all *mandatory* refuters passed) and\n``evidence_level`` per Plan v2 §2.3 (patched) rule:\n\n- ``validated``: 4 mandatory pass with p>0.10 AND\n  identify.strategy == 'backdoor' AND e_value > 1.5.\n- ``supported``: >=2/4 mandatory pass with p>0.05 AND\n  identify.strategy in {'backdoor', 'frontdoor', 'mediation'}.\n- ``planned``: otherwise."
+      },
+      "CausalSensitivityRequest": {
+        "properties": {
+          "estimate_handle": {
+            "$ref": "#/components/schemas/EstimateHandle",
+            "description": "Echo of the EstimateHandle returned by /api/v1/causal/estimate. Carries the DAG, treatment, outcome, method_family, data, and seed so the engine can re-fit identically without a server-side cache."
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "evalue",
+              "linear",
+              "partial_linear"
+            ],
+            "title": "Method",
+            "description": "Sensitivity bound method. ``evalue`` is the default (VanderWeele-Ding E-value, paper Gamma-bound style, cheap). ``linear`` runs Cinelli-Hazlett 2020 robustness value + partial R^2. ``partial_linear`` is reserved and rejected at the engine layer.",
+            "default": "evalue"
+          },
+          "benchmark_covariate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64,
+                "minLength": 1,
+                "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Benchmark Covariate",
+            "description": "Optional adjustment-set covariate name to use as the benchmarking strength for the Cinelli-Hazlett RV interpretation. When supplied, must appear in ``estimate_handle.dag.nodes`` with ``node_kind='covariate'`` (enforced by ``_check_benchmark_covariate_in_dag``). Ignored on the ``evalue`` branch."
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 4294967295.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed",
+            "description": "Optional RNG seed (re-used by primary DoWhy path)."
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "sync",
+              "async_job"
+            ],
+            "title": "Mode",
+            "description": "Execution mode. B2b.3 implements ``sync`` only; ``async_job`` is reserved and currently rejected with HTTP 422 (``_check_async_not_implemented``).",
+            "default": "sync"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "estimate_handle"
+        ],
+        "title": "CausalSensitivityRequest",
+        "description": "Sensitivity phase input (Plan v2 §2.5 verbatim Request).\n\nBounds the unmeasured-confounder bias on the upstream\n``/estimate`` result without re-running the estimation. Two\nmethods are implemented; ``partial_linear`` is reserved at the\nengine layer (HTTP 422 ``code='method_reserved'``).\n\nPlan v2 §2.5 does not expose ``assumptions_acknowledged`` (unlike\nB2b.2 mediation's Mod 8) — for sensitivity, the *bounds\nthemselves* are the assumptions and a separate acknowledgement\nfield would be redundant. Surface intentionally minimal."
+      },
+      "CausalSensitivityResponse": {
+        "properties": {
+          "method": {
+            "type": "string",
+            "enum": [
+              "evalue",
+              "linear"
+            ],
+            "title": "Method",
+            "description": "Echo of the branch that ran. Distinct from ``SensitivityMethod`` because the Response only ever carries the two implemented branches."
+          },
+          "evalue_detail": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SensitivityEvalueDetail"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "E-value branch payload. Populated iff ``method='evalue'``; ``None`` otherwise (enforced by Response validator)."
+          },
+          "linear_detail": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SensitivityLinearDetail"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Cinelli-Hazlett branch payload. Populated iff ``method='linear'``; ``None`` otherwise (enforced by Response validator)."
+          },
+          "overall_robust": {
+            "type": "boolean",
+            "title": "Overall Robust",
+            "description": "Boolean rollup of the paper's 'Gamma-bound >= 1.5' falsification gate (paper line 101). For ``method='evalue'``: ``e_value_lower_ci > 1.5``. For ``method='linear'``: ``robustness_value_alpha > 0.10`` (Cinelli-Hazlett 2020 conventional threshold; E-value and RV live on different scales so the engine thresholds them separately and surfaces only this boolean)."
+          },
+          "evidence_level": {
+            "type": "string",
+            "enum": [
+              "validated",
+              "supported",
+              "planned"
+            ],
+            "title": "Evidence Level",
+            "description": "Aggregated evidence per Plan v2 §2.5. ``validated`` when ``overall_robust=True``; ``supported`` otherwise (the estimate exists but the bound is too tight); ``planned`` reserved for Phase G integration paths."
+          },
+          "diagnostics": {
+            "$ref": "#/components/schemas/SensitivityDiagnostics"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/CausalWarning"
+            },
+            "type": "array",
+            "maxItems": 20,
+            "title": "Warnings",
+            "description": "Engine warnings. The most important is ``method_fallback`` on the evalue branch — signals that the DoWhy primary path raised and the engine fell back to the self-implemented Chinn-VWD E-value."
+          },
+          "engine_version": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$",
+            "title": "Engine Version",
+            "description": "``CAUSAL_ENGINE_VERSION`` at the time of fit."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "method",
+          "overall_robust",
+          "evidence_level",
+          "diagnostics",
+          "engine_version"
+        ],
+        "title": "CausalSensitivityResponse",
+        "description": "Sensitivity phase output.\n\nCarries exactly one of ``evalue_detail`` / ``linear_detail`` keyed\nby ``method`` (Response-level validator\n``_check_detail_present``), plus an ``overall_robust`` boolean\nthat operationalises Plan v2 §2.5's paper Gamma-bound gate and an\naggregated ``evidence_level``."
+      },
+      "CausalWarning": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "enum": [
+              "small_sample",
+              "ci_wider_than_estimate",
+              "no_continuous_covariate",
+              "identification_unstable",
+              "method_fallback"
+            ],
+            "title": "Code"
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "info",
+              "warn",
+              "error"
+            ],
+            "title": "Severity",
+            "default": "warn"
+          },
+          "message": {
+            "type": "string",
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Message"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "CausalWarning",
+        "description": "Operator-visible warning record carried in response payloads."
+      },
+      "DagEdge": {
+        "properties": {
+          "src": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+            "title": "Src"
+          },
+          "dst": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+            "title": "Dst"
+          },
+          "edge_kind": {
+            "type": "string",
+            "enum": [
+              "direct",
+              "confounding"
+            ],
+            "title": "Edge Kind",
+            "default": "direct"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "src",
+          "dst"
+        ],
+        "title": "DagEdge",
+        "description": "Directed edge between two declared nodes."
+      },
+      "DagNode": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+            "title": "Name",
+            "description": "Identifier (Python-valid).",
+            "examples": [
+              "dm_in"
+            ]
+          },
+          "node_kind": {
+            "type": "string",
+            "enum": [
+              "treatment",
+              "outcome",
+              "mediator",
+              "covariate",
+              "instrument",
+              "latent"
+            ],
+            "title": "Node Kind",
+            "description": "Causal role.",
+            "examples": [
+              "treatment"
+            ]
+          },
+          "bos_field_ref": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bos Field Ref",
+            "description": "Optional dotted reference to the Phase A schema field this node represents, e.g. 'ser.SerComputeRequest.dm_in'. Used for DAG-library audit + B0.7's time-indexed DSL (e.g. '@step_at_m3_boundary')."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "name",
+          "node_kind"
+        ],
+        "title": "DagNode",
+        "description": "A single causal-graph node."
+      },
+      "DagSpec": {
+        "properties": {
+          "nodes": {
+            "items": {
+              "$ref": "#/components/schemas/DagNode"
+            },
+            "type": "array",
+            "maxItems": 64,
+            "minItems": 2,
+            "title": "Nodes"
+          },
+          "edges": {
+            "items": {
+              "$ref": "#/components/schemas/DagEdge"
+            },
+            "type": "array",
+            "maxItems": 256,
+            "minItems": 1,
+            "title": "Edges"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "hand",
+              "auto_causal_learn",
+              "hybrid",
+              "library"
+            ],
+            "title": "Source",
+            "description": "Provenance of the DAG: 'hand' (operator-authored), 'auto_causal_learn' (auto-discovery), 'hybrid' (skeleton + auto-validate), or 'library' (curated, e.g. B0.7's PHASE_B_DAGS/*.json)."
+          },
+          "provenance_meta": {
+            "additionalProperties": {
+              "type": "string",
+              "enum": [
+                "hand",
+                "auto",
+                "library"
+              ]
+            },
+            "type": "object",
+            "title": "Provenance Meta",
+            "description": "Per-edge provenance. Keys use format 'src->dst'. Lets a hybrid DAG record which edges came from the hand skeleton vs the auto-validation pass vs the curated library. Optional; recommended when source == 'hybrid'."
+          },
+          "citation": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Citation"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "nodes",
+          "edges",
+          "source"
+        ],
+        "title": "DagSpec",
+        "description": "Directed acyclic graph plus provenance metadata.\n\nValidators enforce:\n\n- every edge endpoint references a declared node,\n- no self-loops,\n- graph is acyclic; on violation the smallest cycle is reported\n  so the operator can act surgically."
+      },
+      "DmlParams": {
+        "properties": {
+          "model_y": {
+            "type": "string",
+            "enum": [
+              "linear_regression",
+              "lasso",
+              "ridge"
+            ],
+            "title": "Model Y",
+            "description": "Outcome nuisance model.",
+            "default": "linear_regression"
+          },
+          "model_t": {
+            "type": "string",
+            "enum": [
+              "linear_regression",
+              "lasso",
+              "ridge",
+              "logistic"
+            ],
+            "title": "Model T",
+            "description": "Treatment nuisance model.",
+            "default": "linear_regression"
+          },
+          "discrete_treatment": {
+            "type": "boolean",
+            "title": "Discrete Treatment",
+            "description": "True when treatment is binary/categorical.",
+            "default": false
+          },
+          "cv": {
+            "type": "integer",
+            "maximum": 20.0,
+            "minimum": 2.0,
+            "title": "Cv",
+            "description": "Cross-fitting folds.",
+            "default": 2
+          },
+          "random_state": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 4294967295.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Random State"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "DmlParams",
+        "description": "Parameters for the DML estimator (D9 = α: LinearDML MVP).\n\nMaps to ``econml.dml.LinearDML(model_y=..., model_t=..., ...)``.\nFor Phase B MVP both nuisance models default to sklearn's\n``LinearRegression``; alternatives are explicit strings, resolved\nby ``causal_estimate_engine``."
+      },
+      "EstimateDiagnostics": {
+        "properties": {
+          "method": {
+            "type": "string",
+            "maxLength": 64,
+            "title": "Method"
+          },
+          "n_samples": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "N Samples"
+          },
+          "n_treated": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "N Treated"
+          },
+          "n_control": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "N Control"
+          },
+          "n_continuous_covariates": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "N Continuous Covariates"
+          },
+          "n_discrete_covariates": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "N Discrete Covariates"
+          },
+          "cv_folds": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cv Folds"
+          },
+          "fit_time_ms": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Fit Time Ms"
+          },
+          "used_precomputed_estimand": {
+            "type": "boolean",
+            "title": "Used Precomputed Estimand",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "method",
+          "n_samples",
+          "n_continuous_covariates",
+          "n_discrete_covariates",
+          "fit_time_ms"
+        ],
+        "title": "EstimateDiagnostics",
+        "description": "Estimator diagnostics returned alongside the point estimate."
+      },
+      "EstimateHandle": {
+        "properties": {
+          "dag": {
+            "$ref": "#/components/schemas/DagSpec"
+          },
+          "treatment": {
+            "type": "string",
+            "title": "Treatment"
+          },
+          "outcome": {
+            "type": "string",
+            "title": "Outcome"
+          },
+          "method_family": {
+            "type": "string",
+            "title": "Method Family"
+          },
+          "method_params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Method Params"
+          },
+          "data": {
+            "$ref": "#/components/schemas/CausalData"
+          },
+          "seed": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 4294967295.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Seed"
+          },
+          "issued_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Issued At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "dag",
+          "treatment",
+          "outcome",
+          "method_family",
+          "data"
+        ],
+        "title": "EstimateHandle",
+        "description": "Echo of /estimate's run; sufficient for /refute and /sensitivity\nto re-fit on the same data + DAG + method choice. Stateless — no\nserver-side cache is required."
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "IdentifiedEstimandHandle": {
+        "properties": {
+          "strategy": {
+            "type": "string",
+            "enum": [
+              "backdoor",
+              "frontdoor",
+              "iv",
+              "mediation",
+              "trivial",
+              "unidentifiable"
+            ],
+            "title": "Strategy"
+          },
+          "adjustment_set": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 64,
+            "title": "Adjustment Set"
+          },
+          "estimand_expression": {
+            "type": "string",
+            "maxLength": 2048,
+            "minLength": 1,
+            "title": "Estimand Expression"
+          },
+          "dataset_fingerprint": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 8,
+            "title": "Dataset Fingerprint"
+          },
+          "issued_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Issued At"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "strategy",
+          "adjustment_set",
+          "estimand_expression",
+          "dataset_fingerprint"
+        ],
+        "title": "IdentifiedEstimandHandle",
+        "description": "Echo of /identify's verdict, sufficient for /estimate to reuse\nthe same adjustment strategy without re-running identification."
+      },
+      "MediationDecomposition": {
+        "properties": {
+          "total_effect": {
+            "type": "number",
+            "title": "Total Effect",
+            "description": "Total ATE: treatment -> outcome on this branch."
+          },
+          "direct_effect": {
+            "type": "number",
+            "title": "Direct Effect",
+            "description": "Average direct effect (ADE / NDE) — treatment -> outcome with all mediators held at their natural baseline value."
+          },
+          "indirect_effect": {
+            "type": "number",
+            "title": "Indirect Effect",
+            "description": "Average causal mediation effect (ACME / NIE) summed over all mediators. Per-mediator decomposition lives in ``mediator_share``."
+          },
+          "mediator_share": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "minProperties": 1,
+            "title": "Mediator Share",
+            "description": "Per-mediator share of ``indirect_effect``. Keys are the mediator names from the request; values sum to approximately 1.0. The Response-level validator enforces a [0.7, 1.3] slack on this sum for ``self.decomposition`` only (Mod 8): the slack is wider than Plan v1's [0.95, 1.05] because nonparametric mediation under treatment-mediator interaction routinely sums outside the tight band."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "total_effect",
+          "direct_effect",
+          "indirect_effect",
+          "mediator_share"
+        ],
+        "title": "MediationDecomposition",
+        "description": "Pearl decomposition triple plus per-mediator share.\n\nUsed three times in ``CausalMediationResponse``: once for the point\nestimate (``decomposition``) and once each for the lower / upper\nbootstrap quantile bands (``ci_lower`` / ``ci_upper``).\n\nDeliberately a pure data holder — no ``@model_validator``. The\nPearl-identity (``direct + indirect == total``) and\nmediator_share-sum invariants are validated at the Response level\non ``self.decomposition`` only (see module docstring). Bootstrap CI\nbands provably violate both invariants by construction, so\nvalidating them here would false-positive every Response\ninstantiation that carries CI bands."
+      },
+      "MediationDiagnostics": {
+        "properties": {
+          "method": {
+            "type": "string",
+            "enum": [
+              "dowhy_two_stage",
+              "farbmacher_dml_loo"
+            ],
+            "title": "Method",
+            "description": "Which engine branch produced this Response. ``dowhy_two_stage`` for single-mediator requests; ``farbmacher_dml_loo`` for multi-mediator requests."
+          },
+          "n_samples": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "N Samples",
+            "description": "Number of rows the engine actually fit on."
+          },
+          "n_bootstrap_used": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "N Bootstrap Used",
+            "description": "Number of bootstrap iterations actually completed. Equals the request's ``n_bootstrap`` on the happy path; may be lower if the engine emitted a small_sample warning."
+          },
+          "n_mediators": {
+            "type": "integer",
+            "minimum": 1.0,
+            "title": "N Mediators",
+            "description": "Number of mediators in the request."
+          },
+          "fit_time_ms": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Fit Time Ms",
+            "description": "Wall-clock fit time in milliseconds."
+          },
+          "used_precomputed_estimand": {
+            "type": "boolean",
+            "title": "Used Precomputed Estimand",
+            "description": "True iff the DoWhy branch reused the request's ``precomputed_estimand`` instead of running identify again.",
+            "default": false
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "method",
+          "n_samples",
+          "n_bootstrap_used",
+          "n_mediators",
+          "fit_time_ms"
+        ],
+        "title": "MediationDiagnostics",
+        "description": "Engine-side telemetry attached to every successful Response.\n\nMirrors B2a estimate's diagnostics pattern: lets the caller audit\nwhich branch ran, how large the bootstrap sample was, and whether\nthe precomputed_estimand short-circuit fired."
+      },
+      "MethodParams": {
+        "properties": {
+          "linear_regression": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Linear Regression"
+          },
+          "propensity_score": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Propensity Score"
+          },
+          "dml": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/DmlParams"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "title": "MethodParams",
+        "description": "Typed wrapper over per-method-family config.\n\nEach method_family populates exactly one sub-block; the others must\nbe ``None``. Everything else is 422-rejected."
+      },
+      "RefuterResult": {
+        "properties": {
+          "refuter": {
+            "type": "string",
+            "enum": [
+              "random_common_cause",
+              "placebo_treatment_refuter",
+              "data_subset_refuter",
+              "add_unobserved_common_cause",
+              "bootstrap_refuter",
+              "non_parametric_sensitivity_analyzer"
+            ],
+            "title": "Refuter"
+          },
+          "passed": {
+            "type": "boolean",
+            "title": "Passed",
+            "description": "True when the refuter's diagnostic supports the original estimate (e.g. non-significant p-value, or small relative delta for add_unobserved)."
+          },
+          "p_value": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "P Value",
+            "description": "Significance-test p-value when applicable. None for ``add_unobserved_common_cause`` (no hypothesis test)."
+          },
+          "delta_estimate": {
+            "type": "number",
+            "title": "Delta Estimate",
+            "description": "``new_effect - estimated_effect`` returned by DoWhy. Positive means the refuter's perturbation pushed the estimate higher; negative means lower. Magnitude near zero indicates robustness."
+          },
+          "diagnostic": {
+            "type": "string",
+            "maxLength": 512,
+            "minLength": 1,
+            "title": "Diagnostic",
+            "description": "Free-form refuter description. For DoWhy refuters this echoes ``refutation_type`` (e.g. 'Refute: Add a random common cause'); for add_unobserved it records the relative-delta and the threshold used."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "refuter",
+          "passed",
+          "delta_estimate",
+          "diagnostic"
+        ],
+        "title": "RefuterResult",
+        "description": "One refuter's verdict.\n\n``p_value`` is **Optional** because\n``add_unobserved_common_cause`` does not perform a significance\ntest — it returns a confounder-strength scan instead. For that\nrefuter, ``passed`` is derived from\n``abs(delta_estimate / original_estimate) < 0.1`` (see\nPHASE_B2b1_DESIGN.md §7), and ``p_value`` stays ``None``."
+      },
+      "SensitivityDiagnostics": {
+        "properties": {
+          "method": {
+            "type": "string",
+            "enum": [
+              "evalue",
+              "linear"
+            ],
+            "title": "Method",
+            "description": "Which engine branch produced this Response. Never ``partial_linear`` because that enum value is 422-rejected upstream."
+          },
+          "n_samples": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "N Samples",
+            "description": "Number of rows the engine actually fit on."
+          },
+          "fit_time_ms": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Fit Time Ms",
+            "description": "Wall-clock fit time in milliseconds."
+          },
+          "benchmark_covariate_used": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Benchmark Covariate Used",
+            "description": "Echo of ``request.benchmark_covariate`` when the linear branch actually used it (leave-one-out OLS fired). ``None`` on the evalue branch even if the request carried a benchmark covariate — sensitivity-analyzer benchmarking is not consumed on that branch."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "method",
+          "n_samples",
+          "fit_time_ms"
+        ],
+        "title": "SensitivityDiagnostics",
+        "description": "Engine-side telemetry attached to every successful Response."
+      },
+      "SensitivityEvalueDetail": {
+        "properties": {
+          "e_value_point": {
+            "type": "number",
+            "minimum": 1.0,
+            "title": "E Value Point",
+            "description": "E-value computed on the point estimate. >= 1.0 by construction (E-value = 1 indicates 'no robustness margin'); larger is more robust."
+          },
+          "e_value_lower_ci": {
+            "type": "number",
+            "minimum": 1.0,
+            "title": "E Value Lower Ci",
+            "description": "E-value computed on the lower 95% CI bound of the estimate (the bound closer to the null). The robust variant — Plan v2 §2.5's 'Gamma-bound >= 1.5' gate evaluates this field, not ``e_value_point``."
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "dowhy_class",
+              "self_chinn_vwd"
+            ],
+            "title": "Source",
+            "description": "Which implementation produced the E-value. ``dowhy_class`` = DoWhy EValueSensitivityAnalyzer primary path; ``self_chinn_vwd`` = fallback after a DoWhy-side exception (always pairs with a ``method_fallback`` warning in ``warnings``)."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "e_value_point",
+          "e_value_lower_ci",
+          "source"
+        ],
+        "title": "SensitivityEvalueDetail",
+        "description": "E-value branch payload.\n\nPopulated when ``method='evalue'`` ran. The two E-value fields\nare sourced from DoWhy's ``EValueSensitivityAnalyzer.stats`` dict\nwhen ``source='dowhy_class'`` (verified field names:\n``evalue_estimate`` and ``evalue_lower_ci``); from the\nChinn (2000) / VanderWeele-Ding 2017 approximation when\n``source='self_chinn_vwd'`` (fallback)."
+      },
+      "SensitivityLinearDetail": {
+        "properties": {
+          "robustness_value": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Robustness Value",
+            "description": "Cinelli-Hazlett robustness value RV(q=1). Fraction in [0, 1]: the minimum strength a confounder would need to both predict treatment and outcome (in partial R^2 terms) to fully explain away the observed effect. Larger is more robust; 0 = trivially explained away."
+          },
+          "robustness_value_alpha": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Robustness Value Alpha",
+            "description": "RV at significance threshold alpha=0.05 — the minimum strength to push the t-statistic below the 0.05 critical value. The ``overall_robust`` gate on this branch is ``robustness_value_alpha > 0.10`` (Cinelli-Hazlett 2020 conventional 'highly robust' threshold)."
+          },
+          "partial_r2_yd": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Partial R2 Yd",
+            "description": "Partial R^2 of the outcome on the treatment given the adjustment set. Derived from the same OLS fit: f^2 / (1 + f^2) where f^2 = t^2 / df_resid."
+          },
+          "partial_r2_yz_given_d": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Partial R2 Yz Given D",
+            "description": "Partial R^2 of the outcome on the benchmark covariate given treatment + the rest of the adjustment set. Populated only when ``request.benchmark_covariate`` was provided; otherwise ``None``. Engine computes via leave-one-out OLS where the benchmark covariate is the *omitted* control."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "robustness_value",
+          "robustness_value_alpha",
+          "partial_r2_yd"
+        ],
+        "title": "SensitivityLinearDetail",
+        "description": "Cinelli-Hazlett branch payload.\n\nPopulated when ``method='linear'`` ran. Closed-form expressions\nfrom Cinelli-Hazlett 2020 Eq. 4 applied to a single\n``statsmodels`` OLS fit of ``Y ~ T + adjustment_set``."
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}
