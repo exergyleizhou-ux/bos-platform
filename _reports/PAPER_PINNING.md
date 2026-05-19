@@ -6,12 +6,24 @@
 
 ## §1 Purpose
 
-Paper 1 ("BOS Platform for BSF Bioconversion: Pre-registered
-Pearl/Rubin Mediation Analysis", in preparation for J Clean Prod)
-is the scientific artefact backing the entire Phase B causal layer
-(five `/api/v1/causal/*` endpoints). If the paper's *method*
-section drifts from what the engines implement, the audit chain
-breaks and the platform's evidence-level claims become unsupported.
+Paper 1 ("Staged bioconversion via a protocol-first Biological
+Operating System: Decoupling waste deconstruction from nutrient
+recovery", in preparation for J Clean Prod) is the scientific
+artefact backing the entire Phase B causal layer (five
+`/api/v1/causal/*` endpoints). The paper operationalises a
+*Tenebrio molitor* (M1) → aerobic kernel (M2) → *Protaetia
+brevitarsis* (M3) relay on distillers' grains, with BSF
+(*Hermetia illucens*) referenced only as a literature comparison
+benchmark in §4.3. If the paper's *method* section drifts from
+what the engines implement, the audit chain breaks and the
+platform's evidence-level claims become unsupported.
+
+(Pin-history note: the original 2026-05-16 pin in §3 was recorded
+under an earlier working title — "BOS Platform for BSF
+Bioconversion: Pre-registered Pearl/Rubin Mediation Analysis".
+The paper file SHA-256 is the audit-binding anchor; the title
+change is documented here for chain inspectability and was
+captured in CITATION.cff commit `40cc9fa`.)
 
 The B7 mitigation is a two-part gate:
 

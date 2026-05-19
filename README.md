@@ -484,8 +484,14 @@ This project is licensed under the MIT License. See [LICENSE](LICENSE).
 ## Paper 1 Reproduction (J Clean Prod, in preparation)
 
 The five `/api/v1/causal/*` endpoints back the methodology described
-in Paper 1, "BOS Platform for BSF Bioconversion: Pre-registered
-Pearl/Rubin Mediation Analysis" (in preparation, *J Clean Prod*).
+in Paper 1, "Staged bioconversion via a protocol-first Biological
+Operating System: Decoupling waste deconstruction from nutrient
+recovery" (in preparation, *J Clean Prod*). The paper studies a
+*Tenebrio molitor* (Module 1) → aerobic kernel (Module 2) →
+*Protaetia brevitarsis* (Module 3) relay on distillers' grains,
+with the Signal-API / Control-API interface as the engineered
+inter-stage contract; BSF (*Hermetia illucens*) appears only as a
+comparison benchmark in §4.3, not as a relay executor.
 
 ### Quick verification
 
@@ -531,9 +537,12 @@ Planning, design, and completion docs at `_reports/`:
 - `PAPER_PINNING.md` — SHA pin history, re-pin procedure, and
   Plan v3 trigger conditions
 
-Software citation metadata: see `CITATION.cff`. Author / journal /
-ORCID / repository fields are placeholders until the paper is
-finalised for submission.
+Software citation metadata: see `CITATION.cff`. Author, ORCID,
+repository, license, paper title, and first-author identity are
+populated; `preferred-citation.status` remains `in-preparation`
+until the manuscript is uploaded to J Clean Prod Editorial Manager
+(bumps to `submitted` / `in-press` / `published` as the submission
+lifecycle progresses).
 
 ### Phase G known limitations (do not affect Paper 1 finding)
 
@@ -560,5 +569,6 @@ Documented in each completion doc §10 / §6, consolidated in
 
 None of these affect the headline Pearl/Rubin mediation result
 (70% proportion mediated on the synthetic fixture targeting the
-paper's BSF bench) or the Γ-bound robustness gate (1.5 threshold
-operationalised via `e_value_lower_ci`).
+paper's Signal-API → κ → SER pathway claim) or the Γ-bound
+robustness gate (1.5 threshold operationalised via
+`e_value_lower_ci`).
