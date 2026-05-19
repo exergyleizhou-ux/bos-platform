@@ -1,5 +1,13 @@
 # BOS Code v9.0
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Paper](https://img.shields.io/badge/Paper-J%20Clean%20Prod%20(in%20preparation)-green.svg)](_reports/PAPER_PINNING.md)
+[![Tag](https://img.shields.io/badge/Tag-v0.9.0--paper1-orange.svg)](https://github.com/exergyleizhou-ux/bos-platform/releases/tag/v0.9.0-paper1)
+[![Tests](https://img.shields.io/badge/Tests-53%20passing-brightgreen.svg)](backend/tests/)
+[![Phase](https://img.shields.io/badge/Phase-B%20complete-success.svg)](_reports/PHASE_B_HANDOFF_FOR_PAPER1_SUBMISSION.md)
+[![Zenodo](https://img.shields.io/badge/Zenodo-DOI%20pending-lightgrey.svg)](https://zenodo.org)
+[![OSF](https://img.shields.io/badge/OSF-V14%20preregistration%20pending-lightgrey.svg)](https://osf.io)
+
 `bos-pipeline-reconciled` is the active BOS Code codebase. This repository contains the FastAPI backend, the React + Vite frontend, Docker-based local development, and the current schema package under `backend/app/schemas/`.
 
 ## Scope
@@ -515,13 +523,37 @@ cd backend
 
 ### Paper method ↔ BOS endpoint map
 
-| Paper section | BOS endpoint | Implementation |
+Each paper-level methodological claim is bound 1:1 to a callable
+REST endpoint, a typed Pydantic schema (with frozen `SCHEMA_VERSION`),
+an engine implementation, and a contract-level test. This crosswalk
+is the runtime artefact of the Plan v2 §1 R8 audit-chain mitigation;
+the `test_paper_version_pinned.py` gate above keeps it honest by
+failing when the paper's SHA-256 changes.
+
+| # | Paper section / Eq. | Claim operationalised | BOS endpoint | Schema (version) | Engine | Test file | DAG ref |
+|---|---|---|---|---|---|---|---|
+| 1 | §2.5 Methods — Identification (Eq. 4) | Pearl identification on Signal-API → SER under declared DAG | `POST /api/v1/causal/identify` | `app.schemas.causal.identify` (B.1) | `causal_identify_engine.py` | `test_causal_identify_engine.py` (6 tests) | dag_001 / 002 / 003 |
+| 2 | §3.6 Robustness — Point estimate | LinearDML ATE estimate with 95% CI on the matched-boundary fixture | `POST /api/v1/causal/estimate` | `app.schemas.causal.estimate` (B.2) | `causal_estimate_engine.py` | `test_causal_estimate_engine.py` (7 tests) | dag_001 / 002 / 003 |
+| 3 | §3.6 Robustness — Refutation | 4 mandatory DoWhy refuters + bootstrap (evidence-level aggregation) | `POST /api/v1/causal/refute` | `app.schemas.causal.refute` (B.3) | `causal_refute_engine.py` | `test_causal_refute_engine.py` (8 tests) | dag_001 / 002 / 003 |
+| 4 | §3.6.1 + Eq. 4 — Mediation (~70% finding) | Pearl/Rubin counterfactual NDE/NIE decomposition over Signal-API → κ → SER | `POST /api/v1/causal/mediation` | `app.schemas.causal.mediation` (B.4) | `causal_mediation_engine.py` | `test_causal_mediation_engine.py` (12 tests) | dag_002 |
+| 5 | §2.5 + §3.6.1 — Sensitivity (Γ-bound ≥ 1.5) | VanderWeele-Ding E-value (primary) + self-implemented Chinn-VWD fallback + Cinelli-Hazlett RV (linear branch) | `POST /api/v1/causal/sensitivity` | `app.schemas.causal.sensitivity` (B.5) | `causal_sensitivity_engine.py` | `test_causal_sensitivity_engine.py` (10 tests) | dag_002 |
+
+Supporting infrastructure (not paper-claim-bound but required for
+the chain to be auditable end-to-end):
+
+| Artefact | Purpose | File |
 |---|---|---|
-| Methods — Identification (Eq. 1) | `POST /api/v1/causal/identify` | B2a `causal_identify_engine.py` |
-| Methods — Estimation (Eq. 2) | `POST /api/v1/causal/estimate` | B2a `causal_estimate_engine.py` |
-| Methods — Robustness / Refutation | `POST /api/v1/causal/refute` | B2b.1 `causal_refute_engine.py` |
-| Methods — Mediation (Eq. 4, 70% finding) | `POST /api/v1/causal/mediation` | B2b.2 `causal_mediation_engine.py` |
-| Methods — Sensitivity (Γ-bound ≥ 1.5) | `POST /api/v1/causal/sensitivity` | B2b.3 `causal_sensitivity_engine.py` |
+| Paper SHA-256 pin | Gate-test that the paper `.docx` matches the implementation-time hash | `tests/contract/test_paper_version_pinned.py` |
+| OpenAPI snapshot | 5-path / 28-schema drift gate (B3 mitigation) | `tests/contract/test_phase_b_openapi.py` (4 tests) |
+| Full-chain E2E | Identify → Estimate → Refute → Mediation → Sensitivity run on the matched-boundary fixture | `tests/e2e/test_phase_b_e2e.py` (5 tests) |
+| LangGraph Agent | 14-node subgraph wiring the 5 endpoints into a fan-out workflow | `backend/agent/` (51 tests) |
+| Frontend Mermaid | Browser-side rendering of the active DAG for reviewer inspection | `frontend/src/components/bos/CausalMermaidPanel.tsx` |
+| Audit-chain anchors | Plan v2 §1 / B7 / PAPER_PINNING.md §3 / CITATION.cff | `_reports/`, root |
+
+Tag `v0.9.0-paper1` (commit `92a7a0f`) is the frozen submission
+anchor: pinning the paper SHA, the OpenAPI snapshot, all engine
+versions, and the 53-test green status that was current at Paper 1
+submission to *J Clean Prod*.
 
 ### Audit chain
 
