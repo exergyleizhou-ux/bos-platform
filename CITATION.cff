@@ -15,26 +15,43 @@ keywords:
   - causal-inference
   - mediation-analysis
   - sensitivity-analysis
-  - bsf-bioconversion
-  - black-soldier-fly
+  - staged-bioconversion
+  - tenebrio-molitor
+  - protaetia-brevitarsis
+  - insect-bioconversion
+  - signal-api
+  - control-api
+  - distillers-grains
   - circular-economy
   - bos-platform
   - pearl-rubin
-  - bioconversion
   - phase-b
 abstract: >
-  BOS Platform implements the Black Soldier Fly (BSF) bioconversion
-  case study via a five-endpoint causal inference layer
+  BOS Platform is the software realisation of a protocol-first staged
+  bioconversion architecture backing Paper 1 (J Clean Prod, in
+  preparation). The paper's bench-scale relay couples Tenebrio molitor
+  (Module 1, upstream conditioning) to Protaetia brevitarsis (Module 3,
+  downstream conversion) via a declared aqueous handover layer
+  (Module 2, the aerobic kernel), with a Signal-API / Control-API
+  interface standardising the inter-stage handover; black soldier fly
+  (Hermetia illucens) is treated only as a comparison benchmark in
+  paper §4.3, not as a primary executor. The relay is exercised on
+  distillers' grains as the principal substrate and extended to
+  tobacco straw, traditional Chinese medicine (TCM) residue, and
+  primary-clarifier sludge under matched-boundary accounting. The
+  software exposes a five-endpoint causal inference layer
   (/api/v1/causal/identify, /estimate, /refute, /mediation,
-  /sensitivity) backing Paper 1 (J Clean Prod, in preparation). The
-  mediation endpoint operationalises Pearl/Rubin counterfactual
-  mediation analysis (NDE/NIE decomposition) over the
-  Signal-API -> kappa -> SER pathway. The sensitivity endpoint
-  operationalises the paper's Gamma-bound >= 1.5 falsification gate
-  via VanderWeele-Ding E-value (primary, DoWhy 0.14
+  /sensitivity) that operationalises the paper's pre-registered
+  in-silico analyses. The mediation endpoint implements Pearl/Rubin
+  counterfactual mediation (NDE/NIE decomposition) over the
+  Signal-API -> kappa -> SER pathway (~70% proportion mediated). The
+  sensitivity endpoint operationalises the paper's Gamma-bound >= 1.5
+  falsification gate via VanderWeele-Ding E-value (primary, DoWhy 0.14
   EValueSensitivityAnalyzer) with a self-implemented Chinn-VWD
   fallback and an additional Cinelli-Hazlett robustness value branch
-  for linear-bound analysis.
+  for linear-bound analysis. A LangGraph agent orchestrates the five
+  endpoints; a paper SHA-256 pin gate keeps the software-paper audit
+  chain intact.
 preferred-citation:
   type: article
   title: "Staged bioconversion via a protocol-first Biological Operating System: Decoupling waste deconstruction from nutrient recovery"
