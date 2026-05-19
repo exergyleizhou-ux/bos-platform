@@ -136,3 +136,244 @@ def test_server_creates_run_for_smalltalk(monkeypatch):
         assert body["intent"] == "smalltalk"
         assert body["report"] and "BOS Agent run summary" in body["report"]
         assert body["thread_id"]
+
+
+# ════════════════════════════════════════════════════════════════════
+# Phase B B4 v2 causal-intent routing tests
+# ════════════════════════════════════════════════════════════════════
+
+
+@pytest.mark.asyncio
+async def test_graph_causal_ate_intent_routes_to_identify():
+    """``causal.ate`` should pick up via keyword fallback. Without
+    the dag/data/treatment/outcome inputs the identify node writes
+    an error to ``state.causal.errors`` and the graph short-circuits
+    to render (Plan v2 §3.3). The intent classification is what we
+    pin here; the deeper happy path is exercised in B4 v2 Step 4
+    completion + integration tests."""
+    graph = build_graph(checkpointer=get_checkpointer())
+    final = await graph.ainvoke(
+        {
+            "messages": [HumanMessage(
+                content="what is the ATE of Signal-API on SER?",
+            )],
+            "tool_calls": [],
+        },
+        config={"configurable": {"thread_id": "t-causal-ate-1"}},
+    )
+    assert final.get("intent") == "causal.ate"
+    # Identify should have written an error (missing prereqs) and
+    # render should have produced a report mentioning the causal
+    # error block.
+    causal = final.get("causal") or {}
+    assert causal.get("errors"), (
+        f"identify_node should have written errors when prereqs "
+        f"are missing; got causal={causal}"
+    )
+    assert "report" in final
+    assert "Causal errors" in final["report"]
+
+
+@pytest.mark.asyncio
+async def test_graph_causal_mediation_intent_routes_to_identify():
+    """``causal.mediation`` should be picked up by the keyword
+    fallback (matches 'mediation' / 'proportion mediated')."""
+    graph = build_graph(checkpointer=get_checkpointer())
+    final = await graph.ainvoke(
+        {
+            "messages": [HumanMessage(
+                content="proportion mediated of kappa pathway",
+            )],
+            "tool_calls": [],
+        },
+        config={"configurable": {"thread_id": "t-causal-med-1"}},
+    )
+    assert final.get("intent") == "causal.mediation"
+
+
+@pytest.mark.asyncio
+async def test_graph_causal_sensitivity_intent_routes_to_identify():
+    """``causal.sensitivity`` — keyword 'E-value' / 'robustness'."""
+    graph = build_graph(checkpointer=get_checkpointer())
+    final = await graph.ainvoke(
+        {
+            "messages": [HumanMessage(
+                content="how robust is this to unmeasured confounders",
+            )],
+            "tool_calls": [],
+        },
+        config={"configurable": {"thread_id": "t-causal-sens-1"}},
+    )
+    assert final.get("intent") == "causal.sensitivity"
+
+
+@pytest.mark.asyncio
+async def test_graph_causal_full_intent_routes_to_identify():
+    """``causal.full`` — keyword 'explain in depth' / 'full causal'."""
+    graph = build_graph(checkpointer=get_checkpointer())
+    final = await graph.ainvoke(
+        {
+            "messages": [HumanMessage(content="explain in depth")],
+            "tool_calls": [],
+        },
+        config={"configurable": {"thread_id": "t-causal-full-1"}},
+    )
+    assert final.get("intent") == "causal.full"
+
+
+@pytest.mark.asyncio
+async def test_graph_causal_identify_happy_path(monkeypatch):
+    """Mock the 5 causal @tool invocations so the identify -> estimate
+    -> refute chain runs end-to-end without hitting the backend.
+
+    Pins the structural contract: state.causal gets populated, the
+    audit trail accumulates 2 ok records (identify + estimate +
+    refute for causal.ate), and render produces a markdown report
+    with the causal analysis block."""
+    from datetime import datetime, timezone
+
+    from agent.schemas.causal.common import (
+        CausalData, DagEdge, DagNode, DagSpec,
+        EstimateHandle, IdentifiedEstimandHandle,
+    )
+    from agent.schemas.causal.identify import CausalIdentifyResponse
+    from agent.schemas.causal.estimate import (
+        CausalEstimateResponse, EstimateDiagnostics,
+    )
+    from agent.schemas.causal.refute import (
+        CausalRefuteResponse, RefuterResult,
+    )
+    from agent.nodes import (
+        causal_identify as identify_mod,
+        causal_estimate as estimate_mod,
+        causal_refute as refute_mod,
+    )
+
+    # Build a minimal DagSpec + CausalData payload.
+    dag = DagSpec(
+        nodes=[
+            DagNode(name="T", node_kind="treatment"),
+            DagNode(name="Y", node_kind="outcome"),
+            DagNode(name="Z", node_kind="covariate"),
+        ],
+        edges=[
+            DagEdge(src="T", dst="Y"),
+            DagEdge(src="Z", dst="T", edge_kind="confounding"),
+            DagEdge(src="Z", dst="Y", edge_kind="confounding"),
+        ],
+        source="hand",
+    )
+    data = CausalData(
+        inline=[{"T": 1.0, "Y": 2.0, "Z": 0.5}],
+        fingerprint="0" * 16,
+    )
+    estimand_handle = IdentifiedEstimandHandle(
+        strategy="backdoor",
+        adjustment_set=["Z"],
+        estimand_expression="E[Y|do(T)]",
+        dataset_fingerprint=data.fingerprint,
+    )
+    estimate_handle = EstimateHandle(
+        dag=dag,
+        treatment="T",
+        outcome="Y",
+        method_family="linear_regression",
+        method_params={},
+        data=data,
+        seed=42,
+    )
+
+    class _FakeIdentifyTool:
+        async def ainvoke(self, _args):
+            return CausalIdentifyResponse(
+                identified=True, strategy="backdoor",
+                adjustment_set=["Z"],
+                estimand_expression="E[Y|do(T)]",
+                assumptions=["no_unobserved_confounders"],
+                estimand_handle=estimand_handle,
+                evidence_level="supported",
+                engine_version="0.9.0",
+            )
+
+    class _FakeEstimateTool:
+        async def ainvoke(self, _args):
+            return CausalEstimateResponse(
+                point_estimate=2.0, ci_lower=1.8, ci_upper=2.2,
+                std_error=0.1, method_used="linear_regression",
+                n_used_per_stratum={"overall": 100},
+                n_effective=100,
+                heterogeneity_summary=None,
+                e_value_cheap=3.1,
+                estimate_handle=estimate_handle,
+                diagnostics=EstimateDiagnostics(
+                    method="linear_regression", n_samples=100,
+                    n_treated=50, n_control=50,
+                    n_continuous_covariates=1,
+                    n_discrete_covariates=0,
+                    cv_folds=None, fit_time_ms=5.0,
+                    used_precomputed_estimand=True,
+                ),
+                evidence_level="supported",
+                warnings=[],
+                engine_version="0.9.0",
+            )
+
+    class _FakeRefuteTool:
+        async def ainvoke(self, _args):
+            return CausalRefuteResponse(
+                refute_results=[
+                    RefuterResult(
+                        refuter="random_common_cause",
+                        passed=True, p_value=0.5,
+                        delta_estimate=0.01,
+                        diagnostic="Refute: Add a random common cause",
+                    ),
+                ],
+                overall_robust=True,
+                evidence_level="validated",
+                e_value_used=3.1,
+                warnings=[],
+                engine_version="0.9.0",
+            )
+
+    monkeypatch.setattr(identify_mod, "causal_identify", _FakeIdentifyTool())
+    monkeypatch.setattr(estimate_mod, "causal_estimate", _FakeEstimateTool())
+    monkeypatch.setattr(refute_mod, "causal_refute", _FakeRefuteTool())
+
+    graph = build_graph(checkpointer=get_checkpointer())
+    final = await graph.ainvoke(
+        {
+            "messages": [HumanMessage(content="what is the ATE")],
+            "tool_calls": [],
+            "causal": {
+                "dag": dag,
+                "treatment": "T",
+                "outcome": "Y",
+                "data": data,
+            },
+        },
+        config={"configurable": {"thread_id": "t-causal-happy-1"}},
+    )
+
+    assert final["intent"] == "causal.ate"
+    causal = final.get("causal") or {}
+    assert not causal.get("errors"), (
+        f"happy path should not produce errors; got {causal.get('errors')}"
+    )
+    assert causal.get("identify_result") is not None
+    assert causal.get("estimate_result") is not None
+    assert causal.get("refute_result") is not None
+    # Three ok ToolCallRecords (identify + estimate + refute).
+    ok_calls = [
+        r for r in final.get("tool_calls", []) if r.get("status") == "ok"
+    ]
+    assert len(ok_calls) == 3, (
+        f"expected 3 ok tool calls (identify+estimate+refute), "
+        f"got {len(ok_calls)}: {ok_calls}"
+    )
+    # Render produced the causal block.
+    assert "Causal analysis" in final["report"]
+    assert "ATE" in final["report"]
+    # Mermaid block emitted.
+    assert "```mermaid" in final["report"]
+    assert "graph LR" in final["report"]
