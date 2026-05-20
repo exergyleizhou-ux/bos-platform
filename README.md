@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Paper](https://img.shields.io/badge/Paper-J%20Clean%20Prod%20(in%20preparation)-green.svg)](_reports/PAPER_PINNING.md)
-[![Tag](https://img.shields.io/badge/Tag-v0.9.0--paper1-orange.svg)](https://github.com/exergyleizhou-ux/bos-platform/releases/tag/v0.9.0-paper1)
+[![Tag](https://img.shields.io/badge/Tag-v0.9.1--paper--final-orange.svg)](https://github.com/exergyleizhou-ux/bos-platform/releases/tag/v0.9.1-paper-final)
 [![Tests](https://img.shields.io/badge/Tests-53%20passing-brightgreen.svg)](backend/tests/)
 [![Phase](https://img.shields.io/badge/Phase-B%20complete-success.svg)](_reports/PHASE_B_HANDOFF_FOR_PAPER1_SUBMISSION.md)
 [![Zenodo](https://img.shields.io/badge/Zenodo-DOI%20pending-lightgrey.svg)](https://zenodo.org)

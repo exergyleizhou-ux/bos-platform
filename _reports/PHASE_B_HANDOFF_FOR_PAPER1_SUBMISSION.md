@@ -22,10 +22,15 @@
 - `v0.9.0-paper1` → commit `92a7a0f` — the B7 paper-pin commit.
   Anchored at the moment Plan v2 §1 R8 mitigation went live
   (paper-SHA gate + reproduction map shipped together).
-- `v0.9.1-paper-final` (planned) — to be created by the operator
-  after applying the six manuscript patches in
-  `Paper1_BT/_drafts/JCP_FINAL_PATCH_INSTRUCTIONS.md` and the
-  paper-pin re-pin in Step 7 of that document.
+- **`v0.9.1-paper-final` → commit `23ecac1`** — the post-patch
+  final-submission anchor. Twelve manuscript patches landed
+  (Author block / Corresponding author / GitHub URL / commit hash
+  / Zenodo DOI ×2 / OSF DOI / CRediT / Acknowledgments / Funding
+  section / LCA scoping); paper SHA re-pinned from
+  `2FD4...3118D` (74,662 bytes) to `E64EAB...6D9A` (75,633 bytes,
+  +971 bytes). Audit chain entry in `PAPER_PINNING.md` §3
+  classifies as bibliographic + metadata + scoping (no method
+  drift; no Plan v3 review triggered).
 
 ### §1.2 Phase B batches shipped (10/10, including B4 v2)
 
@@ -57,15 +62,21 @@ HEAD `3faee19+` prior to this handoff commit):
 ### §1.4 Paper pin status
 
 - **Paper file**: `Paper1_BT/BOS_Paper1_JCP_FINAL.docx`
-  (74,662 bytes, 258 paragraphs, 13,793 words; text frozen since
-  2026-05-16, B7 re-pin 2026-05-18 was Word save metadata only)
+  (75,633 bytes, ~260 paragraphs after Funding-section insertion,
+  ~14,000 words after LCA append; latest in-place rewrite
+  2026-05-20 via `scratch_y1_patch.py` applying 12 final-
+  submission patches)
 - **SHA-256 pinned in test**:
-  `2fd4387028b2b160388c65ccb0f269967e05b55fdeaf6ba62b1570bcb533118d`
+  `E64EAB068BC3DD58A7DF331201F42F14C581D33178F623EE38427CB052F36D9A`
+  (uppercase form — `_sha256_of_file` calls `.upper()`)
 - **Gate test**: `backend/tests/contract/test_paper_version_pinned.py`
-- **Re-pin history + procedure**: `_reports/PAPER_PINNING.md`
-- **Status**: PASS at this handoff. Will require re-pin three
-  times during operator workflow (Step 1 / Step 2 final-DOI / Step
-  3 final-DOI).
+- **Re-pin history + procedure**: `_reports/PAPER_PINNING.md` (§3
+  contains B7 entry from 2026-05-18 + v0.9.1-paper-final entry
+  from 2026-05-20)
+- **Status**: PASS at this handoff. Two further re-pins remain
+  during operator workflow (Step 2 Zenodo DOI substitution + Step
+  3 OSF DOI substitution); after those land, the paper SHA
+  stabilises until peer review feedback arrives.
 
 ### §1.5 CITATION.cff status
 
@@ -75,6 +86,9 @@ HEAD `3faee19+` prior to this handoff commit):
   brevitarsis / Signal-API / Control-API / distillers-grains /
   Pearl-Rubin / etc.), preferred-citation title + first author +
   status (in-preparation).
+- **Version**: `0.9.1-paper-final` (bumped from `0.9.0-paper1`
+  in commit `23ecac1` to match the post-patch paper anchor).
+- **Date-released**: `2026-05-20`.
 - **Identifiers field**: Zenodo DOI placeholder ready (operator
   fills after Step 2 Zenodo mint).
 - **Lifecycle field**: `preferred-citation.status` will bump
