@@ -12,6 +12,14 @@ Pin history:
     9-byte Word metadata delta; text diff = 0 paragraphs verified
     via ``scratch_paper_diff.py`` (archived in B7 commit; see
     PAPER_PINNING.md re-pin history).
+  - v0.9.1-paper-final (2026-05-20): e64eab06...6d9a (75,633 bytes)
+    +971 bytes; 12 final-submission patches applied via
+    ``scratch_y1_patch.py`` (author block / corresponding author /
+    GitHub URL / commit hash / Zenodo DOI x2 / OSF DOI / CRediT /
+    Acknowledgments / Funding section insertion / LCA scoping
+    paragraph). PAPER_PINNING.md §3 documents the patch summary
+    and classifies the change as bibliographic/metadata (not
+    method-section drift; no Plan v3 review required).
 
 The path is hardcoded to the author machine. The gate skips on
 other machines (CI / co-author env / future Phase G mover) — the
@@ -33,8 +41,8 @@ PAPER_PATH = Path(
 )
 
 PINNED_SHA256 = (
-    "2FD4387028B2B160388C65CCB0F269967E05B55F"
-    "DEAF6BA62B1570BCB533118D"
+    "E64EAB068BC3DD58A7DF331201F42F14"
+    "C581D33178F623EE38427CB052F36D9A"
 )
 
 

@@ -42,11 +42,11 @@ Follow §5 below.
 | Field | Value |
 |---|---|
 | File path | `C:\Users\10420\Desktop\bos 0506\Paper1_BT\BOS_Paper1_JCP_FINAL.docx` |
-| SHA-256 | `2FD4387028B2B160388C65CCB0F269967E05B55FDEAF6BA62B1570BCB533118D` |
-| Size | 74,662 bytes |
-| Pinned at commit | B7 commit (see `git log` for hash; tagged `v0.9.0-paper1`) |
-| Pin date | 2026-05-18 |
-| Pin author | (sole author env; see CITATION.cff for software credit) |
+| SHA-256 | `E64EAB068BC3DD58A7DF331201F42F14C581D33178F623EE38427CB052F36D9A` |
+| Size | 75,633 bytes |
+| Pinned at commit | v0.9.1-paper-final (post-patch final-submission anchor; see `git log` for hash) |
+| Pin date | 2026-05-20 |
+| Pin author | (5-author submission; see CITATION.cff for software credit and §3 history below for patch summary) |
 
 The path is the author machine's absolute path. The test SKIPs on
 machines where the path does not resolve — this is deliberate:
@@ -66,6 +66,65 @@ environment variable.
 - Recorded in: `_reports/PHASE_B_PLAN.md` §1
 - Snapshot preserved as: `BOS_Paper1_JCP_FINAL.docx.bak` (next to
   the live file)
+
+### 2026-05-20 — v0.9.1-paper-final re-pin (Option B: pre-submission final patches)
+
+- SHA-256: `E64EAB068BC3DD58A7DF331201F42F14C581D33178F623EE38427CB052F36D9A`
+- Size: 75,633 bytes
+- Delta: +971 bytes
+- Cause: Final pre-submission patches applied via
+  `backend/scratch_y1_patch.py`. Twelve patches in total,
+  classified as **bibliographic / metadata / scoping**, not
+  method-section drift. No Plan v3 review triggered (see §4
+  trigger conditions — none of the patches modifies Pearl/Rubin
+  decomposition, Γ-bound threshold, refuter selection,
+  identification strategy, headline numbers, equation numbering,
+  or DAG topology).
+- Patches applied:
+  1. Author list — five authors with affiliation superscripts:
+     Lei Zhou(1), Qingwei Deng(2), Xuechen Li(1), Xinyi Huang(3),
+     Guangsheng Chen(1,*). (1) Zhejiang A&F University SKLSS;
+     (2) Guangdong Polytechnic Normal University; (3) Zhejiang
+     A&F University Optoelectronic Engineering.
+  2. Corresponding author: Guangsheng Chen (chengu1@zafu.edu.cn).
+  3. Software availability — GitHub URL embedded
+     (`https://github.com/exergyleizhou-ux/bos-platform`).
+  4. Software availability — commit hash filled (92a7a0f).
+  5. Software availability — Zenodo DOI placeholder
+     (`10.5281/zenodo.XXXXXXX — pending mint`).
+  6. Data availability — Zenodo DOI placeholder (matching format).
+  7. Software availability — OSF DOI placeholder
+     (`10.17605/OSF.IO/XXXXX — pending pre-registration`).
+  8. CRediT statement — five-author role assignment (Lei Zhou
+     leads software/methodology/analysis/writing; Guangsheng Chen
+     supervision/PA/W-R&E; others Conceptualization + W-R&E).
+  9. Acknowledgments — template with TODO placeholders for
+     distillery/supplier/colony source names + CTI third-party
+     lab + Zhejiang A&F University colleagues.
+  10. Funding section (new) — Option B, no funded support
+      ("This research did not receive any specific grant from
+      funding agencies...").
+  11. §4.4 LCA scoping paragraph appended — declares boundary-
+      explicit LCA as V14 pre-registered deliverable, defers
+      Scope 1+2 emissions / water / energy to companion paper.
+  12. (No method-section text changes; all patches are at the
+      front matter, back matter, or pre-existing scoping
+      paragraph.)
+- Evidence (recorded for audit):
+  - `scratch_y1_patch.py` (operator-side, not committed) applied
+    each patch with hit-count guards (each anchor confirmed
+    unique with 1 hit before replacement).
+  - Post-patch sanity verified: 9 placeholder strings absent,
+    11 replacement anchors present in final docx.
+  - Both `BOS_Paper1_JCP_FINAL.docx` (overwrites original) and
+    `.y1-patched.docx` saved with identical SHA.
+  - Backup `.pre-y1-patch` preserved at the B7 pin SHA
+    (`2FD4...3118D`) for rollback.
+- Verdict: **bibliographic + metadata + scoping**, no Plan v3
+  review needed.
+- Action: gate test re-pinned to the new SHA; CITATION.cff
+  bumped to version `0.9.1-paper-final`, date-released
+  `2026-05-20`.
 
 ### 2026-05-18 — B7 re-pin (Option A: minor metadata)
 
