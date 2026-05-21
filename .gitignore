@@ -131,9 +131,12 @@ reports/release-readiness-summary.md
 reports/bos-code-claw-*.md
 
 # Benchmark / docs scaffolding from earlier batches (not Phase B output).
-benchmark_tasks/
-docs/
-scripts/
+# Patterns anchored at repo root (leading slash) so that
+# `backend/scripts/` is NOT affected — only the root-level
+# `scripts/` scaffolding directory is ignored.
+/benchmark_tasks/
+/docs/
+/scripts/
 
 # Top-level historic notes (kept locally; not part of the Phase B
 # audit chain — `BOS_Paper1_*` paper artefacts and `BOS_*BASELINE`

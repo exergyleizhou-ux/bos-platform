@@ -291,3 +291,19 @@ the repo.
 If a Phase G clean-up wants a permanent script, the natural home
 is `backend/scripts/paper_pin_diff.py` with a CLI surface
 (`--current PATH --reference PATH --format json`).
+
+**Update 2026-05-20 (post-v0.9.1-paper-final)**: the patch-side
+of this workflow has been promoted to permanent scripts at:
+
+- `backend/scripts/paper_pin_patch_main.py` — applies the 12
+  pre-submission patches to the main manuscript (author block,
+  GitHub URL, DOIs, CRediT, Acknowledgments, Funding, LCA);
+  produces both an in-place rewrite and a side-by-side
+  `.y1-patched.docx`.
+- `backend/scripts/paper_pin_patch_si.py` — applies the SI
+  patches (commit hash, tag, Zenodo bracketed placeholder).
+
+The diff script (§7 first bullet) is still a Phase G item; the
+text-diff lives inline in the operator workflow for now (compare
+`.pre-y1-patch` backup vs current via the `python-docx`
+paragraph-text equality used during the B7 re-pin).
