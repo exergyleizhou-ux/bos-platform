@@ -20,6 +20,11 @@ Pin history:
     paragraph). PAPER_PINNING.md §3 documents the patch summary
     and classifies the change as bibliographic/metadata (not
     method-section drift; no Plan v3 review required).
+  - (2026-05-21) post-GPT-critic patches: aa251b01...cc8b
+    (75,651 bytes). +18 bytes; 3 Acknowledgments TODO
+    placeholders replaced with anonymised wording
+    (distillery / commercial supplier / colony source). No
+    method-section drift; no Plan v3 review required.
 
 The path is hardcoded to the author machine. The gate skips on
 other machines (CI / co-author env / future Phase G mover) — the
@@ -41,8 +46,8 @@ PAPER_PATH = Path(
 )
 
 PINNED_SHA256 = (
-    "E64EAB068BC3DD58A7DF331201F42F14"
-    "C581D33178F623EE38427CB052F36D9A"
+    "AA251B01904306271F25FDA234F56D07"
+    "D9F0B4284AD94C8CE88F1915A4E3CC8B"
 )
 
 

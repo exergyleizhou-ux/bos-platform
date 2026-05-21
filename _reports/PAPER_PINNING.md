@@ -42,10 +42,10 @@ Follow §5 below.
 | Field | Value |
 |---|---|
 | File path | `C:\Users\10420\Desktop\bos 0506\Paper1_BT\BOS_Paper1_JCP_FINAL.docx` |
-| SHA-256 | `E64EAB068BC3DD58A7DF331201F42F14C581D33178F623EE38427CB052F36D9A` |
-| Size | 75,633 bytes |
-| Pinned at commit | v0.9.1-paper-final (post-patch final-submission anchor; see `git log` for hash) |
-| Pin date | 2026-05-20 |
+| SHA-256 | `AA251B01904306271F25FDA234F56D07D9F0B4284AD94C8CE88F1915A4E3CC8B` |
+| Size | 75,651 bytes |
+| Pinned at commit | (post-GPT-critic-cleanup; see `git log` for hash) |
+| Pin date | 2026-05-21 |
 | Pin author | (5-author submission; see CITATION.cff for software credit and §3 history below for patch summary) |
 
 The path is the author machine's absolute path. The test SKIPs on
@@ -66,6 +66,39 @@ environment variable.
 - Recorded in: `_reports/PHASE_B_PLAN.md` §1
 - Snapshot preserved as: `BOS_Paper1_JCP_FINAL.docx.bak` (next to
   the live file)
+
+### 2026-05-21 — post-GPT-critic-cleanup re-pin (Option A: minor metadata; 3 anonymous-acknowledgment substitutions)
+
+- SHA-256: `AA251B01904306271F25FDA234F56D07D9F0B4284AD94C8CE88F1915A4E3CC8B`
+- Size: 75,651 bytes
+- Delta: +18 bytes
+- Cause: GPT critic review identified 3 `[TODO: ...]` placeholders
+  still present in the Acknowledgments paragraph (distillery name
+  / commercial supplier name / laboratory colony source). To
+  preserve manuscript readiness for submission without disclosing
+  party identities, all three were substituted with anonymised
+  wording:
+  - `[TODO: name of regional grain-spirit distillery]` →
+    "a regional grain-spirit distillery (identifier withheld for
+    confidentiality; batch-level data in Supplementary Table
+    S10A)"
+  - `[TODO: regional commercial supplier name]` →
+    "a regional commercial supplier"
+  - `[TODO: laboratory colony source]` →
+    "an institutional laboratory colony"
+- Sanity verified: 0 remaining `[TODO` occurrences in the
+  patched docx (`backend/scratch_followup_patch.py` printed
+  "remaining [TODO occurrences: 0").
+- Classification per §4: **bibliographic + metadata**, no
+  method drift. No Plan v3 review triggered.
+- Companion SI changes (no SI gate test, recorded for audit):
+  appended two short statements at the end of
+  `BOS_Paper1_JCP_SI.docx` — "Declaration of competing
+  interests: see main manuscript." and "Author contributions:
+  see main manuscript." SI SHA changed from
+  `0cb94f40...4a99af` to `6ee74d53...0ce4` (+37 bytes).
+- Audit chain: this entry + commit message + the
+  `scratch_followup_patch.py` script that produced the rewrite.
 
 ### 2026-05-20 — v0.9.1-paper-final re-pin (Option B: pre-submission final patches)
 
