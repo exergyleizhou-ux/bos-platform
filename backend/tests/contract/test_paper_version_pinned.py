@@ -25,6 +25,25 @@ Pin history:
     placeholders replaced with anonymised wording
     (distillery / commercial supplier / colony source). No
     method-section drift; no Plan v3 review required.
+  - (2026-05-21) post-OpenAI-critic polish: c7e4ce1b...741c
+    (75,569 bytes). -82 bytes; 8 patches applied via
+    `scratch_final_polish.py`:
+      P1   title shifted to JCP-friendly framing ("staged
+           insect bioconversion ... improves resource recovery
+           from distillers' grains")
+      P2.1 highlight 1 -> matched-boundary resource efficiency
+      P2.2 highlight 2 -> "SER 0.53 -> 0.68 jointly D' + G'"
+      P2.3 highlight 3 -> 3-10 kDa fraction within envelope
+      P2.4 highlight 4 -> Control-API audit criteria
+      P2.5 highlight 5 -> audit software layer links claims
+      P3.1 Software availability rewording: "audit-facing
+           implementation reference" replaces "computational
+           core encapsulated" framing
+      P4   mediation ~70% gains "pre-registered in-silico
+           estimate" tag in the abstract / front-matter sentence
+    Classification per §4: bibliographic + metadata + framing
+    (no method-section drift). Same approval class as the prior
+    pins; no Plan v3 review required.
 
 The path is hardcoded to the author machine. The gate skips on
 other machines (CI / co-author env / future Phase G mover) — the
@@ -46,8 +65,8 @@ PAPER_PATH = Path(
 )
 
 PINNED_SHA256 = (
-    "AA251B01904306271F25FDA234F56D07"
-    "D9F0B4284AD94C8CE88F1915A4E3CC8B"
+    "C7E4CE1B695401659668D256B779B60E"
+    "B30738D9963B875112EAC9406353741C"
 )
 
 

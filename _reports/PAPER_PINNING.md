@@ -42,10 +42,10 @@ Follow §5 below.
 | Field | Value |
 |---|---|
 | File path | `C:\Users\10420\Desktop\bos 0506\Paper1_BT\BOS_Paper1_JCP_FINAL.docx` |
-| SHA-256 | `AA251B01904306271F25FDA234F56D07D9F0B4284AD94C8CE88F1915A4E3CC8B` |
-| Size | 75,651 bytes |
-| Pinned at commit | (post-GPT-critic-cleanup; see `git log` for hash) |
-| Pin date | 2026-05-21 |
+| SHA-256 | `C7E4CE1B695401659668D256B779B60EB30738D9963B875112EAC9406353741C` |
+| Size | 75,569 bytes |
+| Pinned at commit | (post-OpenAI-critic polish; 8 patches: title shift + 5 highlights JCP-style + Software availability audit-facing framing + mediation in-silico tag) |
+| Pin date | 2026-05-21 (afternoon) |
 | Pin author | (5-author submission; see CITATION.cff for software credit and §3 history below for patch summary) |
 
 The path is the author machine's absolute path. The test SKIPs on
@@ -66,6 +66,50 @@ environment variable.
 - Recorded in: `_reports/PHASE_B_PLAN.md` §1
 - Snapshot preserved as: `BOS_Paper1_JCP_FINAL.docx.bak` (next to
   the live file)
+
+### 2026-05-21 (afternoon) — post-OpenAI-critic polish re-pin (Option A: framing + JCP-style highlights + audit-facing software wording)
+
+- SHA-256: `C7E4CE1B695401659668D256B779B60EB30738D9963B875112EAC9406353741C`
+- Size: 75,569 bytes
+- Delta: -82 bytes (net text shrink from new shorter highlights)
+- Cause: OpenAI engineer critic review (~3000-word JCP-style
+  repositioning brief) accepted 8/12 suggestions with our 3
+  calibrations. Applied via
+  `backend/scripts/scratch_final_polish.py`:
+
+  | Patch | Change |
+  |---|---|
+  | P1 | Title: "Staged bioconversion via a protocol-first Biological Operating System: Decoupling waste deconstruction from nutrient recovery" → "Staged insect bioconversion through a protocol-first Biological Operating System improves resource recovery from distillers' grains" (keeps BOS brand, foregrounds waste / resource / recovery for JCP editor) |
+  | P2.1 | Highlight 1: BOS architecture framing → "A staged insect-bioconversion relay improved matched-boundary resource efficiency on distillers' grains." |
+  | P2.2 | Highlight 2: Signal-API mechanism framing → "The relay increased SER from 0.53 to 0.68 by jointly improving dry-matter reduction and nitrogen recovery." |
+  | P2.3 | Highlight 3: dose-response RCS-Hill framing → "Signal-API hardening localised activity to a heat-labile, protease-sensitive 3–10 kDa fraction within a defined dose and stability envelope." |
+  | P2.4 | Highlight 4: cross-executor framing → "Control-API rules convert biological handover into auditable dose, hydraulic-load, stability, and reject criteria with PASS / PASS-with-retuning / FAIL outcomes." |
+  | P2.5 | Highlight 5: M1/M2/M3 progressive adjustment framing → "An audit software layer links cleaner-production claims to frozen code, schemas, and tests, with in-silico covariate audits pre-registered as V14 wet-lab targets." |
+  | P3.1 | Software availability: "The full computational core is encapsulated in the BOS Pipeline v9.0 archive" → "The audit-facing implementation reference for this manuscript is encapsulated in the BOS Pipeline v9.0 archive" (per OpenAI's "claim-protection layer, not platform" reframe) |
+  | P4 | Mediation 70% in abstract: gains explicit "pre-registered in-silico estimate maps" tag so reviewers cannot misread it as a wet-lab direct causal claim |
+
+  Calibrations against OpenAI's full proposal:
+  - Discussion §4 NOT contracted to 5 subsections (kept §4.1–4.7
+    structure; the three-tier evidence framing in §4.7 is load-
+    bearing methodological architecture that reviewer would
+    otherwise miss).
+  - Figures NOT reshuffled to OpenAI's recommended 6-figure plan
+    (would require regenerating figure files; reserved for
+    revision round if a reviewer raises figure layout).
+  - The README 7-column paper↔code crosswalk was NOT replaced;
+    instead the OpenAI 5-row "claim-protection" table was
+    added ABOVE it (complementary, not competing). The two
+    tables serve different reviewer personae (editor / software).
+
+- Classification per §4: **bibliographic + metadata + framing**,
+  no method-section drift, no headline-number change, no
+  equation change, no DAG topology change, no Plan v3 review.
+- SI unchanged in this re-pin (the SI patches and Declaration /
+  Author contributions additions from 2026-05-21 morning remain
+  in place; SI SHA still `6ee74d53...0ce4`).
+- Audit chain: this entry + the commit message + the
+  `scripts/scratch_final_polish.py` script that produced the
+  patches.
 
 ### 2026-05-21 — post-GPT-critic-cleanup re-pin (Option A: minor metadata; 3 anonymous-acknowledgment substitutions)
 

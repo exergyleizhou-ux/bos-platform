@@ -521,6 +521,28 @@ cd backend
   tests/unit/test_causal_sensitivity_engine.py
 ```
 
+### Claim-protection map (what each gate prevents)
+
+Higher-level view for the J Clean Prod reviewer who cares less
+about "how many tests" and more about "what scientific error
+each test prevents":
+
+| Paper claim | Evidence type | Code path | Test gate | Failure prevented |
+|---|---|---|---|---|
+| ΔΔSER > 0 (matched-boundary, §3.6) | Direct wet-lab + computation | `backend/app/engine/extended/*` (SER + relay engines) | SER unit + E2E full-chain | Wrong accounting boundary / wrong SER formula |
+| Monte Carlo SER uncertainty (§3.6) | Derived analysis | Monte Carlo propagation in causal engines | Seed-fixed (42) reproducibility | Stochastic drift between runs |
+| Control-API PASS / PASS-with-gain / FAIL | Interface contract | `app/schemas/causal/*` (Pydantic, SCHEMA_VERSION B.1-B.5) | OpenAPI drift gate (4 invariants) | Schema-paper mismatch |
+| Pearl/Rubin mediation ~70% (§3.6.1) | Pre-registered in-silico | `causal_mediation_engine.py` | 12 mediation unit tests | Simulation overclaim presented as wet-lab result |
+| Γ-bound ≥ 1.5 falsification (§2.5 + §3.6.1) | Sensitivity envelope | `causal_sensitivity_engine.py` | 10 sensitivity unit tests | Unobserved confounding gaming the headline |
+| Paper-code linkage | Audit metadata | `tests/contract/test_paper_version_pinned.py` | Paper SHA-256 gate | Manuscript-code drift (silent code change vs paper text) |
+| API surface stability | Audit metadata | `_reports/phase_b_openapi_snapshot.json` | OpenAPI drift gate | Endpoints renamed / reshaped without re-pinning manuscript |
+
+The full 7-column technical paper-method ↔ BOS-endpoint crosswalk
+is below. The claim-protection table above is the higher-level
+"what would go wrong scientifically without the software" view
+that the JCP reviewer cares about; the crosswalk below is the
+machine-level binding that the software-side reviewer cares about.
+
 ### Paper method ↔ BOS endpoint map
 
 Each paper-level methodological claim is bound 1:1 to a callable
