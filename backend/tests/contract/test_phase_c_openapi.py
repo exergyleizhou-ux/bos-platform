@@ -56,16 +56,23 @@ _REF_PATTERN = re.compile(r"#/components/schemas/([A-Za-z0-9_-]+)")
 
 
 PHASE_C_CAUSAL_PATHS = frozenset({
-    "/api/v1/causal/bayesian_estimate",   # C1
-    "/api/v1/causal/conformal_predict",   # C2
+    "/api/v1/causal/bayesian_estimate",       # C1
+    "/api/v1/causal/conformal_predict",       # C2
+    "/api/v1/causal/uncertainty_pipeline",    # C4
 })
 """The Phase C causal endpoints pinned by this gate.
 
-Currently 2 endpoints:
+Currently 3 endpoints:
 - C1 Bayesian baseline (SCHEMA_VERSION C.1)
 - C2 Conformal prediction (SCHEMA_VERSION C.2)
+- C4 Uncertainty propagation pipeline (SCHEMA_VERSION C.4)
 
-Will grow as C3-C4 ship. Each addition needs a corresponding
+C3 (Bayesian mediation) extended the existing Phase B B.4
+mediation endpoint with a new method enum value, NOT a new
+endpoint — so it is pinned by the Phase B OpenAPI snapshot,
+not this Phase C snapshot.
+
+Will grow as C5-C6 ship. Each addition needs a corresponding
 snapshot refresh under ``BOS_REFRESH_OPENAPI_SNAPSHOT=1``.
 """
 

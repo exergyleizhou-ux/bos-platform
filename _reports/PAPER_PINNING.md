@@ -67,6 +67,45 @@ environment variable.
 - Snapshot preserved as: `BOS_Paper1_JCP_FINAL.docx.bak` (next to
   the live file)
 
+### 2026-05-21 (late night) — Phase C C4 ship (Uncertainty propagation pipeline; non-paper-SHA event)
+
+- Paper SHA-256: **unchanged** at
+  `C7E4CE1B695401659668D256B779B60EB30738D9963B875112EAC9406353741C`
+- Software tag bump: `v0.10.2-phase-c-c3` → `v0.10.3-phase-c-c4`
+- CITATION.cff `version` → `0.10.3-phase-c-c4`
+- New endpoint: `POST /api/v1/causal/uncertainty_pipeline`
+  (SCHEMA_VERSION C.4)
+- New engine: `causal_uncertainty_pipeline.py` (pure numpy,
+  no PyMC dependency — composes upstream posteriors)
+- Functionality: end-to-end SER uncertainty propagation
+  operationalising Paper 1 §3.6's 2×10^5 Monte Carlo as a typed
+  REST surface. Takes posterior samples on D' and G' (typically
+  from /bayesian_estimate C1 runs) and propagates through
+  SER = sqrt(D' × G') via Monte Carlo resampling or pairwise
+  alignment. Optional mediation_proportion_posterior input
+  produces a κ-mediation credibility band alongside SER.
+- End-to-end smoke (synthetic Paper 1 baseline: D'~N(0.683,
+  0.021), G'~N(0.672, 0.019), n=1000 each, n_propagated=10000):
+  SER point 0.6763 (Paper 1: 0.68, err 0.004)
+  95% band [0.6481, 0.6764, 0.7035]
+  Evidence: validated
+  Propagation: 32.6ms (no PyMC; numpy quantile + sqrt)
+  0 invalid samples, 0 warnings
+- Test coverage: 13 unit tests in
+  `tests/unit/test_causal_uncertainty_pipeline.py`, all FAST
+  (~5-20ms each). Covers: Paper 1 baseline recovery; band
+  ordering; method dispatch (monte_carlo_resample vs
+  pairwise_alignment); alpha sensitivity; seed reproducibility;
+  mediation band; invalid-sample dropping; all-invalid error
+  path.
+- Phase C OpenAPI snapshot: 3 paths now (bayesian_estimate +
+  conformal_predict + uncertainty_pipeline), 18 schemas under
+  transitive closure (was 14 in C2 state).
+- Phase B OpenAPI snapshot: unchanged (no Phase B endpoint
+  modified).
+- Classification per §4: **software-extension event, not paper
+  drift**. No Plan v3 review trigger.
+
 ### 2026-05-21 (night) — Phase C C3 ship (Bayesian mediation branch; non-paper-SHA event, but Phase B mediation schema bump)
 
 - Paper SHA-256: **unchanged** at

@@ -89,6 +89,48 @@
           }
         }
       }
+    },
+    "/api/v1/causal/uncertainty_pipeline": {
+      "post": {
+        "tags": [
+          "Causal (Phase B)"
+        ],
+        "summary": "Phase C C4 — end-to-end SER uncertainty propagation (D' × G' → SER posterior with optional mediation chain)",
+        "description": "Propagate input posterior samples on D' and G' (and optionally\nthe κ-mediation proportion) through the SER geometric-mean\naggregator, returning a credibility band on the final SER.\n\nOperationalises Paper 1 §3.6's 2×10^5 Monte Carlo propagation\nas a typed REST surface. Phase B B2a reports SER point + CI\non a single fit; this C4 endpoint takes **posterior samples**\nand returns a **posterior** on SER.\n\nInputs (operator pre-computes):\n- ``d_prime_posterior`` (required) — typically the output of\n  /bayesian_estimate run with D' as outcome.\n- ``g_prime_posterior`` (required) — same, but G' as outcome.\n- ``mediation_proportion_posterior`` (optional) — output of\n  /mediation C3 bayesian_mediation branch's proportion\n  samples (computed internally from NIE/total posterior\n  products; operator may need to extract these from the\n  bayesian mediation engine's cache or re-derive from\n  response.decomposition / response.ci_lower / response.ci_upper).\n\nPropagation method:\n- ``monte_carlo_resample`` (default) — n=10,000 default\n  Monte Carlo draws; robust to D'/G' sample-size mismatch.\n- ``pairwise_alignment`` — requires len(D') == len(G') and\n  treats the i-th draw of each as a joint sample.\n\nEvidence-level rules (C4 §_classify_evidence):\n- ``validated`` — n_d ≥ 500 AND n_g ≥ 500 AND n_propagated\n  ≥ 5000 AND SER credibility band excludes 0\n- ``supported`` — n_d ≥ 100 AND n_g ≥ 100 AND SER band low > 0\n- ``planned`` — otherwise\n\nRuntime: ~30-100ms typically (no PyMC sampling; pure numpy\nquantile + sqrt operations).",
+        "operationId": "uncertainty_pipeline_endpoint_api_v1_causal_uncertainty_pipeline_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UncertaintyPipelineRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UncertaintyPipelineResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -816,6 +858,34 @@
         "title": "ConformalPrediction",
         "description": "Single conformal prediction for one new observation."
       },
+      "CredibilityBand": {
+        "properties": {
+          "low": {
+            "type": "number",
+            "title": "Low",
+            "description": "alpha/2 quantile."
+          },
+          "median": {
+            "type": "number",
+            "title": "Median",
+            "description": "0.5 quantile."
+          },
+          "high": {
+            "type": "number",
+            "title": "High",
+            "description": "1-alpha/2 quantile."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "low",
+          "median",
+          "high"
+        ],
+        "title": "CredibilityBand",
+        "description": "A 3-tuple credibility band: (low, median, high)."
+      },
       "DagEdge": {
         "properties": {
           "src": {
@@ -1033,6 +1103,246 @@
         ],
         "title": "IdentifiedEstimandHandle",
         "description": "Echo of /identify's verdict, sufficient for /estimate to reuse\nthe same adjustment strategy without re-running identification."
+      },
+      "UncertaintyPipelineDiagnostics": {
+        "properties": {
+          "n_d_prime_input": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "N D Prime Input"
+          },
+          "n_g_prime_input": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "N G Prime Input"
+          },
+          "n_mediation_input": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "N Mediation Input"
+          },
+          "n_propagated": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "N Propagated"
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "monte_carlo_resample",
+              "pairwise_alignment"
+            ],
+            "title": "Method"
+          },
+          "propagation_time_ms": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Propagation Time Ms"
+          },
+          "invalid_samples_dropped": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Invalid Samples Dropped",
+            "description": "Number of propagated samples dropped due to invalid SER computation (e.g. negative product before sqrt).",
+            "default": 0
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "n_d_prime_input",
+          "n_g_prime_input",
+          "n_propagated",
+          "method",
+          "propagation_time_ms"
+        ],
+        "title": "UncertaintyPipelineDiagnostics",
+        "description": "Pipeline diagnostics."
+      },
+      "UncertaintyPipelineRequest": {
+        "properties": {
+          "d_prime_posterior": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "maxItems": 200000,
+            "minItems": 10,
+            "title": "D Prime Posterior",
+            "description": "Posterior samples of D' (dry-matter reduction normalised). Typically the output of /bayesian_estimate on D' as the outcome. Length 100-10000 is typical."
+          },
+          "g_prime_posterior": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "maxItems": 200000,
+            "minItems": 10,
+            "title": "G Prime Posterior",
+            "description": "Posterior samples of G' (nitrogen recovery normalised). Same source pattern as d_prime_posterior."
+          },
+          "mediation_proportion_posterior": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array",
+                "maxItems": 200000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mediation Proportion Posterior",
+            "description": "Optional posterior samples of the κ-mediation proportion. When supplied, the response includes proportion_mediated_band. Typically the output of /mediation C3 bayesian_mediation branch's proportion_mediated samples."
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "monte_carlo_resample",
+              "pairwise_alignment"
+            ],
+            "title": "Method",
+            "description": "How to combine D' and G' samples. ``monte_carlo_resample`` (default): resample N independent draws from each posterior, combine pointwise. Robust to different sample sizes between D' and G'. ``pairwise_alignment``: requires len(D') == len(G') and treats the i-th draw of each as a joint sample. Use when D' and G' came from the same joint posterior.",
+            "default": "monte_carlo_resample"
+          },
+          "alpha": {
+            "type": "number",
+            "exclusiveMaximum": 1.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Alpha",
+            "description": "Credibility level. Output band uses [alpha/2, median, 1-alpha/2] quantiles. Default 0.05 → 95% credibility.",
+            "default": 0.05
+          },
+          "n_propagated_samples": {
+            "type": "integer",
+            "maximum": 200000.0,
+            "minimum": 100.0,
+            "title": "N Propagated Samples",
+            "description": "Number of Monte Carlo draws to generate (only used when method='monte_carlo_resample'). Default 10,000. Set higher for tighter quantile estimates at the cost of runtime.",
+            "default": 10000
+          },
+          "random_seed": {
+            "type": "integer",
+            "maximum": 4294967295.0,
+            "minimum": 0.0,
+            "title": "Random Seed",
+            "default": 42
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "d_prime_posterior",
+          "g_prime_posterior"
+        ],
+        "title": "UncertaintyPipelineRequest",
+        "description": "Phase C C4 — end-to-end SER uncertainty propagation request.\n\nOperator supplies posterior samples (typically from\n/bayesian_estimate C1) for the two SER components D' and G';\noptionally also the κ-mediation proportion (typically from\n/mediation C3 bayesian_mediation branch).\n\nThe engine propagates these through:\n    SER = sqrt(D' × G')\n    proportion_mediated = NIE / total  (when mediation samples)\nusing Monte Carlo resampling (default) or pairwise alignment."
+      },
+      "UncertaintyPipelineResponse": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "title": "Schema Version",
+            "default": "C.4"
+          },
+          "final_ser_point": {
+            "type": "number",
+            "title": "Final Ser Point",
+            "description": "Posterior mean of SER = sqrt(D' × G')."
+          },
+          "final_ser_credibility_band": {
+            "$ref": "#/components/schemas/CredibilityBand"
+          },
+          "final_ser_posterior_samples": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "title": "Final Ser Posterior Samples",
+            "description": "Full propagated SER samples. Length = n_propagated_samples."
+          },
+          "proportion_mediated_band": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CredibilityBand"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Credibility band on the κ-mediation proportion. Present only when mediation_proportion_posterior was supplied in the request."
+          },
+          "pearl_consistency_residual": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pearl Consistency Residual",
+            "description": "Computed only when mediation_proportion_posterior is supplied. |E[proportion_mediated] - estimated| from samples. NOT enforced — informational."
+          },
+          "diagnostics": {
+            "$ref": "#/components/schemas/UncertaintyPipelineDiagnostics"
+          },
+          "alpha": {
+            "type": "number",
+            "title": "Alpha"
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "monte_carlo_resample",
+              "pairwise_alignment"
+            ],
+            "title": "Method"
+          },
+          "random_seed": {
+            "type": "integer",
+            "title": "Random Seed"
+          },
+          "evidence_level": {
+            "type": "string",
+            "enum": [
+              "validated",
+              "supported",
+              "planned"
+            ],
+            "title": "Evidence Level"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/CausalWarning"
+            },
+            "type": "array",
+            "title": "Warnings"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "final_ser_point",
+          "final_ser_credibility_band",
+          "final_ser_posterior_samples",
+          "diagnostics",
+          "alpha",
+          "method",
+          "random_seed",
+          "evidence_level"
+        ],
+        "title": "UncertaintyPipelineResponse",
+        "description": "Phase C C4 — end-to-end SER posterior."
       },
       "ValidationError": {
         "properties": {

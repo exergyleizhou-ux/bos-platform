@@ -81,6 +81,14 @@ from app.engine.extended.causal_conformal_engine import (
     CausalConformalError,
     predict_conformal,
 )
+from app.schemas.causal.uncertainty import (
+    UncertaintyPipelineRequest,
+    UncertaintyPipelineResponse,
+)
+from app.engine.extended.causal_uncertainty_pipeline import (
+    CausalUncertaintyError,
+    propagate_uncertainty,
+)
 
 
 router = APIRouter()
@@ -509,6 +517,77 @@ async def conformal_predict_endpoint(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail={
                 "code": "conformal_predict_failed",
+                "message": str(exc),
+            },
+        ) from exc
+
+
+# ════════════════════════════════════════════════════════════════════
+# /uncertainty_pipeline (Phase C C4)
+# ════════════════════════════════════════════════════════════════════
+
+
+@router.post(
+    "/uncertainty_pipeline",
+    response_model=UncertaintyPipelineResponse,
+    summary=(
+        "Phase C C4 — end-to-end SER uncertainty propagation "
+        "(D' × G' → SER posterior with optional mediation chain)"
+    ),
+)
+async def uncertainty_pipeline_endpoint(
+    body: UncertaintyPipelineRequest,
+    current_user: User = Depends(require_minimum_role("operator")),
+) -> UncertaintyPipelineResponse:
+    """
+    Propagate input posterior samples on D' and G' (and optionally
+    the κ-mediation proportion) through the SER geometric-mean
+    aggregator, returning a credibility band on the final SER.
+
+    Operationalises Paper 1 §3.6's 2×10^5 Monte Carlo propagation
+    as a typed REST surface. Phase B B2a reports SER point + CI
+    on a single fit; this C4 endpoint takes **posterior samples**
+    and returns a **posterior** on SER.
+
+    Inputs (operator pre-computes):
+    - ``d_prime_posterior`` (required) — typically the output of
+      /bayesian_estimate run with D' as outcome.
+    - ``g_prime_posterior`` (required) — same, but G' as outcome.
+    - ``mediation_proportion_posterior`` (optional) — output of
+      /mediation C3 bayesian_mediation branch's proportion
+      samples (computed internally from NIE/total posterior
+      products; operator may need to extract these from the
+      bayesian mediation engine's cache or re-derive from
+      response.decomposition / response.ci_lower / response.ci_upper).
+
+    Propagation method:
+    - ``monte_carlo_resample`` (default) — n=10,000 default
+      Monte Carlo draws; robust to D'/G' sample-size mismatch.
+    - ``pairwise_alignment`` — requires len(D') == len(G') and
+      treats the i-th draw of each as a joint sample.
+
+    Evidence-level rules (C4 §_classify_evidence):
+    - ``validated`` — n_d ≥ 500 AND n_g ≥ 500 AND n_propagated
+      ≥ 5000 AND SER credibility band excludes 0
+    - ``supported`` — n_d ≥ 100 AND n_g ≥ 100 AND SER band low > 0
+    - ``planned`` — otherwise
+
+    Runtime: ~30-100ms typically (no PyMC sampling; pure numpy
+    quantile + sqrt operations).
+    """
+    try:
+        response, _warnings = propagate_uncertainty(body)
+        return response
+    except CausalUncertaintyError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"code": exc.code, "message": exc.message},
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "code": "uncertainty_pipeline_failed",
                 "message": str(exc),
             },
         ) from exc
