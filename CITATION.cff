@@ -7,7 +7,7 @@ authors:
     email: "exergyleizhou@gmail.com"
     orcid: "https://orcid.org/0009-0000-9073-1349"
 type: software
-version: "0.10.0-phase-c-c1"
+version: "0.10.1-phase-c-c2"
 date-released: "2026-05-21"
 repository-code: "https://github.com/exergyleizhou-ux/bos-platform"
 license: "MIT"

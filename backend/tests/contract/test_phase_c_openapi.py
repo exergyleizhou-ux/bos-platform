@@ -56,13 +56,17 @@ _REF_PATTERN = re.compile(r"#/components/schemas/([A-Za-z0-9_-]+)")
 
 
 PHASE_C_CAUSAL_PATHS = frozenset({
-    "/api/v1/causal/bayesian_estimate",
+    "/api/v1/causal/bayesian_estimate",   # C1
+    "/api/v1/causal/conformal_predict",   # C2
 })
 """The Phase C causal endpoints pinned by this gate.
 
-Currently 1 endpoint (C1 Bayesian baseline). Will grow as C2-C4
-ship; each addition needs a corresponding snapshot refresh under
-``BOS_REFRESH_OPENAPI_SNAPSHOT=1``.
+Currently 2 endpoints:
+- C1 Bayesian baseline (SCHEMA_VERSION C.1)
+- C2 Conformal prediction (SCHEMA_VERSION C.2)
+
+Will grow as C3-C4 ship. Each addition needs a corresponding
+snapshot refresh under ``BOS_REFRESH_OPENAPI_SNAPSHOT=1``.
 """
 
 

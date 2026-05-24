@@ -73,6 +73,14 @@ from app.engine.extended.causal_bayesian_engine import (
     CausalBayesianError,
     estimate_ate_bayesian,
 )
+from app.schemas.causal.conformal import (
+    ConformalPredictRequest,
+    ConformalPredictResponse,
+)
+from app.engine.extended.causal_conformal_engine import (
+    CausalConformalError,
+    predict_conformal,
+)
 
 
 router = APIRouter()
@@ -436,6 +444,71 @@ async def bayesian_estimate_endpoint(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail={
                 "code": "bayesian_estimate_failed",
+                "message": str(exc),
+            },
+        ) from exc
+
+
+# ════════════════════════════════════════════════════════════════════
+# /conformal_predict (Phase C C2)
+# ════════════════════════════════════════════════════════════════════
+
+
+@router.post(
+    "/conformal_predict",
+    response_model=ConformalPredictResponse,
+    summary=(
+        "Phase C C2 — distribution-free conformal prediction "
+        "intervals (split + Mondrian variants)"
+    ),
+)
+async def conformal_predict_endpoint(
+    body: ConformalPredictRequest,
+    current_user: User = Depends(require_minimum_role("operator")),
+) -> ConformalPredictResponse:
+    """
+    Compute distribution-free prediction intervals at the requested
+    (1-α) coverage level for new observations.
+
+    Method families (C2 MVP):
+
+    - ``split_conformal`` (default) — Lei & Wasserman 2014. Marginal
+      coverage guarantee P(Y ∈ Ĉ(X)) ≥ 1-α. Requires no
+      distributional assumption beyond exchangeability between
+      training and calibration splits.
+    - ``mondrian_conformal`` — Vovk et al. 2005. Stratified
+      conformal: per-stratum quantile gives conditional coverage
+      guarantee P(Y ∈ Ĉ(X) | stratum=s) ≥ 1-α within each stratum.
+      Requires ``stratum_variable`` to be set (validator-enforced).
+      Strata with fewer than ``n_min_per_stratum`` calibration
+      samples fall back to the marginal quantile with a
+      ``small_stratum`` warning.
+
+    Implementation: custom split-conformal (~50 LOC numpy) with no
+    ``mapie`` / ``crepes`` dependency. Internal OLS regressor fit on
+    training split; residuals computed on calibration split; (1-α)
+    quantile (``method='higher'`` for finite-sample correction).
+
+    Evidence level rules (C2 Design §3.4):
+    - ``validated`` — n_cal ≥ 30 AND marginal_quantile < 50% of
+      outcome std AND (for Mondrian) all strata have n ≥
+      n_min_per_stratum
+    - ``supported`` — n_cal ≥ 10
+    - ``planned`` — otherwise
+    """
+    try:
+        response, _warnings = predict_conformal(body)
+        return response
+    except CausalConformalError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"code": exc.code, "message": exc.message},
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "code": "conformal_predict_failed",
                 "message": str(exc),
             },
         ) from exc

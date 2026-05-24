@@ -67,6 +67,35 @@ environment variable.
 - Snapshot preserved as: `BOS_Paper1_JCP_FINAL.docx.bak` (next to
   the live file)
 
+### 2026-05-21 (late evening) — Phase C C2 ship (Conformal prediction engine; non-paper-SHA event)
+
+- Paper SHA-256: **unchanged** at
+  `C7E4CE1B695401659668D256B779B60EB30738D9963B875112EAC9406353741C`
+- Software tag bump: `v0.10.0-phase-c-c1` → `v0.10.1-phase-c-c2`
+- CITATION.cff `version`: `0.10.0-phase-c-c1` →
+  `0.10.1-phase-c-c2`
+- New endpoint: `POST /api/v1/causal/conformal_predict`
+  (SCHEMA_VERSION C.2)
+- Implementation: custom split-conformal + Mondrian variants
+  (~50 LOC numpy core, no mapie / crepes dependency); Lei &
+  Wasserman 2014 split-conformal + Vovk et al. 2005 Mondrian
+  stratification
+- Test coverage: 12 new unit tests in
+  `tests/unit/test_causal_conformal_engine.py` (FAST, no PyMC
+  required, ~5-10 ms per test) covering all 10 C2 design §4.3
+  behaviors + 2 bonus tests; all PASS
+- Phase C OpenAPI snapshot regenerated to include 2nd path
+  (2 paths total in `_reports/phase_c_openapi_snapshot.json`,
+  14 schemas captured under transitive ref closure)
+- End-to-end smoke (synthetic ATE=2.0, n=200): prediction diff
+  T=1 - T=0 = 1.977 (true 2.0, err 0.023); marginal quantile
+  q_(1-α) = 2.42; coverage guarantee 95%; evidence='supported'
+- Mondrian conditional coverage smoke (n=300, 2 strata with
+  noise SD 0.5 vs 2.0): per-stratum quantiles correctly larger
+  for noisier stratum
+- Classification per §4: **software-extension event, not paper
+  drift**. No Plan v3 review trigger.
+
 ### 2026-05-21 (evening) — Phase C C1 ship (Bayesian baseline engine; non-paper-SHA event, recorded for audit chain completeness)
 
 - Paper SHA-256: **unchanged** at

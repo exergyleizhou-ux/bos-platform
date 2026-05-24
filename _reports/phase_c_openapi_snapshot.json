@@ -47,6 +47,48 @@
           }
         }
       }
+    },
+    "/api/v1/causal/conformal_predict": {
+      "post": {
+        "tags": [
+          "Causal (Phase B)"
+        ],
+        "summary": "Phase C C2 — distribution-free conformal prediction intervals (split + Mondrian variants)",
+        "description": "Compute distribution-free prediction intervals at the requested\n(1-α) coverage level for new observations.\n\nMethod families (C2 MVP):\n\n- ``split_conformal`` (default) — Lei & Wasserman 2014. Marginal\n  coverage guarantee P(Y ∈ Ĉ(X)) ≥ 1-α. Requires no\n  distributional assumption beyond exchangeability between\n  training and calibration splits.\n- ``mondrian_conformal`` — Vovk et al. 2005. Stratified\n  conformal: per-stratum quantile gives conditional coverage\n  guarantee P(Y ∈ Ĉ(X) | stratum=s) ≥ 1-α within each stratum.\n  Requires ``stratum_variable`` to be set (validator-enforced).\n  Strata with fewer than ``n_min_per_stratum`` calibration\n  samples fall back to the marginal quantile with a\n  ``small_stratum`` warning.\n\nImplementation: custom split-conformal (~50 LOC numpy) with no\n``mapie`` / ``crepes`` dependency. Internal OLS regressor fit on\ntraining split; residuals computed on calibration split; (1-α)\nquantile (``method='higher'`` for finite-sample correction).\n\nEvidence level rules (C2 Design §3.4):\n- ``validated`` — n_cal ≥ 30 AND marginal_quantile < 50% of\n  outcome std AND (for Mondrian) all strata have n ≥\n  n_min_per_stratum\n- ``supported`` — n_cal ≥ 10\n- ``planned`` — otherwise",
+        "operationId": "conformal_predict_endpoint_api_v1_causal_conformal_predict_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConformalPredictRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConformalPredictResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -471,6 +513,308 @@
         ],
         "title": "CausalWarning",
         "description": "Operator-visible warning record carried in response payloads."
+      },
+      "ConformalPredictRequest": {
+        "properties": {
+          "dag": {
+            "$ref": "#/components/schemas/DagSpec"
+          },
+          "treatment": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+            "title": "Treatment"
+          },
+          "outcome": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+            "title": "Outcome"
+          },
+          "data": {
+            "$ref": "#/components/schemas/CausalData"
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "split_conformal",
+              "mondrian_conformal"
+            ],
+            "title": "Method",
+            "default": "split_conformal"
+          },
+          "alpha": {
+            "type": "number",
+            "exclusiveMaximum": 1.0,
+            "exclusiveMinimum": 0.0,
+            "title": "Alpha",
+            "description": "Significance level. (1 - alpha) is the coverage guarantee. Default 0.05 → 95% prediction interval.",
+            "default": 0.05
+          },
+          "calibration_fraction": {
+            "type": "number",
+            "exclusiveMaximum": 0.95,
+            "exclusiveMinimum": 0.05,
+            "title": "Calibration Fraction",
+            "description": "Fraction of data held out for calibration (quantile estimation). Default 0.3.",
+            "default": 0.3
+          },
+          "stratum_variable": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64,
+                "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stratum Variable",
+            "description": "Stratum column name (required when method='mondrian_conformal'). Must be a column in data.inline."
+          },
+          "new_observations": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": {
+                    "type": "number"
+                  },
+                  "type": "object"
+                },
+                "type": "array",
+                "maxItems": 10000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Observations",
+            "description": "Optional list of new x rows to predict on. Each row must contain all backdoor variables + treatment (+ stratum_variable for Mondrian). When None, only calibration stats are returned."
+          },
+          "random_seed": {
+            "type": "integer",
+            "maximum": 4294967295.0,
+            "minimum": 0.0,
+            "title": "Random Seed",
+            "default": 42
+          },
+          "n_min_per_stratum": {
+            "type": "integer",
+            "maximum": 10000.0,
+            "minimum": 1.0,
+            "title": "N Min Per Stratum",
+            "description": "Honest power floor for Mondrian. Strata with fewer than n_min cal samples fall back to the marginal quantile + a 'small_stratum' warning.",
+            "default": 10
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "sync",
+              "async_job"
+            ],
+            "title": "Mode",
+            "default": "sync"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "dag",
+          "treatment",
+          "outcome",
+          "data"
+        ],
+        "title": "ConformalPredictRequest",
+        "description": "Phase C C2 — Conformal prediction request.\n\nSplits the data into training (fit OLS regressor) + calibration\n(compute residual quantile). Predicts on optional\nnew_observations with distribution-free (1-α) intervals."
+      },
+      "ConformalPredictResponse": {
+        "properties": {
+          "schema_version": {
+            "type": "string",
+            "title": "Schema Version",
+            "default": "C.2"
+          },
+          "predictions": {
+            "items": {
+              "$ref": "#/components/schemas/ConformalPrediction"
+            },
+            "type": "array",
+            "title": "Predictions",
+            "description": "One entry per row in request.new_observations. Empty if no new_observations were supplied."
+          },
+          "coverage_guarantee": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Coverage Guarantee",
+            "description": "1 - alpha (the marginal coverage guarantee)."
+          },
+          "n_calibration_samples": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "N Calibration Samples"
+          },
+          "n_training_samples": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "N Training Samples"
+          },
+          "marginal_quantile": {
+            "type": "number",
+            "minimum": 0.0,
+            "title": "Marginal Quantile",
+            "description": "The (1-α) quantile of |residuals| on the marginal calibration set. The marginal split-conformal interval half-width."
+          },
+          "median_interval_width": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Median Interval Width",
+            "description": "Median width of the prediction intervals on the new observations. None if no new_observations supplied."
+          },
+          "strata_used": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "integer"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Strata Used",
+            "description": "Stratum value → number of calibration samples in that stratum. None for marginal split-conformal."
+          },
+          "per_stratum_quantiles": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Per Stratum Quantiles",
+            "description": "Stratum value → (1-α) quantile of |residuals| within that stratum. None for marginal split-conformal."
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "split_conformal",
+              "mondrian_conformal"
+            ],
+            "title": "Method"
+          },
+          "alpha": {
+            "type": "number",
+            "title": "Alpha"
+          },
+          "random_seed": {
+            "type": "integer",
+            "title": "Random Seed"
+          },
+          "evidence_level": {
+            "type": "string",
+            "enum": [
+              "validated",
+              "supported",
+              "planned"
+            ],
+            "title": "Evidence Level"
+          },
+          "warnings": {
+            "items": {
+              "$ref": "#/components/schemas/CausalWarning"
+            },
+            "type": "array",
+            "title": "Warnings"
+          },
+          "treatment": {
+            "type": "string",
+            "title": "Treatment"
+          },
+          "outcome": {
+            "type": "string",
+            "title": "Outcome"
+          },
+          "backdoor_variables": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Backdoor Variables"
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "coverage_guarantee",
+          "n_calibration_samples",
+          "n_training_samples",
+          "marginal_quantile",
+          "method",
+          "alpha",
+          "random_seed",
+          "evidence_level",
+          "treatment",
+          "outcome"
+        ],
+        "title": "ConformalPredictResponse",
+        "description": "Phase C C2 — conformal prediction response."
+      },
+      "ConformalPrediction": {
+        "properties": {
+          "point": {
+            "type": "number",
+            "title": "Point",
+            "description": "Point prediction μ̂(x)."
+          },
+          "interval_low": {
+            "type": "number",
+            "title": "Interval Low",
+            "description": "Lower bound of the (1-α) prediction interval."
+          },
+          "interval_high": {
+            "type": "number",
+            "title": "Interval High",
+            "description": "Upper bound."
+          },
+          "stratum": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stratum",
+            "description": "Stratum value for this observation (Mondrian only). None for marginal split-conformal."
+          }
+        },
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "point",
+          "interval_low",
+          "interval_high"
+        ],
+        "title": "ConformalPrediction",
+        "description": "Single conformal prediction for one new observation."
       },
       "DagEdge": {
         "properties": {
