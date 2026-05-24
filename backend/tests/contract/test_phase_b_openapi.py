@@ -43,17 +43,37 @@ SNAPSHOT_PATH = (
 _REF_PATTERN = re.compile(r"#/components/schemas/([A-Za-z0-9_-]+)")
 
 
+PHASE_B_CAUSAL_PATHS = frozenset({
+    "/api/v1/causal/identify",
+    "/api/v1/causal/estimate",
+    "/api/v1/causal/refute",
+    "/api/v1/causal/mediation",
+    "/api/v1/causal/sensitivity",
+})
+"""The five Phase B causal endpoints pinned by this gate.
+
+Phase C (Bayesian, Conformal, etc.) and later additions are pinned
+by their own scoped tests (e.g. ``test_phase_c_openapi.py``) and
+snapshots (``_reports/phase_c_openapi_snapshot.json``). This
+explicit-path scope replaces the earlier ``/api/v1/causal/*`` glob
+so that additive Phase C endpoints do NOT falsely trigger a
+Phase B drift alarm.
+"""
+
+
 def _compute_scoped_spec() -> dict:
     """Mirror the snapshot generator's scope rule.
 
-    Selects ``/api/v1/causal/*`` paths plus the transitive closure
-    of ``components.schemas`` they reference.
+    Selects the five named Phase B causal paths
+    (``PHASE_B_CAUSAL_PATHS``) plus the transitive closure of
+    ``components.schemas`` they reference. Explicitly does NOT
+    include Phase C endpoints.
     """
     spec = app.openapi()
     causal_paths = {
         path: methods
         for path, methods in spec["paths"].items()
-        if path.startswith("/api/v1/causal/")
+        if path in PHASE_B_CAUSAL_PATHS
     }
     all_schemas = spec.get("components", {}).get("schemas", {})
 

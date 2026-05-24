@@ -65,6 +65,14 @@ from app.engine.extended.causal_sensitivity_engine import (
     CausalSensitivityError,
     run_sensitivity,
 )
+from app.schemas.causal.bayesian import (
+    BayesianEstimateRequest,
+    BayesianEstimateResponse,
+)
+from app.engine.extended.causal_bayesian_engine import (
+    CausalBayesianError,
+    estimate_ate_bayesian,
+)
 
 
 router = APIRouter()
@@ -359,4 +367,75 @@ async def sensitivity_endpoint(
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail={"code": "sensitivity_failed", "message": str(exc)},
+        ) from exc
+
+
+# ════════════════════════════════════════════════════════════════════
+# /bayesian_estimate (Phase C C1)
+# ════════════════════════════════════════════════════════════════════
+
+
+@router.post(
+    "/bayesian_estimate",
+    response_model=BayesianEstimateResponse,
+    summary=(
+        "Phase C C1 — Bayesian backdoor ATE estimation "
+        "(PyMC posterior + 95% HDI)"
+    ),
+)
+async def bayesian_estimate_endpoint(
+    body: BayesianEstimateRequest,
+    current_user: User = Depends(require_minimum_role("operator")),
+) -> BayesianEstimateResponse:
+    """
+    Compute a Bayesian posterior over the ATE for the (treatment,
+    outcome) pair on the supplied data via PyMC NUTS sampling.
+
+    Complements Phase B B2a's frequentist LinearDML by providing
+    full posterior characterisation (HDI + samples) instead of point
+    + frequentist CI. The two approaches are reported side-by-side
+    in Paper 3 (methodology paper) per the "dual Bayesian–frequentist
+    reporting" framing.
+
+    Method families (C1 MVP):
+
+    - ``bayesian_backdoor`` (default) — Linear regression with
+      weakly informative priors (Gelman et al. 2008 style) over the
+      treatment coefficient. Returns posterior samples + 95% HDI.
+    - ``bayesian_dml`` — Reserved for Phase C C2+; 422-rejected with
+      ``code='method_reserved'`` (mirrors B2a's
+      ``method_family_reserved`` pattern).
+
+    Sync-mode requests with inline row count > 10,000 are
+    422-rejected at validator time; use ``mode='async_job'`` for
+    larger datasets.
+
+    Evidence level rules:
+
+    - ``validated`` — r_hat < 1.01 AND ESS > 400 AND n_divergent == 0
+      AND HDI excludes zero AND backdoor adjustment set non-empty
+    - ``supported`` — r_hat < 1.05 AND ESS > 100 AND HDI excludes zero
+    - ``planned`` — otherwise (e.g. small_sample, no backdoor, or
+      poor sampler diagnostics)
+
+    Sampling timing: typically 10-30s with a C++ compiler available
+    (pytensor compiled mode); 30-90s on pytensor's Python fallback
+    when no compiler is present. The lazy PyMC import means
+    importing this router does not pay the ~5-10s PyMC import cost.
+    """
+    try:
+        response, _warnings = estimate_ate_bayesian(body)
+        return response
+    except CausalBayesianError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={"code": exc.code, "message": exc.message},
+        ) from exc
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail={
+                "code": "bayesian_estimate_failed",
+                "message": str(exc),
+            },
         ) from exc

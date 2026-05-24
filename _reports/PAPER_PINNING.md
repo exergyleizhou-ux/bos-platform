@@ -67,6 +67,38 @@ environment variable.
 - Snapshot preserved as: `BOS_Paper1_JCP_FINAL.docx.bak` (next to
   the live file)
 
+### 2026-05-21 (evening) — Phase C C1 ship (Bayesian baseline engine; non-paper-SHA event, recorded for audit chain completeness)
+
+- Paper SHA-256: **unchanged** at
+  `C7E4CE1B695401659668D256B779B60EB30738D9963B875112EAC9406353741C`
+  (Phase C is software extension, not manuscript modification)
+- Software tag bump: `v0.9.1-paper-final` →
+  `v0.10.0-phase-c-c1`
+- CITATION.cff `version` bumped from `0.9.1-paper-final` to
+  `0.10.0-phase-c-c1`
+- Phase C Batch C1 first wave landed (commit 326d38e: schema +
+  engine + deps) plus second wave (this commit: router endpoint
+  + 11 unit tests + OpenAPI snapshot + drift gate + Phase B
+  scope tightening)
+- New endpoint: `POST /api/v1/causal/bayesian_estimate`
+  (SCHEMA_VERSION C.1)
+- New components in `_reports/phase_c_openapi_snapshot.json`:
+  1 path + 11 schemas (BayesianEstimateRequest /
+  BayesianEstimateResponse / BayesianDiagnostics + transitively-
+  referenced CausalData / DagSpec / etc.)
+- Phase B `test_phase_b_openapi.py` scope rule tightened from
+  `/api/v1/causal/*` glob to an explicit 5-path frozenset
+  (`PHASE_B_CAUSAL_PATHS`). This prevents future Phase C / D
+  endpoint additions from falsely triggering Phase B drift
+  alarms.
+- End-to-end smoke test (synthetic ATE=2.0, n=100): posterior
+  mean 1.847, 95% HDI [1.551, 2.116], r_hat 1.0000, ESS 803,
+  n_divergent 0, evidence_level='validated'.
+- Classification per §4: **software-extension event, not paper
+  drift**. No Plan v3 review trigger; Phase C is itself the
+  approved extension. Paper-SHA gate test verified PASS at the
+  unchanged anchor.
+
 ### 2026-05-21 (afternoon) — post-OpenAI-critic polish re-pin (Option A: framing + JCP-style highlights + audit-facing software wording)
 
 - SHA-256: `C7E4CE1B695401659668D256B779B60EB30738D9963B875112EAC9406353741C`
