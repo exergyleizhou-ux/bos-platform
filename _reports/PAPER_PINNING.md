@@ -67,6 +67,43 @@ environment variable.
 - Snapshot preserved as: `BOS_Paper1_JCP_FINAL.docx.bak` (next to
   the live file)
 
+### 2026-05-24 — Phase C C5 ship (Validation suite — synthetic-data calibration benchmarks)
+
+- Paper SHA-256: **unchanged** at
+  `C7E4CE1B695401659668D256B779B60EB30738D9963B875112EAC9406353741C`
+- Software tag bump: `v0.10.3-phase-c-c4` → `v0.10.4-phase-c-c5`
+- CITATION.cff `version` → `0.10.4-phase-c-c5`, date-released
+  `2026-05-24` (calibration run date)
+- New files:
+  - `backend/scripts/run_phase_c_calibration.py` — operator CLI
+    that runs C1/C2/C4 calibration benchmarks at configurable
+    n_trials and emits a markdown report at
+    `_reports/PHASE_C_CALIBRATION_RUN_<date>.md`. Default
+    n_trials=10; supports `--skip-bayesian` for fast iteration.
+    Pure-numpy operations (C2 + C4) run in seconds; C1 PyMC
+    runs at small trial count to keep wall-clock manageable.
+  - `backend/tests/benchmarks/test_phase_c_calibration.py` —
+    pytest-based benchmark tests at compact N (~30 trials for
+    C2 + C4, 5 trials for C1). Marked `@pytest.mark.slow`;
+    fast CI loops can skip via `-m "not slow"`.
+  - `backend/tests/benchmarks/__init__.py` — pytest collection
+    marker.
+- New artifact:
+  `_reports/PHASE_C_CALIBRATION_RUN_2026-05-24.md` — first
+  calibration run output (C2 + C4 only; n_trials=20).
+  - C2 Conformal: empirical coverage 0.954 (target 0.950) PASS
+  - C4 Uncertainty pipeline: max point error 0.0028 PASS
+- Test verification:
+  - 2 fast benchmark tests PASS (C2 + C4)
+  - C1 slow benchmark not run in this commit (would add ~5 min);
+    runs cleanly via `pytest -m slow` or via the CLI
+- No new endpoint added; no schema bump.
+- Phase B + Phase C OpenAPI snapshots unchanged.
+- Classification per §4: **software-extension event, not paper
+  drift**. No Plan v3 review trigger. This batch builds
+  CALIBRATION infrastructure on top of existing endpoints
+  without modifying their public contracts.
+
 ### 2026-05-21 (late night) — Phase C C4 ship (Uncertainty propagation pipeline; non-paper-SHA event)
 
 - Paper SHA-256: **unchanged** at
