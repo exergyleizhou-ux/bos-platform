@@ -347,6 +347,198 @@ def _fit_linear_dml_ate(
     return ate
 
 
+# Module-level cache for Bayesian posterior samples (used to
+# short-circuit the bootstrap when method='bayesian_mediation').
+# Keyed by (id(request), id(df)). Cleared per call; not threadsafe.
+_BAYESIAN_POSTERIOR_CACHE: Dict[int, Dict[str, np.ndarray]] = {}
+
+
+def _run_bayesian_mediation(
+    request: CausalMediationRequest,
+    df: pd.DataFrame,
+) -> Tuple[
+    MediationDecomposition, MediationDiagnostics, str, List[CausalWarning]
+]:
+    """Phase C C3 — Bayesian two-stage mediation via PyMC.
+
+    Model (single mediator M, treatment T, outcome Y, covariates X):
+
+        Mediator equation:
+            M = alpha_T * T + alpha_X . X + eps_M,  eps_M ~ Normal(0, sigma_M)
+
+        Outcome equation:
+            Y = beta_T * T + beta_M * M + beta_X . X + eps_Y,
+            eps_Y ~ Normal(0, sigma_Y)
+
+    Pearl decomposition (posterior-sampled):
+        NDE (natural direct effect):    posterior(beta_T)
+        NIE (natural indirect effect):  posterior(alpha_T * beta_M)
+        Total effect:                   posterior(beta_T + alpha_T * beta_M)
+        proportion mediated:            posterior(NIE / total)
+
+    The Bayesian branch is restricted to **single mediator** in this
+    MVP. Multi-mediator extension is a future Plan v3 amendment
+    (would require joint PyMC model with multiple mediator
+    equations).
+
+    Returns ``(decomposition_point, diagnostics, strategy_str,
+    warnings_list)``. Bootstrap CI is the outer caller's
+    responsibility; the Bayesian posterior already provides
+    uncertainty, but the response schema expects bootstrap CI bands,
+    so the outer caller will re-sample the posterior in
+    ``_bootstrap_ci``. (A future refinement: short-circuit the
+    bootstrap when method='bayesian_mediation' and use posterior
+    HDI directly.)
+    """
+    # Lazy PyMC import (same pattern as C1)
+    import pymc as pm
+    import arviz as az
+
+    warnings_list: List[CausalWarning] = []
+
+    # Restrict to single mediator in this MVP
+    if len(request.mediators) != 1:
+        raise CausalMediationError(
+            code="bayesian_mediation_single_only",
+            message=(
+                f"method='bayesian_mediation' requires exactly 1 "
+                f"mediator in Phase C C3 MVP; got "
+                f"{len(request.mediators)}. Multi-mediator Bayesian "
+                f"mediation is a Plan v3 amendment item; use "
+                f"farbmacher_dml_loo for multi-mediator analysis."
+            ),
+        )
+
+    mediator = request.mediators[0]
+    t0 = time.perf_counter()
+
+    # Extract arrays
+    T = df[request.treatment].to_numpy(dtype=float)
+    M = df[mediator].to_numpy(dtype=float)
+    Y = df[request.outcome].to_numpy(dtype=float)
+
+    # Covariates: DAG nodes minus {T, M, Y}
+    excluded = {request.treatment, request.outcome, mediator}
+    covariate_names = [
+        n.name for n in request.dag.nodes if n.name not in excluded
+    ]
+    # Keep only columns that exist in df
+    covariate_names = [c for c in covariate_names if c in df.columns]
+    if covariate_names:
+        X = df[covariate_names].to_numpy(dtype=float)
+    else:
+        X = np.zeros((len(df), 0), dtype=float)
+
+    # PyMC two-stage model
+    with pm.Model():
+        # Mediator equation coefficients
+        alpha_T = pm.Normal("alpha_T", mu=0.0, sigma=2.0)
+        if X.shape[1] > 0:
+            alpha_X = pm.Normal(
+                "alpha_X", mu=0.0, sigma=2.0, shape=X.shape[1]
+            )
+        sigma_M = pm.HalfNormal("sigma_M", sigma=1.0)
+
+        # Outcome equation coefficients
+        beta_T = pm.Normal("beta_T", mu=0.0, sigma=2.0)
+        beta_M = pm.Normal("beta_M", mu=0.0, sigma=2.0)
+        if X.shape[1] > 0:
+            beta_X = pm.Normal(
+                "beta_X", mu=0.0, sigma=2.0, shape=X.shape[1]
+            )
+        sigma_Y = pm.HalfNormal("sigma_Y", sigma=1.0)
+
+        # Mediator likelihood
+        mu_M = alpha_T * T
+        if X.shape[1] > 0:
+            mu_M = mu_M + pm.math.dot(X, alpha_X)
+        pm.Normal("M_obs", mu=mu_M, sigma=sigma_M, observed=M)
+
+        # Outcome likelihood
+        mu_Y = beta_T * T + beta_M * M
+        if X.shape[1] > 0:
+            mu_Y = mu_Y + pm.math.dot(X, beta_X)
+        pm.Normal("Y_obs", mu=mu_Y, sigma=sigma_Y, observed=Y)
+
+        # Sample
+        with warnings_module.catch_warnings():
+            warnings_module.simplefilter("ignore")
+            idata = pm.sample(
+                draws=request.n_bootstrap if request.n_bootstrap >= 500
+                else 500,
+                tune=500,
+                chains=2,
+                target_accept=0.95,
+                random_seed=request.seed or 42,
+                progressbar=False,
+                return_inferencedata=True,
+                compute_convergence_checks=False,
+            )
+
+    # Posterior samples
+    alpha_T_samples = idata.posterior["alpha_T"].values.flatten()
+    beta_T_samples = idata.posterior["beta_T"].values.flatten()
+    beta_M_samples = idata.posterior["beta_M"].values.flatten()
+
+    # Pearl decomposition (posterior samples)
+    NDE_samples = beta_T_samples
+    NIE_samples = alpha_T_samples * beta_M_samples
+    total_samples = NDE_samples + NIE_samples
+
+    # Cache posterior samples so run_mediation() can short-circuit
+    # the bootstrap when method='bayesian_mediation' (each PyMC
+    # call takes 30-90s without C++ compiler; 200 bootstrap calls
+    # would take 1+ hours per request).
+    _BAYESIAN_POSTERIOR_CACHE[id(request)] = {
+        "NDE": NDE_samples,
+        "NIE": NIE_samples,
+        "total": total_samples,
+    }
+
+    # Point estimates (posterior means)
+    total_effect = float(np.mean(total_samples))
+    direct_effect = float(np.mean(NDE_samples))
+    indirect_effect = float(np.mean(NIE_samples))
+
+    fit_ms = (time.perf_counter() - t0) * 1000.0
+
+    # Per-mediator share (must sum to ~1.0; single mediator → 1.0).
+    decomposition = MediationDecomposition(
+        total_effect=total_effect,
+        direct_effect=direct_effect,
+        indirect_effect=indirect_effect,
+        mediator_share={mediator: 1.0},
+    )
+
+    diagnostics = MediationDiagnostics(
+        method="bayesian_mediation",
+        n_samples=len(df),
+        n_bootstrap_used=len(total_samples),
+        n_mediators=1,
+        fit_time_ms=fit_ms,
+        used_precomputed_estimand=False,
+    )
+
+    # Pearl identity check (additivity)
+    pearl_residual = abs(
+        (direct_effect + indirect_effect) - total_effect
+    )
+    if pearl_residual > 1e-6:
+        warnings_list.append(
+            CausalWarning(
+                code="ci_wider_than_estimate",
+                message=(
+                    f"Bayesian Pearl residual "
+                    f"{pearl_residual:.2e} > 1e-6 tolerance; "
+                    f"posterior NDE+NIE != total at the posterior "
+                    f"mean (sampling noise on small posteriors)."
+                ),
+            )
+        )
+
+    return decomposition, diagnostics, "bayesian_pearl", warnings_list
+
+
 def _run_farbmacher_mediation(
     request: CausalMediationRequest,
     df: pd.DataFrame,
@@ -746,14 +938,24 @@ def run_mediation(
     n_effective = len(df)
 
     # Branch dispatch.
+    # Phase C C3 (2026-05-21): operator can opt into the Bayesian
+    # branch by setting ``request.method = "bayesian_mediation"``.
+    # Otherwise the legacy mediator-count dispatch applies (single
+    # mediator → DoWhy two-stage; multi-mediator → Farbmacher LOO).
     warnings_list: List[CausalWarning] = []
-    if len(request.mediators) == 1:
+    if request.method == "bayesian_mediation":
+        (
+            decomp_point, diagnostics, strategy, branch_warnings,
+        ) = _run_bayesian_mediation(request, df)
+        warnings_list.extend(branch_warnings)
+        branch_fn_raw: Callable[
+            [CausalMediationRequest, pd.DataFrame], Tuple
+        ] = _run_bayesian_mediation
+    elif len(request.mediators) == 1:
         decomp_point, diagnostics, strategy = _run_dowhy_mediation(
             request, df,
         )
-        branch_fn_raw: Callable[
-            [CausalMediationRequest, pd.DataFrame], Tuple
-        ] = _run_dowhy_mediation
+        branch_fn_raw = _run_dowhy_mediation
     else:
         (
             decomp_point, diagnostics, strategy, branch_warnings,
@@ -761,18 +963,88 @@ def run_mediation(
         warnings_list.extend(branch_warnings)
         branch_fn_raw = _run_farbmacher_mediation
 
-    # Bootstrap CI.
-    branch_fn = _branch_decomposition_only(branch_fn_raw)
-    (
-        ci_lower, ci_upper, proportion_ci, n_completed, boot_warnings,
-    ) = _bootstrap_ci(
-        request,
-        df,
-        branch_fn=branch_fn,
-        n_bootstrap=request.n_bootstrap,
-        alpha=_DEFAULT_CI_ALPHA,
-        seed=request.seed,
-    )
+    # Bootstrap CI — Phase C C3 short-circuit:
+    # When method='bayesian_mediation', the PyMC sampler in
+    # _run_bayesian_mediation already produced ~1000 posterior
+    # samples per NDE/NIE/total. Re-running it 200x for bootstrap
+    # would take 1+ hours per request. Instead we derive the CI
+    # bands directly from the posterior quantiles (alpha/2,
+    # 1-alpha/2), matching the bootstrap response shape.
+    if request.method == "bayesian_mediation":
+        cached = _BAYESIAN_POSTERIOR_CACHE.pop(id(request), None)
+        if cached is None:
+            raise CausalMediationError(
+                code="bayesian_posterior_cache_missing",
+                message=(
+                    "Internal error: _run_bayesian_mediation should "
+                    "have populated _BAYESIAN_POSTERIOR_CACHE."
+                ),
+            )
+        # alpha/2 and 1-alpha/2 quantiles for each effect
+        alpha = _DEFAULT_CI_ALPHA
+        nde_low = float(np.quantile(cached["NDE"], alpha / 2))
+        nde_high = float(np.quantile(cached["NDE"], 1 - alpha / 2))
+        nie_low = float(np.quantile(cached["NIE"], alpha / 2))
+        nie_high = float(np.quantile(cached["NIE"], 1 - alpha / 2))
+        total_low = float(np.quantile(cached["total"], alpha / 2))
+        total_high = float(np.quantile(cached["total"], 1 - alpha / 2))
+        mediator_name = request.mediators[0]
+        # CI bands are pure data holders (per MediationDecomposition
+        # docstring — no validators on this sub-model). mediator_share
+        # must be a non-empty Dict, so single mediator → 1.0 marker.
+        ci_lower = MediationDecomposition(
+            total_effect=total_low,
+            direct_effect=nde_low,
+            indirect_effect=nie_low,
+            mediator_share={mediator_name: 1.0},
+        )
+        ci_upper = MediationDecomposition(
+            total_effect=total_high,
+            direct_effect=nde_high,
+            indirect_effect=nie_high,
+            mediator_share={mediator_name: 1.0},
+        )
+        # proportion mediated quantiles
+        # Guard against zero division — only compute ratio where
+        # total != 0.
+        with np.errstate(divide="ignore", invalid="ignore"):
+            prop_samples = np.where(
+                np.abs(cached["total"]) > 1e-12,
+                cached["NIE"] / cached["total"],
+                np.nan,
+            )
+        prop_samples = prop_samples[~np.isnan(prop_samples)]
+        if len(prop_samples) > 0:
+            proportion_ci = (
+                float(np.quantile(prop_samples, alpha / 2)),
+                float(np.quantile(prop_samples, 1 - alpha / 2)),
+            )
+        else:
+            proportion_ci = (0.0, 0.0)
+        n_completed = len(cached["total"])
+        boot_warnings: List[CausalWarning] = []
+        warnings_list.append(
+            CausalWarning(
+                code="method_fallback",
+                message=(
+                    "bayesian_mediation: bootstrap loop short-"
+                    "circuited; CI bands derived from PyMC posterior "
+                    f"quantiles ({n_completed} samples)."
+                ),
+            )
+        )
+    else:
+        branch_fn = _branch_decomposition_only(branch_fn_raw)
+        (
+            ci_lower, ci_upper, proportion_ci, n_completed, boot_warnings,
+        ) = _bootstrap_ci(
+            request,
+            df,
+            branch_fn=branch_fn,
+            n_bootstrap=request.n_bootstrap,
+            alpha=_DEFAULT_CI_ALPHA,
+            seed=request.seed,
+        )
     warnings_list.extend(boot_warnings)
 
     # Update diagnostics with the bootstrap-completed count and a

@@ -58,7 +58,15 @@ from app.schemas.causal_common import (
 )
 
 
-SCHEMA_VERSION = "B.4"
+SCHEMA_VERSION = "C.3"
+# History: Phase B B2b.2 shipped "B.4". Phase C C3 bumped to "C.3"
+# when the Bayesian mediation branch was added (additive enum value
+# in ``MediationMethod`` Literal: ``"bayesian_mediation"``). The
+# constant bump is informational; the response model does not emit
+# ``schema_version`` as a field, so the Phase B OpenAPI snapshot
+# only sees the new enum literal, not the constant. Per
+# PHASE_C_PLAN.md §2.3, this is classified as bibliographic +
+# metadata + schema-additive, NOT method drift.
 
 
 # Inline-row ceiling for ``mode='sync'``. Above this, the request must
@@ -93,8 +101,16 @@ AssumptionAck = Literal[
 # Engine-branch tag used by ``MediationDiagnostics.method``. The
 # single-mediator branch routes to DoWhy ``mediation.two_stage_regression``;
 # the multi-mediator branch routes to a Farbmacher 2022-style leave-one-out
-# LinearDML loop (per PHASE_B2b2_DESIGN.md §1).
-MediationMethod = Literal["dowhy_two_stage", "farbmacher_dml_loo"]
+# LinearDML loop (per PHASE_B2b2_DESIGN.md §1). Phase C C3 added a third
+# branch routing to a PyMC Bayesian two-stage mediation model (per
+# PHASE_C_PLAN.md §2.3); this branch is selected by the operator via
+# ``CausalMediationRequest.method = "bayesian_mediation"`` and runs
+# regardless of mediator count.
+MediationMethod = Literal[
+    "dowhy_two_stage",
+    "farbmacher_dml_loo",
+    "bayesian_mediation",   # Phase C C3, additive
+]
 
 
 # ════════════════════════════════════════════════════════════════════
@@ -156,6 +172,19 @@ class CausalMediationRequest(BaseModel):
             "``natural`` only (Pearl NDE/NIE); ``controlled`` and "
             "``interventional`` are reserved values rejected by the "
             "engine with HTTP 422 (D9-style)."
+        ),
+    )
+    method: Optional[MediationMethod] = Field(
+        default=None,
+        description=(
+            "Optional explicit engine-branch override. Default "
+            "``None`` (auto-dispatch by mediator count: 1 → "
+            "``dowhy_two_stage``, ≥2 → ``farbmacher_dml_loo``, "
+            "mirroring Phase B B2b.2 behaviour). "
+            "Phase C C3 added ``bayesian_mediation`` as an "
+            "operator-selectable third branch (single-mediator only "
+            "in C3 MVP); use this field to opt into PyMC posterior-"
+            "based NDE/NIE estimation."
         ),
     )
     seed: Optional[int] = Field(

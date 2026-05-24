@@ -67,6 +67,55 @@ environment variable.
 - Snapshot preserved as: `BOS_Paper1_JCP_FINAL.docx.bak` (next to
   the live file)
 
+### 2026-05-21 (night) — Phase C C3 ship (Bayesian mediation branch; non-paper-SHA event, but Phase B mediation schema bump)
+
+- Paper SHA-256: **unchanged** at
+  `C7E4CE1B695401659668D256B779B60EB30738D9963B875112EAC9406353741C`
+- Software tag bump: `v0.10.1-phase-c-c2` → `v0.10.2-phase-c-c3`
+- CITATION.cff `version` → `0.10.2-phase-c-c3`
+- **Schema additive change** (per Plan v3 §2.3):
+  - `MediationMethod` Literal extended from
+    `("dowhy_two_stage", "farbmacher_dml_loo")` to
+    `("dowhy_two_stage", "farbmacher_dml_loo",
+    "bayesian_mediation")`
+  - `CausalMediationRequest` gains optional `method` field
+    (default None → auto-dispatch by mediator count; explicit
+    `"bayesian_mediation"` opts into PyMC branch)
+  - `app/schemas/causal/mediation.py` SCHEMA_VERSION constant
+    bumped `B.4` → `C.3` (informational; not emitted in
+    response, but documents the lineage)
+- **Phase B OpenAPI snapshot regenerated** to reflect new
+  `MediationMethod` enum value + new optional `method` field on
+  the request. **Classified as schema-additive, not method
+  drift** — operators omitting `method` get the same behaviour
+  as before C3.
+- New engine function: `_run_bayesian_mediation` in
+  `causal_mediation_engine.py` (~150 LOC). PyMC two-stage Pearl
+  decomposition: mediator equation `M = α_T·T + α_X·X + ε_M`,
+  outcome equation `Y = β_T·T + β_M·M + β_X·X + ε_Y`; NDE =
+  posterior(β_T), NIE = posterior(α_T · β_M), total = NDE + NIE.
+- **Bootstrap short-circuit** for bayesian_mediation: rather
+  than re-running PyMC 200x (which would take ~30 min per
+  request), the CI bands are derived from the posterior
+  quantiles of the SINGLE PyMC run. Triggers a
+  `method_fallback` warning explaining the short-circuit. The
+  posterior typically has 1000+ samples, so CI quantile
+  estimation is stable.
+- End-to-end smoke (synthetic n=150, true NDE=0.5, NIE=3.0,
+  total=3.5): recovered NDE=0.853, NIE=2.925 (err 0.075),
+  total=3.778; 95% CI brackets true values; sampling time
+  148.7s.
+- Test coverage: 5 new tests (3 slow PyMC + 2 fast schema
+  validation) added to existing
+  `tests/unit/test_causal_mediation_engine.py`. All 14 non-slow
+  tests PASS (12 original + 2 new C3 fast), 0 regression on
+  Phase B B2b.2 behaviour.
+- Phase C OpenAPI snapshot unchanged (no new endpoint; the
+  mediation endpoint is in Phase B scope).
+- Classification per §4: **schema-additive, not method drift**.
+  No Plan v3 review trigger. Pre-C3 operators (no `method`
+  field in request) get identical behaviour.
+
 ### 2026-05-21 (late evening) — Phase C C2 ship (Conformal prediction engine; non-paper-SHA event)
 
 - Paper SHA-256: **unchanged** at

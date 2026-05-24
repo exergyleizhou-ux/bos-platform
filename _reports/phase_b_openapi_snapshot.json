@@ -675,6 +675,23 @@
             "description": "Mediation decomposition flavour. B2b.2 MVP implements ``natural`` only (Pearl NDE/NIE); ``controlled`` and ``interventional`` are reserved values rejected by the engine with HTTP 422 (D9-style).",
             "default": "natural"
           },
+          "method": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "dowhy_two_stage",
+                  "farbmacher_dml_loo",
+                  "bayesian_mediation"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Method",
+            "description": "Optional explicit engine-branch override. Default ``None`` (auto-dispatch by mediator count: 1 → ``dowhy_two_stage``, ≥2 → ``farbmacher_dml_loo``, mirroring Phase B B2b.2 behaviour). Phase C C3 added ``bayesian_mediation`` as an operator-selectable third branch (single-mediator only in C3 MVP); use this field to opt into PyMC posterior-based NDE/NIE estimation."
+          },
           "seed": {
             "anyOf": [
               {
@@ -1622,7 +1639,8 @@
             "type": "string",
             "enum": [
               "dowhy_two_stage",
-              "farbmacher_dml_loo"
+              "farbmacher_dml_loo",
+              "bayesian_mediation"
             ],
             "title": "Method",
             "description": "Which engine branch produced this Response. ``dowhy_two_stage`` for single-mediator requests; ``farbmacher_dml_loo`` for multi-mediator requests."
