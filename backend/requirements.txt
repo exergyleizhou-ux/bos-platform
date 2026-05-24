@@ -71,3 +71,12 @@ Pillow==10.2.0
 black==24.1.1
 ruff==0.2.1
 mypy==1.8.0
+
+# ─────────────────────────────────────────────────────────────────
+# Phase C C1 — Bayesian baseline (added per PHASE_C_C1_DESIGN.md §10)
+# numpy 2.x compatible; pytensor uses Python fallback if g++ absent.
+# Smoke test on synthetic ATE=2.0 recovers posterior mean 1.847,
+# 95% HDI [1.551, 2.116], r_hat 1.0000, ESS 803, evidence='validated'.
+# ─────────────────────────────────────────────────────────────────
+pymc>=5.10,<6.0
+arviz>=0.16,<1.0
