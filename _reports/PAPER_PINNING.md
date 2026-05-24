@@ -67,6 +67,41 @@ environment variable.
 - Snapshot preserved as: `BOS_Paper1_JCP_FINAL.docx.bak` (next to
   the live file)
 
+### 2026-05-24 — Phase C C6 ship (Frontend uncertainty display — UncertaintyBandPanel)
+
+- Paper SHA-256: **unchanged** at
+  `C7E4CE1B695401659668D256B779B60EB30738D9963B875112EAC9406353741C`
+- Software tag bump: `v0.10.4-phase-c-c5` → `v0.10.5-phase-c-c6`
+- CITATION.cff `version` → `0.10.5-phase-c-c6`, date-released
+  `2026-05-24` (same calendar day as C5; back-to-back C5+C6 ships
+  in one session)
+- New files:
+  - `frontend/src/components/bos/UncertaintyBandPanel.tsx` —
+    pure-SVG horizontal interval-bar visualisation for Bayesian
+    HDI, Conformal prediction intervals, C4 credibility bands,
+    and frequentist CIs. Multi-band overlay on a shared x-axis
+    with auto-scaling 5% padding. Pure presentational component
+    (mirrors CausalMermaidPanel.tsx pattern). No charting-library
+    dependency — uses Tailwind + raw SVG only.
+  - `frontend/src/components/bos/UncertaintyBandPanel.test.tsx` —
+    21 vitest cases covering: pure helpers (`computeXRange`,
+    `xToPixel`), auto-scaling rule, pixel-mapping formula, empty
+    state, multiple bands, kind tagging, invalid-band defensive
+    rendering, legend deduplication, axis tick rendering.
+- No backend changes; no schema bump; no Phase B/C OpenAPI
+  snapshot change; no new REST endpoint.
+- Test verification:
+  - 21/21 new tests PASS in 804 ms
+  - CausalMermaidPanel regression: 15/15 PASS in 768 ms
+  - `tsc --noEmit` exit 0 (no TypeScript errors introduced)
+- Phase C 6/6 batches complete with this ship. Next milestone:
+  Phase G housekeeping (Sphinx docs, repo public flip on Paper 1
+  acceptance) and/or `v1.0` cut at Paper 2 submission.
+- Classification per §4: **software-extension event, not paper
+  drift**. Phase C is methodology software layer that runs
+  alongside Paper 1's claims rather than modifying them. No Plan v3
+  review trigger.
+
 ### 2026-05-24 — Phase C C5 ship (Validation suite — synthetic-data calibration benchmarks)
 
 - Paper SHA-256: **unchanged** at
