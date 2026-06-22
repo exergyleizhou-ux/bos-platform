@@ -95,6 +95,7 @@ class TestMonteCarlo:
                 )
             )
 
+
 class TestSensitivity:
     """Tests for sensitivity analysis."""
 
@@ -137,6 +138,7 @@ class TestSensitivity:
         )
         scores = [result.impact_scores[p] for p in result.parameter_ranking]
         assert scores == sorted(scores, reverse=True)
+
 
 class TestBayesianAB:
     """Tests for Bayesian A/B testing."""
@@ -196,6 +198,7 @@ class TestBayesianAB:
                 )
             )
 
+
 class TestForecast:
     """Tests for time-series forecasting."""
 
@@ -254,10 +257,7 @@ class TestForecast:
         self,
     ):
         # Simulate simple trend data
-        values = [
-            0.20 - i * 0.01
-            for i in range(12)
-        ]
+        values = [0.20 - i * 0.01 for i in range(12)]
         result = run_forecast(
             ForecastInput(
                 values=values,
@@ -268,10 +268,7 @@ class TestForecast:
             )
         )
         assert len(result.forecast) == 4
-        assert (
-            result.method
-            == "holt_winters"
-        )
+        assert result.method == "holt_winters"
 
     def test_ci_bounds_order(self):
         values = [
@@ -299,14 +296,10 @@ class TestForecast:
     def test_too_few_values_raises(
         self,
     ):
-        with pytest.raises(
-            ValueError
-        ):
+        with pytest.raises(ValueError):
             run_forecast(
                 ForecastInput(
-                    values=[
-                        0.15
-                    ],
+                    values=[0.15],
                     method="sma",
                     horizon=3,
                     window=3,
@@ -335,19 +328,7 @@ class TestForecast:
             )
         )
         # MAPE and RMSE may be None if no holdout, but if present, must be >= 0
-        if (
-            result.mape
-            is not None
-        ):
-            assert (
-                result.mape
-                >= 0
-            )
-            if (
-                result.rmse
-                is not None
-            ):
-                assert (
-                    result.rmse
-                    >= 0
-                )
+        if result.mape is not None:
+            assert result.mape >= 0
+            if result.rmse is not None:
+                assert result.rmse >= 0

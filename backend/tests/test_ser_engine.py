@@ -88,9 +88,7 @@ class TestNitrogenBalance:
 
     def test_basic_balance(self):
         """Sum of outputs should be <= input (conservation)."""
-        balance = compute_nitrogen_balance(
-            n_in=0.5, n_larvae=0.3, n_frass=0.15
-        )
+        balance = compute_nitrogen_balance(n_in=0.5, n_larvae=0.3, n_frass=0.15)
         assert balance.n_loss >= 0
         assert math.isclose(
             balance.n_in,
@@ -100,22 +98,14 @@ class TestNitrogenBalance:
 
     def test_perfect_recovery(self):
         """All nitrogen recovered - n_loss - 0."""
-        balance = compute_nitrogen_balance(
-            n_in=1.0, n_larvae=0.6, n_frass=0.4
-        )
-        assert math.isclose(
-            balance.n_loss, 0.0, abs_tol=1e-9
-        )
-        assert math.isclose(
-            balance.recovery_pct, 1.0, rel_tol=1e-6
-        )
+        balance = compute_nitrogen_balance(n_in=1.0, n_larvae=0.6, n_frass=0.4)
+        assert math.isclose(balance.n_loss, 0.0, abs_tol=1e-9)
+        assert math.isclose(balance.recovery_pct, 1.0, rel_tol=1e-6)
 
     def test_zero_input_raises(self):
         """Zero n_in should raise ValueError."""
         with pytest.raises(ValueError, match="n_in"):
-            compute_nitrogen_balance(
-                n_in=0.0, n_larvae=0.1, n_frass=0.1
-            )
+            compute_nitrogen_balance(n_in=0.0, n_larvae=0.1, n_frass=0.1)
 
 
 class TestScoreToGrade:
@@ -144,21 +134,15 @@ class TestScoreToGrade:
         expected_grade: str,
     ):
         grade = score_to_grade(score)
-        assert (
-            grade == expected_grade
-        ), f"score={score} - got {grade}, expected {expected_grade}"
+        assert grade == expected_grade, f"score={score} - got {grade}, expected {expected_grade}"
 
     def test_zero_score(self):
         """Zero SER should get A+."""
-        assert (
-            score_to_grade(0.0) == "A+"
-        )
+        assert score_to_grade(0.0) == "A+"
 
     def test_negative_score_raises(
         self,
     ):
         """Negative SER should raise ValueError."""
-        with pytest.raises(
-            ValueError
-        ):
+        with pytest.raises(ValueError):
             score_to_grade(-0.1)
