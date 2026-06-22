@@ -5,14 +5,15 @@ Tests for SER calculation logic, grading, edge cases, and nitrogen balance.
 """
 
 import math
+
 import pytest
 
 from app.engine.ser_calculator import (
-    compute_ser,
-    compute_nitrogen_balance,
-    score_to_grade,
     SERInput,
     SERResult,
+    compute_nitrogen_balance,
+    compute_ser,
+    score_to_grade,
 )
 
 

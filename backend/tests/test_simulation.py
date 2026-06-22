@@ -5,13 +5,13 @@ Tests for Monte Carlo, Sensitivity, Bayesian A/B, and Forecast engines.
 """
 
 import math
-import pytest
-import numpy as np
 
-from app.engine.monte_carlo import run_monte_carlo, MonteCarloInput
-from app.engine.sensitivity import run_sensitivity, SensitivityInput
-from app.engine.bayesian_ab import run_bayesian_ab, BayesianABInput
-from app.engine.forecast import run_forecast, ForecastInput
+import pytest
+
+from app.engine.bayesian_ab import BayesianABInput, run_bayesian_ab
+from app.engine.forecast import ForecastInput, run_forecast
+from app.engine.monte_carlo import MonteCarloInput, run_monte_carlo
+from app.engine.sensitivity import SensitivityInput, run_sensitivity
 
 
 class TestMonteCarlo:
@@ -123,7 +123,7 @@ class TestSensitivity:
                 n_steps=n_steps,
             )
         )
-        for param, points in result.sweep_results.items():
+        for _param, points in result.sweep_results.items():
             assert len(points) == n_steps
 
     def test_ranking_ordered_by_impact(self):
@@ -290,6 +290,7 @@ class TestForecast:
         for lo, hi in zip(
             result.ci_lower,
             result.ci_upper,
+            strict=False,
         ):
             assert lo <= hi
 
