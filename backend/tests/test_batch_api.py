@@ -29,195 +29,199 @@ class TestBatchCreate:
         assert "id" in data
         assert "created_at" in data
 
-        async def test_create_batch_missing_required(self, client: AsyncClient, auth_headers: dict):
-            resp = await client.post(
-                "/api/v1/batches",
-                json={"species": "BSF"},
-                headers=auth_headers,
-            )
-            assert resp.status_code == 422
+    async def test_create_batch_missing_required(self, client: AsyncClient, auth_headers: dict):
+        resp = await client.post(
+            "/api/v1/batches",
+            json={"species": "BSF"},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 422
 
-            async def test_create_batch_unauthorized(self, client: AsyncClient, sample_batch_payload: dict):
-                resp = await client.post("/api/v1/batches", json=sample_batch_payload)
-                assert resp.status_code == 401
+    async def test_create_batch_unauthorized(self, client: AsyncClient, sample_batch_payload: dict):
+        resp = await client.post("/api/v1/batches", json=sample_batch_payload)
+        assert resp.status_code == 401
 
-                async def test_create_batch_negative_dm(self, client: AsyncClient, auth_headers: dict):
-                    payload = {
-                        "batch_id": "BSF-NEG",
-                        "species": "BSF",
-                        "dm_in": -5.0,
-                        "dm_out": 3.0,
-                    }
-                    resp = await client.post("/api/v1/batches", json=payload, headers=auth_headers)
-                    assert resp.status_code == 422
+    async def test_create_batch_negative_dm(self, client: AsyncClient, auth_headers: dict):
+        payload = {
+            "batch_id": "BSF-NEG",
+            "species": "BSF",
+            "dm_in": -5.0,
+            "dm_out": 3.0,
+        }
+        resp = await client.post("/api/v1/batches", json=payload, headers=auth_headers)
+        assert resp.status_code == 422
 
-                    @pytest.mark.asyncio
-                    class TestBatchList:
-                        """GET /batches"""
+@pytest.mark.asyncio
+class TestBatchList:
+    """GET /batches"""
 
-                        async def test_list_batches_empty(self, client: AsyncClient, auth_headers: dict):
-                            resp = await client.get("/api/v1/batches", headers=auth_headers)
-                            assert resp.status_code == 200
-                            data = resp.json()
-                            assert "items" in data
-                            assert "total" in data
-                            assert "page" in data
-                            assert "total_pages" in data
+    async def test_list_batches_empty(self, client: AsyncClient, auth_headers: dict):
+        resp = await client.get("/api/v1/batches", headers=auth_headers)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "items" in data
+        assert "total" in data
+        assert "page" in data
+        assert "total_pages" in data
 
-                            async def test_list_batches_with_data(
-                                self,
-                                client: AsyncClient,
-                                auth_headers: dict,
-                                sample_batch_payload: dict,
-                            ):
-                                # Create a batch first
-                                await client.post("/api/v1/batches", json=sample_batch_payload, headers=auth_headers)
-                                resp = await client.get("/api/v1/batches", headers=auth_headers)
-                                assert resp.status_code == 200
-                                data = resp.json()
-                                assert data["total"] >= 1
-                                assert len(data["items"]) >= 1
+    async def test_list_batches_with_data(
+        self,
+        client: AsyncClient,
+        auth_headers: dict,
+        sample_batch_payload: dict,
+    ):
+        # Create a batch first
+        await client.post("/api/v1/batches", json=sample_batch_payload, headers=auth_headers)
+        resp = await client.get("/api/v1/batches", headers=auth_headers)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["total"] >= 1
+        assert len(data["items"]) >= 1
 
-                                async def test_list_batches_pagination(self, client: AsyncClient, auth_headers: dict):
-                                    resp = await client.get(
-                                        "/api/v1/batches",
-                                        params={"page": 1, "page_size": 5},
-                                        headers=auth_headers,
-                                    )
-                                    assert resp.status_code == 200
-                                    data = resp.json()
-                                    assert data["page"] == 1
-                                    assert len(data["items"]) <= 5
+    async def test_list_batches_pagination(self, client: AsyncClient, auth_headers: dict):
+        resp = await client.get(
+            "/api/v1/batches",
+            params={"page": 1, "page_size": 5},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["page"] == 1
+        assert len(data["items"]) <= 5
 
-                                    async def test_list_batches_filter_species(
-                                        self,
-                                        client: AsyncClient,
-                                        auth_headers: dict,
-                                        sample_batch_payload: dict,
-                                    ):
-                                        await client.post(
-                                            "/api/v1/batches", json=sample_batch_payload, headers=auth_headers
-                                        )
-                                        resp = await client.get(
-                                            "/api/v1/batches",
-                                            params={"species": "BSF"},
-                                            headers=auth_headers,
-                                        )
-                                        assert resp.status_code == 200
-                                        data = resp.json()
-                                        for item in data["items"]:
-                                            assert item["species"] == "BSF"
+    async def test_list_batches_filter_species(
+        self,
+        client: AsyncClient,
+        auth_headers: dict,
+        sample_batch_payload: dict,
+    ):
+        await client.post(
+            "/api/v1/batches", json=sample_batch_payload, headers=auth_headers
+        )
+        resp = await client.get(
+            "/api/v1/batches",
+            params={"species": "BSF"},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        for item in data["items"]:
+            assert item["species"] == "BSF"
 
-                                            @pytest.mark.asyncio
-                                            class TestBatchDetail:
-                                                """GET /batches/{id}"""
+@pytest.mark.asyncio
+class TestBatchDetail:
+    """GET /batches/{id}"""
 
-                                                async def test_get_batch_success(
-                                                    self,
-                                                    client: AsyncClient,
-                                                    auth_headers: dict,
-                                                    sample_batch_payload: dict,
-                                                ):
-                                                    create_resp = await client.post(
-                                                        "/api/v1/batches",
-                                                        json=sample_batch_payload,
-                                                        headers=auth_headers,
-                                                    )
-                                                    batch_id = create_resp.json()["id"]
+    async def test_get_batch_success(
+        self,
+        client: AsyncClient,
+        auth_headers: dict,
+        sample_batch_payload: dict,
+    ):
+        create_resp = await client.post(
+            "/api/v1/batches",
+            json=sample_batch_payload,
+            headers=auth_headers,
+        )
+        batch_id = create_resp.json()["id"]
 
-                                                    resp = await client.get(
-                                                        f"/api/v1/batches/{batch_id}", headers=auth_headers
-                                                    )
-                                                    assert resp.status_code == 200
-                                                    data = resp.json()
-                                                    assert data["id"] == batch_id
-                                                    assert data["batch_id"] == "BSF-TEST-001"
+        resp = await client.get(
+            f"/api/v1/batches/{batch_id}", headers=auth_headers
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["id"] == batch_id
+        assert data["batch_id"] == "BSF-TEST-001"
 
-                                                    async def test_get_batch_not_found(
-                                                        self, client: AsyncClient, auth_headers: dict
-                                                    ):
-                                                        resp = await client.get(
-                                                            "/api/v1/batches/99999", headers=auth_headers
-                                                        )
-                                                        assert resp.status_code == 404
+    async def test_get_batch_not_found(
+        self, client: AsyncClient, auth_headers: dict
+    ):
+        resp = await client.get(
+            "/api/v1/batches/99999", headers=auth_headers
+        )
+        assert resp.status_code == 404
 
-                                                        @pytest.mark.asyncio
-                                                        class TestBatchUpdate:
-                                                            """PATCH /batches/{id}"""
+@pytest.mark.asyncio
+class TestBatchUpdate:
+    """PATCH /batches/{id}"""
 
-                                                            async def test_update_batch_success(
-                                                                self,
-                                                                client: AsyncClient,
-                                                                auth_headers: dict,
-                                                                sample_batch_payload: dict,
-                                                            ):
-                                                                create_resp = await client.post(
-                                                                    "/api/v1/batches",
-                                                                    json=sample_batch_payload,
-                                                                    headers=auth_headers,
-                                                                )
-                                                                batch_id = create_resp.json()["id"]
+    async def test_update_batch_success(
+        self,
+        client: AsyncClient,
+        auth_headers: dict,
+        sample_batch_payload: dict,
+    ):
+        create_resp = await client.post(
+            "/api/v1/batches",
+            json=sample_batch_payload,
+            headers=auth_headers,
+        )
+        batch_id = create_resp.json()["id"]
 
-                                                                resp = await client.patch(
-                                                                    f"/api/v1/batches/{batch_id}",
-                                                                    json={
-                                                                        "notes": "Updated notes",
-                                                                        "temperature": 30.0,
-                                                                    },
-                                                                    headers=auth_headers,
-                                                                )
-                                                                assert resp.status_code == 200
-                                                                data = resp.json()
-                                                                assert data["notes"] == "Updated notes"
-                                                                assert data["temperature"] == 30.0
+        resp = await client.patch(
+            f"/api/v1/batches/{batch_id}",
+            json={
+                "notes": "Updated notes",
+                "temperature": 30.0,
+            },
+            headers=auth_headers,
+        )
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["notes"] == "Updated notes"
+        assert data["temperature"] == 30.0
 
-                                                                async def test_update_batch_not_found(
-                                                                    self, client: AsyncClient, auth_headers: dict
-                                                                ):
-                                                                    resp = await client.patch(
-                                                                        "/api/v1/batches/99999",
-                                                                        json={"notes": "nope"},
-                                                                        headers=auth_headers,
-                                                                    )
-                                                                    assert resp.status_code == 404
+    async def test_update_batch_not_found(
+        self, client: AsyncClient, auth_headers: dict
+    ):
+        resp = await client.patch(
+            "/api/v1/batches/99999",
+            json={"notes": "nope"},
+            headers=auth_headers,
+        )
+        assert resp.status_code == 404
 
-                                                                    @pytest.mark.asyncio
-                                                                    class TestBatchDelete:
-                                                                        """DELETE /batches/{id}"""
+@pytest.mark.asyncio
+class TestBatchDelete:
+    """DELETE /batches/{id}"""
 
-                                                                        async def test_delete_batch_success(
-                                                                            self,
-                                                                            client: AsyncClient,
-                                                                            auth_headers: dict,
-                                                                            sample_batch_payload: dict,
-                                                                        ):
-                                                                            create_resp = await client.post(
-                                                                                "/api/v1/batches",
-                                                                                json=sample_batch_payload,
-                                                                                headers=auth_headers,
-                                                                            )
-                                                                            batch_id = create_resp.json()["id"]
+    async def test_delete_batch_success(
+        self,
+        client: AsyncClient,
+        auth_headers: dict,
+        scientist_headers: dict,
+        sample_batch_payload: dict,
+    ):
+        create_resp = await client.post(
+            "/api/v1/batches",
+            json=sample_batch_payload,
+            headers=auth_headers,
+        )
+        batch_id = create_resp.json()["id"]
 
-                                                                            resp = await client.delete(
-                                                                                f"/api/v1/batches/{batch_id}",
-                                                                                headers=auth_headers,
-                                                                            )
-                                                                            assert resp.status_code == 204
+        # DELETE is a soft archive and requires scientist+ role.
+        resp = await client.delete(
+            f"/api/v1/batches/{batch_id}",
+            headers=scientist_headers,
+        )
+        assert resp.status_code == 200
 
-                                                                            # Verify deleted
-                                                                            get_resp = await client.get(
-                                                                                f"/api/v1/batches/{batch_id}",
-                                                                                headers=auth_headers,
-                                                                            )
-                                                                            assert get_resp.status_code == 404
+        # Soft archive: the batch is retained with status "archived".
+        get_resp = await client.get(
+            f"/api/v1/batches/{batch_id}",
+            headers=auth_headers,
+        )
+        assert get_resp.status_code == 200
+        assert get_resp.json()["status"] == "archived"
 
-                                                                            async def test_delete_batch_not_found(
-                                                                                self,
-                                                                                client: AsyncClient,
-                                                                                auth_headers: dict,
-                                                                            ):
-                                                                                resp = await client.delete(
-                                                                                    "/api/v1/batches/99999",
-                                                                                    headers=auth_headers,
-                                                                                )
-                                                                                assert resp.status_code == 404
+    async def test_delete_batch_not_found(
+        self,
+        client: AsyncClient,
+        scientist_headers: dict,
+    ):
+        # Use scientist+ role so we exercise the 404 path, not the 403 role guard.
+        resp = await client.delete(
+            "/api/v1/batches/99999",
+            headers=scientist_headers,
+        )
+        assert resp.status_code == 404

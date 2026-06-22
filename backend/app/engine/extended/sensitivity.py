@@ -72,10 +72,16 @@ def run_sensitivity(inp: SensitivityInput) -> SensitivityResult:
             sample = params.copy()
             sample[name] = x
 
-            if name == "dm_out" and x > sample["dm_in"]:
-                sample[name] = sample["dm_in"]
-            if name == "dm_in" and sample[name] <= 0:
-                sample[name] = 1e-6
+            # Keep every swept sample inside compute_ser's valid domain so the
+            # sweep never crashes on an out-of-range combination:
+            #   dm_in > 0, 0 <= dm_out <= dm_in, and n_in/n_larvae/n_frass >= 0.
+            # (Sweeping dm_in below dm_out, or an N fraction below zero, would
+            # otherwise raise ValueError from ser_calculator.)
+            sample["dm_in"] = max(sample["dm_in"], 1e-6)
+            sample["dm_out"] = min(max(sample["dm_out"], 0.0), sample["dm_in"])
+            for n_key in ("n_in", "n_larvae", "n_frass"):
+                if n_key in sample:
+                    sample[n_key] = max(sample[n_key], 0.0)
 
             ser = compute_ser(
                 SERInput(
