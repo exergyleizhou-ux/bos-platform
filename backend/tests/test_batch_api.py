@@ -51,6 +51,7 @@ class TestBatchCreate:
         resp = await client.post("/api/v1/batches", json=payload, headers=auth_headers)
         assert resp.status_code == 422
 
+
 @pytest.mark.asyncio
 class TestBatchList:
     """GET /batches"""
@@ -95,9 +96,7 @@ class TestBatchList:
         auth_headers: dict,
         sample_batch_payload: dict,
     ):
-        await client.post(
-            "/api/v1/batches", json=sample_batch_payload, headers=auth_headers
-        )
+        await client.post("/api/v1/batches", json=sample_batch_payload, headers=auth_headers)
         resp = await client.get(
             "/api/v1/batches",
             params={"species": "BSF"},
@@ -107,6 +106,7 @@ class TestBatchList:
         data = resp.json()
         for item in data["items"]:
             assert item["species"] == "BSF"
+
 
 @pytest.mark.asyncio
 class TestBatchDetail:
@@ -125,21 +125,16 @@ class TestBatchDetail:
         )
         batch_id = create_resp.json()["id"]
 
-        resp = await client.get(
-            f"/api/v1/batches/{batch_id}", headers=auth_headers
-        )
+        resp = await client.get(f"/api/v1/batches/{batch_id}", headers=auth_headers)
         assert resp.status_code == 200
         data = resp.json()
         assert data["id"] == batch_id
         assert data["batch_id"] == "BSF-TEST-001"
 
-    async def test_get_batch_not_found(
-        self, client: AsyncClient, auth_headers: dict
-    ):
-        resp = await client.get(
-            "/api/v1/batches/99999", headers=auth_headers
-        )
+    async def test_get_batch_not_found(self, client: AsyncClient, auth_headers: dict):
+        resp = await client.get("/api/v1/batches/99999", headers=auth_headers)
         assert resp.status_code == 404
+
 
 @pytest.mark.asyncio
 class TestBatchUpdate:
@@ -171,15 +166,14 @@ class TestBatchUpdate:
         assert data["notes"] == "Updated notes"
         assert data["temperature"] == 30.0
 
-    async def test_update_batch_not_found(
-        self, client: AsyncClient, auth_headers: dict
-    ):
+    async def test_update_batch_not_found(self, client: AsyncClient, auth_headers: dict):
         resp = await client.patch(
             "/api/v1/batches/99999",
             json={"notes": "nope"},
             headers=auth_headers,
         )
         assert resp.status_code == 404
+
 
 @pytest.mark.asyncio
 class TestBatchDelete:
